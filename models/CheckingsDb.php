@@ -1,0 +1,58 @@
+<?php
+require_once PROJECT_ROOT_PATH . "/entities/Checking.php";
+
+class CheckingsDb extends Database
+{
+  public $class = Checking::class;
+  public $idName = "id_checkin";
+  public $tableName = "cheking";
+
+  public function obtenerChecking($id)
+  {
+    $query = $this->prepareQuery("select-one");
+    $params = $this->prepareParams(null, "select-one", $id);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function listarCheckings($nroRegistroMaestro = null)
+  {
+    if ($nroRegistroMaestro) {
+      $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro";
+      $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+      return $this->executeQuery($query, $params, "select-one");
+    }
+
+    $query = $this->prepareQuery("select");
+
+    return $this->executeQuery($query, null, "select");
+  }
+
+  public function crearChecking(Checking $checking)
+  {
+    $checkingArray = $this->prepareData((array) $checking, "insert");
+    $query = $this->prepareQuery("insert", $checkingArray);
+    $params = $this->prepareParams($checkingArray);
+
+    return $this->executeQuery($query, $params, "insert");
+  }
+
+  public function actualizarChecking($id, Checking $checking)
+  {
+    $checkingArray = $this->prepareData((array) $checking);
+    $query = $this->prepareQuery("update", $checkingArray);
+    $params = $this->prepareParams($checkingArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function eliminarChecking($id)
+  {
+    $query = $this->prepareQuery("delete");
+    $params = $this->prepareParams(null, "delete", $id);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+}
+?>

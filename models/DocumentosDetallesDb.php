@@ -1,0 +1,87 @@
+<?php
+require_once PROJECT_ROOT_PATH . "/entities/DocumentoDetalle.php";
+
+class DocumentosDetallesDb extends Database
+{
+  public $class = DocumentoDetalle::class;
+  public $idName = "id_documentos_detalle";
+  public $tableName = "documento_detalle";
+
+  public function obtenerDocumentoDetalle($id)
+  {
+    $query = $this->prepareQuery("select-one");
+    $params = $this->prepareParams(null, "select-one", $id);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function listarDocumentosDetalles($nroRegistroMaestro = null, $nroComprobanteVenta = null)
+  {
+    if ($nroRegistroMaestro) {
+      $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nivel_descargo != 2";
+      $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+      return $this->executeQuery($query, $params, "select");
+    }
+
+    if ($nroComprobanteVenta) {
+      $query = "SELECT * FROM $this->tableName WHERE nro_comprobante = :nro_comprobante_venta";
+      $params = array(["nombre" => "nro_comprobante_venta", "valor" => $nroComprobanteVenta, "tipo" => PDO::PARAM_STR]);
+
+      return $this->executeQuery($query, $params, "select");
+    }
+
+    $query = $this->prepareQuery("select");
+
+    return $this->executeQuery($query, null, "select");
+  }
+
+  public function crearDocumentoDetalle(DocumentoDetalle $grupoDeLaCarta)
+  {
+    $documentoDetalleArray = $this->prepareData((array) $grupoDeLaCarta, "insert");
+    $query = $this->prepareQuery("insert", $documentoDetalleArray);
+    $params = $this->prepareParams($documentoDetalleArray);
+
+    return $this->executeQuery($query, $params, "insert");
+  }
+
+  public function actualizarDocumentoDetalle($id, DocumentoDetalle $grupoDeLaCarta)
+  {
+    $documentoDetalleArray = $this->prepareData((array) $grupoDeLaCarta);
+    $query = $this->prepareQuery("update", $documentoDetalleArray);
+    $params = $this->prepareParams($documentoDetalleArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function actualizarDocumentoMovimiento($id, $idDocumentoMovimiento)
+  {
+    $query = "UPDATE $this->tableName SET id_documento_movimiento = :id_documento_movimiento WHERE $this->idName = :id";
+    $params = array(
+      ["nombre" => "id_documento_movimiento", "valor" => $idDocumentoMovimiento, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function actualizarIdItem($id, $idItem)
+  {
+    $query = "UPDATE $this->tableName SET id_item = :id_item WHERE $this->idName = :id";
+    $params = array(
+      ["nombre" => "id_item", "valor" => $idItem, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function eliminarDocumentoDetalle($id)
+  {
+    $query = $this->prepareQuery("delete");
+    $params = $this->prepareParams(null, "delete", $id);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+}
+?>
