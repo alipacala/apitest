@@ -7,11 +7,6 @@ require_once PROJECT_ROOT_PATH . "/models/ProductosRecetaDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosPaqueteDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/Producto.php";
-require_once PROJECT_ROOT_PATH . "/entities/ProductoReceta.php";
-require_once PROJECT_ROOT_PATH . "/entities/ProductoPaquete.php";
-require_once PROJECT_ROOT_PATH . "/entities/Config.php";
-
 class ProductosController extends BaseController
 {
   public function get()

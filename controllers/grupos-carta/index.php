@@ -5,8 +5,6 @@ require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 require_once PROJECT_ROOT_PATH . "/models/GruposDeLaCartaDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/GrupoDeLaCarta.php";
-
 class GruposDeLaCartaController extends BaseController
 {
   public function get()

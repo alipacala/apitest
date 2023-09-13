@@ -6,10 +6,6 @@ require_once PROJECT_ROOT_PATH . "/models/TerapistasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/TerapistasHabilidadesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/HabilidadesProfesionalesDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/Terapista.php";
-require_once PROJECT_ROOT_PATH . "/entities/TerapistaHabilidad.php";
-require_once PROJECT_ROOT_PATH . "/entities/HabilidadProfesional.php";
-
 class TerapistasController extends BaseController
 {
   public function get()

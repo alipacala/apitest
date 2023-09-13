@@ -5,8 +5,6 @@ require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/DocumentoDetalle.php";
-
 class DocumentosDetallesController extends BaseController
 {
   public function get()

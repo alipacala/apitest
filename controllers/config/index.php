@@ -3,7 +3,6 @@ require_once __DIR__ . "/../../inc/bootstrap.php";
 require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
-require_once PROJECT_ROOT_PATH . "/entities/Config.php";
 
 class ConfigController extends BaseController
 {

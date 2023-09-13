@@ -12,11 +12,6 @@ require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/PersonasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/ComprobanteVentas.php";
-require_once PROJECT_ROOT_PATH . "/entities/ComprobanteDetalle.php";
-require_once PROJECT_ROOT_PATH . "/entities/FeComprobante.php";
-require_once PROJECT_ROOT_PATH . "/entities/FeItem.php";
-
 class ComprobantesVentasController extends BaseController
 {
   public function get()
@@ -141,6 +136,7 @@ class ComprobantesVentasController extends BaseController
       }
 
       $comprobante->porcentaje_igv = $porcentajeIGV / 100;
+      $comprobante->subtotal = $comprobante->subtotal / (1 + $comprobante->porcentaje_igv);
       $comprobante->igv = $comprobante->subtotal * $comprobante->porcentaje_igv;
       $comprobante->total = $comprobante->subtotal + $comprobante->igv;
       $comprobante->monto_credito = $comprobante->total; // TODO: puede que no se tenga que guardar el saldo temporal en el campo monto_credito
@@ -155,6 +151,7 @@ class ComprobantesVentasController extends BaseController
         $documentoDetalleArray = get_object_vars($documentoDetalle);
         $comprobanteDetalle = $this->mapJsonToClass($documentoDetalleArray, ComprobanteDetalle::class);
         $comprobanteDetalle->id_comprobante_ventas = $idComprobante;
+        $comprobanteDetalle->id_usuario = $comprobante->id_usuario;
 
         $idDetalle = $comprobantesDetallesDb->crearComprobanteDetalle($comprobanteDetalle);
 
@@ -269,6 +266,8 @@ class ComprobantesVentasController extends BaseController
         $configDb->incrementarCorrelativo(15); // 15 es el id del correlativo de boletas
       } else if ($comprobante->tipo_comprobante === "01") {
         $configDb->incrementarCorrelativo(16); // 16 es el id del correlativo de facturas
+      } else {
+        $configDb->incrementarCorrelativo(20); // 20 es el id del correlativo de pedidos
       }
 
       $response = [

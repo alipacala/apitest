@@ -3,7 +3,6 @@ require_once __DIR__ . "/../../inc/bootstrap.php";
 require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 
 require_once PROJECT_ROOT_PATH . "/models/TerapistasHabilidadesDb.php";
-require_once PROJECT_ROOT_PATH . "/entities/TerapistaHabilidad.php";
 
 class TerapistasHabilidadesController extends BaseController
 {

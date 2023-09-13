@@ -10,14 +10,6 @@ require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosRecetaDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosPaqueteDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/DocumentoMovimiento.php";
-require_once PROJECT_ROOT_PATH . "/entities/DocumentoDetalle.php";
-require_once PROJECT_ROOT_PATH . "/entities/Config.php";
-require_once PROJECT_ROOT_PATH . "/entities/Checking.php";
-require_once PROJECT_ROOT_PATH . "/entities/Producto.php";
-require_once PROJECT_ROOT_PATH . "/entities/ProductoReceta.php";
-require_once PROJECT_ROOT_PATH . "/entities/ProductoPaquete.php";
-
 class DocumentosMovimientoController extends BaseController
 {
   public function get()
@@ -130,6 +122,7 @@ class DocumentosMovimientoController extends BaseController
         $detalle->tipo_movimiento = $documentoMovimiento->tipo_movimiento;
         $detalle->nro_registro_maestro = $documentoMovimiento->nro_registro_maestro;
         $detalle->fecha_hora_registro = $documentoMovimiento->fecha_hora_registro;
+        $detalle->fecha = $documentoMovimiento->fecha_hora_registro;
 
         $detalle->nivel_descargo = 1;
 
@@ -137,7 +130,6 @@ class DocumentosMovimientoController extends BaseController
         $detalle->precio_total = $detalle->cantidad * $detalle->precio_unitario;
 
         $detalle->id_usuario = $documentoMovimiento->id_usuario;
-        $detalle->fecha_hora_registro = $documentoMovimiento->fecha_hora_registro;
 
         if ($producto->tipo == 'SRV') {
           $detalle->id_profesional = $detalle->id_profesional ?? null;
@@ -182,6 +174,8 @@ class DocumentosMovimientoController extends BaseController
             $detalle->tipo_de_unidad = $insumo->tipo_de_unidad;
             $detalle->precio_unitario = 0; // TODO: requiere preguntar
             $detalle->precio_total = 0; // solo los detalles con nivel_descargo 1 tienen precio_total
+
+            $detalle->fecha = $documentoMovimiento->fecha_hora_registro;
 
             $detalle->id_acompanate = $detalleDescargo1->id_acompanate;
             $detalle->id_profesional = $detalleDescargo1->id_profesional ?? null;
@@ -236,6 +230,8 @@ class DocumentosMovimientoController extends BaseController
             $detalle->id_profesional = $producto->tipo == 'SRV' ? $detalleDescargo13->id_profesional : null;
             $detalle->id_producto = $insumo->id_producto_insumo;
             $detalle->nivel_descargo = 2;
+              
+            $detalle->fecha = $documentoMovimiento->fecha_hora_registro;
 
             $detalle->cantidad = $insumo->cantidad * $detalleDescargo13->cantidad;
             $detalle->tipo_de_unidad = $insumo->tipo_de_unidad;

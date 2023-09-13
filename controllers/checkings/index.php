@@ -7,10 +7,6 @@ require_once PROJECT_ROOT_PATH . "/models/PersonasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/AcompanantesDb.php";
 
-require_once PROJECT_ROOT_PATH . "/entities/Checking.php";
-require_once PROJECT_ROOT_PATH . "/entities/Persona.php";
-require_once PROJECT_ROOT_PATH . "/entities/Acompanante.php";
-
 class CheckingsController extends BaseController
 {
   public function get()

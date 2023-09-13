@@ -9,6 +9,7 @@ class DocumentoDetalle
   public ?string $tipo_movimiento;
   public ?string $nro_registro_maestro;
   public ?int $id_documento_movimiento;
+  public ?string $fecha;
   public ?int $id_producto;
   public ?int $nivel_descargo;
   public ?float $cantidad;
