@@ -45,10 +45,10 @@ class ComprobantesVentasController extends BaseController
   public function getOne($id)
   {
     $comprobantesVentasDb = new ComprobantesVentasDb();
-    $impresora = $comprobantesVentasDb->obtenerComprobanteVentas($id);
+    $comprobante = $comprobantesVentasDb->obtenerComprobanteVentas($id);
 
-    $response = $impresora ? $impresora : ["mensaje" => "Comprobante de Ventas no encontrada"];
-    $code = $impresora ? 200 : 404;
+    $response = $comprobante ? $comprobante : ["mensaje" => "Comprobante de Ventas no encontrada"];
+    $code = $comprobante ? 200 : 404;
 
     $this->sendResponse($response, $code);
   }
@@ -219,7 +219,7 @@ class ComprobantesVentasController extends BaseController
         $documentoDetalle->nro_comprobante = $comprobante->nro_comprobante;
         $documentoDetalle->fecha_hora_registro = $comprobante->fecha_hora_registro; // TODO: puede que no se tenga que actualizar
 
-        $documentosDetallesDb->actualizarDocumentoDetalle($idDocumentoDetalle, $documentoDetalle);
+        $documentosDetallesDb->actualizarDocumentoDetalle($idDocumentoDetalle, $documentoDetalle, true);
       }
 
       // actualizar datos de la personanaturaljuridica
@@ -288,27 +288,27 @@ class ComprobantesVentasController extends BaseController
 
   public function update($id)
   {
-    $impresoraDelBody = $this->getBody();
-    $impresora = $this->mapJsonToClass($impresoraDelBody, ComprobanteVentas::class);
+    $comprobanteDelBody = $this->getBody();
+    $comprobante = $this->mapJsonToClass($comprobanteDelBody, ComprobanteVentas::class);
 
     $comprobantesVentasDb = new ComprobantesVentasDb();
 
     $prevComprobanteVentas = $comprobantesVentasDb->obtenerComprobanteVentas($id);
     unset($prevComprobanteVentas->id_impresora);
 
-    // comprobar que la impresora exista
+    // comprobar que el comprobante exista
     if (!$prevComprobanteVentas) {
       $this->sendResponse(["mensaje" => "Comprobante de Ventas no encontrada"], 404);
       return;
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevComprobanteVentas == $impresora) {
+    if ($prevComprobanteVentas == $comprobante) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
 
-    $result = $comprobantesVentasDb->actualizarComprobanteVentas($id, $impresora);
+    $result = $comprobantesVentasDb->actualizarComprobanteVentas($id, $comprobante);
 
     $response = $result ? [
       "mensaje" => "Comprobante de Ventas actualizada correctamente",
@@ -318,13 +318,13 @@ class ComprobantesVentasController extends BaseController
 
     $this->sendResponse($response, $code);
   }
-  
+
   public function delete($id)
   {
     $comprobantesVentasDb = new ComprobantesVentasDb();
     $prevComprobanteVentas = $comprobantesVentasDb->obtenerComprobanteVentas($id);
 
-    // comprobar que la impresora exista
+    // comprobar que el comprobante exista
     if (!$prevComprobanteVentas) {
       $this->sendResponse(["mensaje" => "Comprobante de Ventas no encontrada"], 404);
       return;

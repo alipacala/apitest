@@ -36,18 +36,29 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function crearDocumentoDetalle(DocumentoDetalle $grupoDeLaCarta)
+  public function crearDocumentoDetalle(DocumentoDetalle $documentoDetalle)
   {
-    $documentoDetalleArray = $this->prepareData((array) $grupoDeLaCarta, "insert");
+    $documentoDetalleArray = $this->prepareData((array) $documentoDetalle, "insert");
     $query = $this->prepareQuery("insert", $documentoDetalleArray);
     $params = $this->prepareParams($documentoDetalleArray);
 
     return $this->executeQuery($query, $params, "insert");
   }
 
-  public function actualizarDocumentoDetalle($id, DocumentoDetalle $grupoDeLaCarta)
+  public function actualizarDocumentoDetalle($id, DocumentoDetalle $documentoDetalle, $conSubproductos = false)
   {
-    $documentoDetalleArray = $this->prepareData((array) $grupoDeLaCarta);
+    if ($conSubproductos) {
+      
+      $query = "UPDATE $this->tableName SET nro_comprobante = :nro_comprobante WHERE $this->idName = :id OR id_item = :id";
+      $params = array(
+        ["nombre" => "nro_comprobante", "valor" => $documentoDetalle->nro_comprobante, "tipo" => PDO::PARAM_STR],
+        ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
+      );
+
+      return $this->executeQuery($query, $params, "update");
+    }
+
+    $documentoDetalleArray = $this->prepareData((array) $documentoDetalle);
     $query = $this->prepareQuery("update", $documentoDetalleArray);
     $params = $this->prepareParams($documentoDetalleArray, "update", $id);
 

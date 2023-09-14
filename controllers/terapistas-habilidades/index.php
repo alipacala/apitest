@@ -9,10 +9,9 @@ class TerapistasHabilidadesController extends BaseController
   public function get()
   {
     $params = $this->getParams();
-    $conHabilidades = $params['con_habilidades'] == '';
 
     $terapistasHabilidadesDb = new TerapistasHabilidadesDb();
-    $result = $terapistasHabilidadesDb->listarTerapistasHabilidades($conHabilidades);
+    $result = $terapistasHabilidadesDb->listarTerapistasHabilidades();
 
     $this->sendResponse($result, 200);
   }
