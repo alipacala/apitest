@@ -30,7 +30,7 @@ class CheckingsDb extends Database
     }
 
     if ($abiertos !== null) {
-      $query = "SELECT * FROM $this->tableName WHERE cerrada IS NULL OR cerrada = 0";
+      $query = "SELECT * FROM $this->tableName WHERE (cerrada = IS NULL) OR (cerrada = 1 AND DATE(fecha_cerrada) = CURDATE())";
       return $this->executeQuery($query, null, "select");
     }
 

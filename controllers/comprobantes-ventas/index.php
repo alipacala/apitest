@@ -20,7 +20,7 @@ class ComprobantesVentasController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
 
     $comprobantesVentasDb = new ComprobantesVentasDb();
-    $result = $comprobantesVentasDb->listarComprobantesVentas($nroRegistroMaestro);
+    $result = $comprobantesVentasDb->listarComprobantsVenta($nroRegistroMaestro);
 
     if ($nroRegistroMaestro) {
       $result = array_map(function ($recibo) {
@@ -34,7 +34,7 @@ class ComprobantesVentasController extends BaseController
           "tipo_pago" => $recibo["medio_pago"],
           "total_comprobante" => $recibo["total_comprobante"],
           "total_recibo" => $recibo["total_recibo"],
-          "monto_credito" => $recibo["monto_credito"]
+          "por_pagar" => $recibo["por_pagar"]
         ];
       }, $result);
     }
@@ -109,7 +109,7 @@ class ComprobantesVentasController extends BaseController
     $comprobante->hora_documento = $configDb->obtenerFechaYHora()["hora"];
 
     $comprobante->monto_inicial = 0;
-    $comprobante->monto_credito = 0;
+    $comprobante->por_pagar = 0;
 
     $comprobante->fecha_hora_registro = $configDb->obtenerFechaYHora()["fecha_y_hora"];
 
@@ -139,7 +139,7 @@ class ComprobantesVentasController extends BaseController
       $comprobante->subtotal = $comprobante->subtotal / (1 + $comprobante->porcentaje_igv);
       $comprobante->igv = $comprobante->subtotal * $comprobante->porcentaje_igv;
       $comprobante->total = $comprobante->subtotal + $comprobante->igv;
-      $comprobante->monto_credito = $comprobante->total; // TODO: puede que no se tenga que guardar el saldo temporal en el campo monto_credito
+      $comprobante->por_pagar = $comprobante->total;
 
       $idComprobante = $comprobantesVentasDb->crearComprobanteVentas($comprobante);
 
@@ -216,10 +216,10 @@ class ComprobantesVentasController extends BaseController
         $idDocumentoDetalle = $documentoDetalle->id_documentos_detalle;
         unset($documentoDetalle->id_documentos_detalle);
 
-        $documentoDetalle->nro_comprobante = $comprobante->nro_comprobante;
-        $documentoDetalle->fecha_hora_registro = $comprobante->fecha_hora_registro; // TODO: puede que no se tenga que actualizar
+        $detalleAActualizar = new DocumentoDetalle();
+        $detalleAActualizar->nro_comprobante = $comprobante->nro_comprobante;
 
-        $documentosDetallesDb->actualizarDocumentoDetalle($idDocumentoDetalle, $documentoDetalle, true);
+        $documentosDetallesDb->actualizarDocumentoDetalle($idDocumentoDetalle, $detalleAActualizar, true);
       }
 
       // actualizar datos de la personanaturaljuridica

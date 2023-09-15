@@ -15,7 +15,7 @@ class ComprobantesVentasDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarComprobantesVentas($nroRegistroMaestro = null)
+  public function listarComprobantsVenta($nroRegistroMaestro = null)
   {
     if ($nroRegistroMaestro) {
       $query = "SELECT
@@ -24,7 +24,7 @@ class ComprobantesVentasDb extends Database
        co.nro_documento_cliente,
        fec.rznSocialUsuario,
        co.total AS total_comprobante,
-       co.monto_credito,
+       co.por_pagar,
        co.id_comprobante_ventas,
        co.tipo_comprobante,
        co.forma_de_pago,
@@ -64,7 +64,7 @@ class ComprobantesVentasDb extends Database
 
   public function pagar($id, $monto)
   {
-    $query = "UPDATE $this->tableName SET monto_credito = monto_credito - :monto WHERE $this->idName = :id";
+    $query = "UPDATE $this->tableName SET por_pagar = por_pagar - :monto WHERE $this->idName = :id";
     $params = array(
       ["nombre" => "monto", "valor" => $monto, "tipo" => PDO::PARAM_STR],
       ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]

@@ -48,11 +48,12 @@ class DocumentosDetallesDb extends Database
   public function actualizarDocumentoDetalle($id, DocumentoDetalle $documentoDetalle, $conSubproductos = false)
   {
     if ($conSubproductos) {
-      
-      $query = "UPDATE $this->tableName SET nro_comprobante = :nro_comprobante WHERE $this->idName = :id OR id_item = :id";
+
+      $query = "UPDATE $this->tableName SET nro_comprobante = :nro_comprobante WHERE $this->idName = :id OR id_item = :id_item";
       $params = array(
         ["nombre" => "nro_comprobante", "valor" => $documentoDetalle->nro_comprobante, "tipo" => PDO::PARAM_STR],
-        ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
+        ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT],
+        ["nombre" => "id_item", "valor" => $id, "tipo" => PDO::PARAM_INT],
       );
 
       return $this->executeQuery($query, $params, "update");

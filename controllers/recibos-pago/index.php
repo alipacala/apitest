@@ -66,11 +66,11 @@ class RecibosPagoController extends BaseController
       $comprobantesVentasDb = new ComprobantesVentasDb();
       $comprobanteVenta = $comprobantesVentasDb->obtenerComprobanteVentas($reciboPago->id_comprobante_ventas);
 
-      if ($comprobanteVenta->monto_credito == 0) {
+      if ($comprobanteVenta->por_pagar == 0) {
         throw new Exception("El comprobante de venta ya fue pagado");
       }
 
-      if ($comprobanteVenta->monto_credito < $reciboPago->total) {
+      if ($comprobanteVenta->por_pagar < $reciboPago->total) {
         throw new Exception("El monto a pagar es mayor al monto pendiente del comprobante de venta");
       }
       
