@@ -104,7 +104,8 @@ class BaseController
    */
   public static function getUriAction()
   {
-    require_once __DIR__ . '\..\inc\bootstrap.php';
+    // require_once __DIR__ . '.\..\inc\bootstrap.php';
+    require_once realpath(__DIR__ . '.\..\inc\bootstrap.php');
 
     $uri = $_SERVER['REQUEST_URI'];
     $uri = explode('/', $uri);

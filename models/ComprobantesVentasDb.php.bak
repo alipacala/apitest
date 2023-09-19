@@ -15,7 +15,7 @@ class ComprobantesVentasDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarComprobantesVentas($nroRegistroMaestro = null)
+  public function listarComprobantsVenta($nroRegistroMaestro = null)
   {
     if ($nroRegistroMaestro) {
       $query = "SELECT

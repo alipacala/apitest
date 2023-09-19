@@ -20,7 +20,7 @@ class ComprobantesVentasController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
 
     $comprobantesVentasDb = new ComprobantesVentasDb();
-    $result = $comprobantesVentasDb->listarComprobantsVenta($nroRegistroMaestro);
+    $result = $comprobantesVentasDb->listarComprobantesVentas($nroRegistroMaestro);
 
     if ($nroRegistroMaestro) {
       $result = array_map(function ($recibo) {

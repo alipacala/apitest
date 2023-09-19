@@ -261,7 +261,7 @@ class CheckingsController extends BaseController
 
         // comprobar que los comprobantes tengan por_pagar = 0
         $comprobantesVentasDb = new ComprobantesVentasDb();
-        $comprobantes = $comprobantesVentasDb->obtenerReporte($checking->nro_registro_maestro);
+        $comprobantes = $comprobantesVentasDb->listarComprobantesVentas($checking->nro_registro_maestro);
 
         foreach ($comprobantes as $comprobante) {
           if (floatval($comprobante["por_pagar"]) > 0) {

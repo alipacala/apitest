@@ -57,7 +57,6 @@ class RecibosPagoController extends BaseController
       $reciboPago->nro_de_caja = 1;
       $reciboPago->moneda = "PEN";
       $reciboPago->fecha = $recibosPagoDb->obtenerFechaYHora()["fecha_y_hora"];
-      $reciboPago->nro_cierre_turno = 1;
       $reciboPago->fecha_hora_registro = $recibosPagoDb->obtenerFechaYHora()["fecha_y_hora"];
 
       $recibosPagoDb = new RecibosPagoDb();
@@ -73,7 +72,7 @@ class RecibosPagoController extends BaseController
       if ($comprobanteVenta->por_pagar < $reciboPago->total) {
         throw new Exception("El monto a pagar es mayor al monto pendiente del comprobante de venta");
       }
-      
+
       $comprobantesVentasDb->pagar($reciboPago->id_comprobante_ventas, $reciboPago->total);
 
       // actualizar el id_recibo_de_pago de los documentos detalles
@@ -136,6 +135,36 @@ class RecibosPagoController extends BaseController
     $code = $result ? 200 : 400;
 
     $this->sendResponse($response, $code);
+  }
+
+  function updatePartial($id, $action = null)
+  {
+    if ($action == 'cerrar-turno') {
+      $recibosPagoDb = new RecibosPagoDb();
+      $configDb = new ConfigDb();
+
+      $nroCierreTurno = $configDb->obtenerConfig(21)->numero_correlativo;
+
+      // comprobar que el turno no haya sido cerrado
+      $result = $recibosPagoDb->comprobarTurnoCerrado();
+      if ($result[0]["cantidad"] <= 0) {
+        $this->sendResponse(["mensaje" => "El turno ya fue cerrado"], 400);
+        return;
+      }
+
+      $result = $recibosPagoDb->cerrarTurno($nroCierreTurno);
+
+      $response = $result ? [
+        "mensaje" => "Recibos de pago actualizados correctamente"
+      ] : ["mensaje" => "Error al actualizar los recibos de pago"];
+      $code = $result ? 200 : 400;
+
+      $configDb->incrementarCorrelativo(21);
+
+      $this->sendResponse($response, $code);
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no implementada"], 501);
+    }
   }
 
   public function delete($id)

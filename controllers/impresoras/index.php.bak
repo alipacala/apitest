@@ -4,7 +4,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 
 require_once PROJECT_ROOT_PATH . "/models/ImpresorasDb.php";
 
-class ImpresorasController extends BaseController
+class ReportesController extends BaseController
 {
   public function get()
   {
@@ -99,7 +99,7 @@ class ImpresorasController extends BaseController
 }
 
 try {
-  $controller = new ImpresorasController();
+  $controller = new ReportesController();
   $controller->route();
 } catch (Exception $e) {
   $controller->sendResponse([

@@ -40,6 +40,23 @@ class RecibosPagoDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function cerrarTurno($nroCierreTurno)
+  {
+    $query = "UPDATE recibo_de_pago SET nro_cierre_turno = :nro_cierre_turno WHERE nro_cierre_turno IS NULL";
+    $params = array(
+      ["nombre" => "nro_cierre_turno", "valor" => $nroCierreTurno, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function comprobarTurnoCerrado()
+  {
+    $query = "SELECT COUNT(*) AS cantidad FROM recibo_de_pago WHERE nro_cierre_turno IS NULL";
+
+    return $this->executeQuery($query);
+  }
+
   public function eliminarReciboPago($id)
   {
     $query = $this->prepareQuery("delete");
