@@ -105,7 +105,7 @@ class BaseController
   public static function getUriAction()
   {
     // require_once __DIR__ . '.\..\inc\bootstrap.php';
-    require_once realpath(__DIR__ . '.\..\inc\bootstrap.php');
+    require_once realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'inc' . DIRECTORY_SEPARATOR . 'bootstrap.php');
 
     $uri = $_SERVER['REQUEST_URI'];
     $uri = explode('/', $uri);
@@ -185,16 +185,16 @@ class BaseController
    * @return bool
    */
   function compararObjetos($objeto1, $objeto2)
-{
-    $array1 = (array)$objeto1;
-    $array2 = (array)$objeto2;
+  {
+    $array1 = (array) $objeto1;
+    $array2 = (array) $objeto2;
 
     foreach ($array1 as $campo => $valor) {
-        if (!array_key_exists($campo, $array2) || $array2[$campo] != $valor) {
-            return false;
-        }
+      if (!array_key_exists($campo, $array2) || $array2[$campo] != $valor) {
+        return false;
+      }
     }
     return true;
-}
+  }
 }
 ?>
