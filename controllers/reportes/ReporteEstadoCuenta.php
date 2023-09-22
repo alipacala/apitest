@@ -125,26 +125,26 @@ class ReporteEstadoCuenta
   function imprimirTotalesReporteEstadoCuenta(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
   {
     $pdf->SetFont('Arial', null, $tamanoLetra);
-    $pdf->Cell(108, $lineHeight, "TOTAL CONSUMO: ", 0, 0, "R");
+    $pdf->Cell(98, $lineHeight, "TOTAL CONSUMO: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', $tamanoLetra);
-    $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($header["TOTAL"]), 0, 0, "R");
+    $pdf->Cell(24, $lineHeight, $this->darFormatoMoneda($header["TOTAL"]), 0, 0, "R");
     $pdf->Ln();
 
     $pdf->SetFont('Arial', null, $tamanoLetra);
-    $pdf->Cell(108, $lineHeight, "TOTAL PAGOS Y ADELANTOS: ", 0, 0, "R");
+    $pdf->Cell(98, $lineHeight, "TOTAL PAGOS Y ADELANTOS: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', $tamanoLetra);
-    $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($header["TOTAL"] - $header["X_COBRAR"]), 0, 0, "R");
+    $pdf->Cell(24, $lineHeight, $this->darFormatoMoneda($header["TOTAL"] - $header["X_COBRAR"]), 0, 0, "R");
     $pdf->Ln();
 
-    $pdf->Line(84, $pdf->GetY(), 132, $pdf->GetY());
+    $pdf->Line(72, $pdf->GetY(), 132, $pdf->GetY());
 
     $pdf->SetFont('Arial', null, $tamanoLetra);
-    $pdf->Cell(108, 8 , "TOTAL POR COBRAR: ", 0, 0, "R");
+    $pdf->Cell(98, 8 , "TOTAL POR COBRAR: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(14, 8, $this->darFormatoMoneda($header["X_COBRAR"]), 0, 0, "R");
+    $pdf->Cell(24, 8, $this->darFormatoMoneda($header["X_COBRAR"]), 0, 0, "R");
   }
 
   function darFormatoMoneda($monto)
