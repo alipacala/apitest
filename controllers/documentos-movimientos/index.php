@@ -163,6 +163,8 @@ class DocumentosMovimientoController extends BaseController
           foreach ($insumos as $insumo) {
             $detalle = new DocumentoDetalle();
 
+            $producto = $productosDb->obtenerProducto($insumo->id_producto_producto);
+
             $detalle->tipo_movimiento = $documentoMovimiento->tipo_movimiento;
             $detalle->nro_registro_maestro = $documentoMovimiento->nro_registro_maestro;
             $detalle->fecha_hora_registro = $documentoMovimiento->fecha_hora_registro;
@@ -172,8 +174,8 @@ class DocumentosMovimientoController extends BaseController
 
             $detalle->cantidad = $insumo->cantidad * $detalleDescargo1->cantidad;
             $detalle->tipo_de_unidad = $insumo->tipo_de_unidad;
-            $detalle->precio_unitario = 0; // TODO: requiere preguntar
-            $detalle->precio_total = 0; // solo los detalles con nivel_descargo 1 tienen precio_total
+            $detalle->precio_unitario = $producto->precio_venta_01;
+            $detalle->precio_total = $detalle->cantidad * $detalle->precio_unitario;
 
             $detalle->fecha = $documentoMovimiento->fecha_hora_registro;
 

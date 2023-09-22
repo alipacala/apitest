@@ -88,6 +88,15 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function deshacerPagoDocumentosDetalles($id) {
+    $query = "UPDATE $this->tableName
+      SET nro_comprobante = NULL, id_recibo_de_pago = NULL 
+      WHERE nro_comprobante = (SELECT nro_comprobante FROM comprobante_ventas WHERE id_comprobante_ventas = :id_comprobante_ventas LIMIT 1)";
+    $params = array(["nombre" => "id_comprobante_ventas", "valor" => $id, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function eliminarDocumentoDetalle($id)
   {
     $query = $this->prepareQuery("delete");

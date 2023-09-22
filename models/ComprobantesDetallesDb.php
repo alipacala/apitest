@@ -15,8 +15,15 @@ class ComprobantesDetallesDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarComprobantesDetalles()
+  public function listarComprobantesDetalles($idComprobante = null)
   {
+    if ($idComprobante) {
+      $query = "SELECT cd.*, dd.fecha_servicio FROM comprobante_detalle AS cd INNER JOIN documento_detalle AS dd ON cd.id_documentos_detalle = dd.id_documentos_detalle WHERE id_comprobante_ventas = :id_comprobante";
+      $params = array(["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT]);
+
+      return $this->executeQuery($query, $params, "select");
+    }
+
     $query = $this->prepareQuery("select");
 
     return $this->executeQuery($query, null, "select");
@@ -44,6 +51,14 @@ class ComprobantesDetallesDb extends Database
   {
     $query = $this->prepareQuery("delete");
     $params = $this->prepareParams(null, "delete", $id);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+
+  public function eliminarComprobanteDetallePorIdComprobante($idComprobante)
+  {
+    $query = "DELETE FROM comprobante_detalle WHERE id_comprobante_ventas = :id_comprobante";
+    $params = array(["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT]);
 
     return $this->executeQuery($query, $params, "delete");
   }

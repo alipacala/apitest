@@ -11,6 +11,7 @@ require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/PersonasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
+require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
 
 class ComprobantesVentasController extends BaseController
 {
@@ -19,8 +20,13 @@ class ComprobantesVentasController extends BaseController
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
 
+    $fecha = $params['fecha'] ?? null;
+    $mes = $params['mes'] ?? null;
+    $anio = $params['anio'] ?? null;
+    $soloBolFact = boolval(($params['solo_bol_fact'] ?? null) === "");
+
     $comprobantesVentasDb = new ComprobantesVentasDb();
-    $result = $comprobantesVentasDb->listarComprobantesVentas($nroRegistroMaestro);
+    $result = $comprobantesVentasDb->listarComprobantesVentas($nroRegistroMaestro, $fecha, $mes, $anio, $soloBolFact);
 
     if ($nroRegistroMaestro) {
       $result = array_map(function ($recibo) {
@@ -34,7 +40,29 @@ class ComprobantesVentasController extends BaseController
           "tipo_pago" => $recibo["medio_pago"],
           "total_comprobante" => $recibo["total_comprobante"],
           "total_recibo" => $recibo["total_recibo"],
-          "por_pagar" => $recibo["por_pagar"]
+          "por_pagar" => $recibo["por_pagar"],
+          "estado" => $recibo["estado"]
+        ];
+      }, $result);
+    } else {
+
+      $result = array_map(function ($comprobante) {
+        $tiposDoc = [
+          "00" => "PD",
+          "01" => "FA",
+          "03" => "BO"
+        ];
+
+        return [
+          "fecha" => $comprobante["fecha_documento"],
+          "tipo_doc" => $tiposDoc[$comprobante["tipo_comprobante"]],
+          "nro_comprobante" => $comprobante["nro_comprobante"],
+          "nombre" => $comprobante["rznSocialUsuario"],
+          "dni_ruc" => $comprobante["nro_documento_cliente"],
+          "monto" => $comprobante["total"],
+          "estado" => $comprobante["estado"] ? null : "ANULADO",
+          "usuario_reg" => $comprobante["usuario"],
+          "id" => $comprobante["id_comprobante_ventas"]
         ];
       }, $result);
     }
@@ -140,6 +168,7 @@ class ComprobantesVentasController extends BaseController
       $comprobante->igv = $comprobante->subtotal * $comprobante->porcentaje_igv;
       $comprobante->total = $comprobante->subtotal + $comprobante->igv;
       $comprobante->por_pagar = $comprobante->total;
+      $comprobante->estado = 1;
 
       $idComprobante = $comprobantesVentasDb->crearComprobanteVentas($comprobante);
 
@@ -294,7 +323,7 @@ class ComprobantesVentasController extends BaseController
     $comprobantesVentasDb = new ComprobantesVentasDb();
 
     $prevComprobanteVentas = $comprobantesVentasDb->obtenerComprobanteVentas($id);
-    unset($prevComprobanteVentas->id_impresora);
+    unset($prevComprobanteVentas->id_comprobante);
 
     // comprobar que el comprobante exista
     if (!$prevComprobanteVentas) {
@@ -330,13 +359,53 @@ class ComprobantesVentasController extends BaseController
       return;
     }
 
-    $result = $comprobantesVentasDb->eliminarComprobanteVentas($id);
+    $seAnuloComprobante = true;
 
-    $response = $result ? [
-      "mensaje" => "Comprobante de Ventas eliminada correctamente",
-      "resultado" => $prevComprobanteVentas
-    ] : ["mensaje" => "Error al eliminar la Comprobante de Ventas"];
-    $code = $result ? 200 : 400;
+    try {
+      $comprobantesVentasDb->empezarTransaccion();
+
+      // borrar los detalles de comprobante
+      $comprobantesDetallesDb = new ComprobantesDetallesDb();
+      $comprobanteDetallesEliminados = $comprobantesDetallesDb->eliminarComprobanteDetallePorIdComprobante($id);
+
+      // borrar el fe_comprobante y los fe_items
+      $feItemsDb = new FeItemsDb();
+      $feItemsEliminados = $feItemsDb->eliminarFeItemsPorIdComprobante($id);
+
+      $feComprobantesDb = new FeComprobantesDb();
+      $feComprobanteAnulado = $feComprobantesDb->anularFeComprobante($id);
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+      $documentosDetallesActualizados = $documentosDetallesDb->deshacerPagoDocumentosDetalles($id);
+
+      $checkingsDb = new CheckingsDb();
+      $checkingAbierto =  $checkingsDb->deshacerCerradoChecking($prevComprobanteVentas->nro_registro_maestro);
+
+      // borrar los recibos de pago
+      $recibosPagoDb = new RecibosPagoDb();
+      $recibosEliminados = $recibosPagoDb->eliminarRecibosPagoPorComprobante($id);
+
+      // anular el comprobante
+      $comprobanteAnulado = $comprobantesVentasDb->anularComprobanteVentas($id);
+
+      $comprobantesVentasDb->terminarTransaccion();
+
+    } catch (Exception $e) {
+      $comprobantesVentasDb->cancelarTransaccion();
+      $seAnuloComprobante = false;
+      $newException = new Exception("Error al anular el comprobante, el fe_comprobante o actualizar los detalles de documento", 0, $e);
+      throw $newException;
+    }
+
+    // $seAnuloComprobante = $comprobanteDetallesEliminados && $feItemsEliminados && $feComprobanteAnulado && $recibosEliminados && $documentosDetallesActualizados && $comprobanteAnulado;
+
+    $comprobanteActualizado = $comprobantesVentasDb->obtenerComprobanteVentas($id);
+
+    $response = $seAnuloComprobante ? [
+      "mensaje" => "Comprobante de Ventas anulado correctamente",
+      "resultado" => $comprobanteActualizado
+    ] : ["mensaje" => "Error al anular el Comprobante de Ventas"];
+    $code = $seAnuloComprobante ? 200 : 400;
 
     $this->sendResponse($response, $code);
   }

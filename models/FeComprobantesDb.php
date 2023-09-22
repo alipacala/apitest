@@ -40,6 +40,13 @@ class FeComprobantesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function anularFeComprobante($id) {
+    $query = "UPDATE fe_comprobante SET xestado = 0 WHERE NroMov = :id_comprobante";
+    $params = array(["nombre" => "id_comprobante", "valor" => $id, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function eliminarFeComprobante($id)
   {
     $query = $this->prepareQuery("delete");

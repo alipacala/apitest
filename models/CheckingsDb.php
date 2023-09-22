@@ -39,6 +39,16 @@ class CheckingsDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function deshacerCerradoChecking($nroRegistroMaestro)
+  {
+    $query = "UPDATE $this->tableName
+      SET cerrada = NULL, fecha_cerrada = NULL, hora_cerrada = NULL
+      WHERE nro_registro_maestro = :nro_registro_maestro";
+    $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function crearChecking(Checking $checking)
   {
     $checkingArray = $this->prepareData((array) $checking, "insert");

@@ -57,6 +57,13 @@ class RecibosPagoDb extends Database
     return $this->executeQuery($query);
   }
 
+  public function eliminarRecibosPagoPorComprobante($id) {
+    $query = "DELETE FROM recibo_de_pago WHERE id_comprobante_ventas = :id_comprobante";
+    $params = array(["nombre" => "id_comprobante", "valor" => $id, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+
   public function eliminarReciboPago($id)
   {
     $query = $this->prepareQuery("delete");

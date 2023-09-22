@@ -263,6 +263,11 @@ class CheckingsController extends BaseController
         $comprobantesVentasDb = new ComprobantesVentasDb();
         $comprobantes = $comprobantesVentasDb->listarComprobantesVentas($checking->nro_registro_maestro);
 
+        // filtrar anulados
+        $comprobantes = array_filter($comprobantes, function ($comprobante) {
+          return $comprobante["estado"] == 1;
+        });
+
         foreach ($comprobantes as $comprobante) {
           if (floatval($comprobante["por_pagar"]) > 0) {
             $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay comprobantes por pagar"], 400);

@@ -47,5 +47,13 @@ class FeItemsDb extends Database
 
     return $this->executeQuery($query, $params, "delete");
   }
+  
+  public function eliminarFeItemsPorIdComprobante($idComprobante)
+  {
+    $query = "DELETE FROM $this->tableName WHERE NroMov = :id_comprobante";
+    $params = array(["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
 }
 ?>
