@@ -5,10 +5,13 @@ require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 require_once PROJECT_ROOT_PATH . "/models/ReportesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
 require_once PROJECT_ROOT_PATH . "/models/GruposDeLaCartaDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
+require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteEstadoCuenta.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteRegistroVentas.php";
 
 class ReportesController extends BaseController
 {
@@ -16,7 +19,13 @@ class ReportesController extends BaseController
   {
     $params = $this->getParams();
     $tipo = $params['tipo'] ?? null;
+
     $fecha = $params['fecha'] ?? null;
+
+    $mes = $params['mes'] ?? null;
+    $anio = $params['anio'] ?? null;
+    $soloBolFact = boolval(($params['solo_bol_fact'] ?? null) === "");
+    $idUsuario = $params['id_usuario'] ?? null;
 
     $consumos = $params['consumos'] ?? null;
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
@@ -60,7 +69,37 @@ class ReportesController extends BaseController
 
       $reporteEstadoCuenta = new ReporteEstadoCuenta();
 
-      $this->sendResponse($reporteEstadoCuenta->generarReporteEstadoCuenta($result, $nroRegistroMaestro), 200);
+      $this->sendResponse($reporteEstadoCuenta->generarReporte($result, $nroRegistroMaestro), 200);
+
+    } else if ($tipo == "registro-ventas") {
+
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+      $result = $comprobantesVentasDb->listarComprobantesVentas(null, $fecha, $mes, $anio, $soloBolFact);
+
+      $usuariosDb = new UsuariosDb();
+      $usuario = $usuariosDb->obtenerNombreUsuario($idUsuario)[0]["usuario"];
+
+      $tiposDoc = [
+        "00" => "PD",
+        "01" => "FA",
+        "03" => "BO",
+      ];
+
+      $result = array_map(function ($comprobante) use ($tiposDoc) {
+        return [
+          "fecha" => $comprobante["fecha_documento"],
+          "tipo_doc" => $tiposDoc[$comprobante["tipo_comprobante"]],
+          "nro_comprobante" => $comprobante["nro_comprobante"],
+          "nombre" => $comprobante["rznSocialUsuario"],
+          "estado" => $comprobante["estado"] ? "" : "ANULADO",
+          "dni_ruc" => $comprobante["nro_documento_cliente"],
+          "monto" => $comprobante["total"],
+        ];
+      }, $result);
+
+      $reporteRegistroVentas = new ReporteRegistroVentas();
+      $this->sendResponse($reporteRegistroVentas->generarReporte($result, $usuario, $fecha, $mes, $anio), 200);
+
     } else {
       // no hay ese tipo de reporte
       $this->sendResponse([

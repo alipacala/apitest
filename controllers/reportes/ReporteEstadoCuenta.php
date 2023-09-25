@@ -3,9 +3,9 @@ require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
 class ReporteEstadoCuenta
 {
-  function generarReporteEstadoCuenta($result = null, $nroRegistroMaestro = null)
+  function generarReporte($result = null, $nroRegistroMaestro = null)
   {
-    [$result, $header] = $this->prepararDatosReporteEstadoCuenta($result, $nroRegistroMaestro);
+    [$result, $header] = $this->prepararDatos($result, $nroRegistroMaestro);
 
     $pdf = new FPDF();
     $pdf->AddPage(null, 'A4');
@@ -13,15 +13,15 @@ class ReporteEstadoCuenta
     $lineHeight = 4;
     $tamanoLetra = 6;
 
-    $this->imprimirCabeceraReporteEstadoCuenta($pdf, $lineHeight, $tamanoLetra, $header);
-    $this->imprimirCabeceraTablaReporteEstadoCuenta($pdf, $lineHeight, $tamanoLetra);
-    $this->imprimirGruposTablaReporteEstadoCuenta($pdf, $lineHeight, $tamanoLetra, $result);
-    $this->imprimirTotalesReporteEstadoCuenta($pdf, $lineHeight, $tamanoLetra, $header);
+    $this->imprimirCabecera($pdf, $lineHeight, $tamanoLetra, $header);
+    $this->imprimirCabeceraTabla($pdf, $lineHeight, $tamanoLetra);
+    $this->imprimirGruposTabla($pdf, $lineHeight, $tamanoLetra, $result);
+    $this->imprimirTotales($pdf, $lineHeight, $tamanoLetra, $header);
 
     $pdf->Output();
   }
 
-  function prepararDatosReporteEstadoCuenta($result = null, $nroRegistroMaestro = null)
+  function prepararDatos($result = null, $nroRegistroMaestro = null)
   {
     $header = [];
     $header["TITULAR"] = $result[0]["titular"];
@@ -51,7 +51,7 @@ class ReporteEstadoCuenta
     return [$result, $header];
   }
 
-  function imprimirCabeceraReporteEstadoCuenta(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
+  function imprimirCabecera(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
   {
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, $lineHeight, "ESTADO DE CUENTA", 0, 0, "C");
@@ -71,7 +71,7 @@ class ReporteEstadoCuenta
     $pdf->Ln();
   }
 
-  function imprimirCabeceraTablaReporteEstadoCuenta(FPDF $pdf, $lineHeight, $tamanoLetra)
+  function imprimirCabeceraTabla(FPDF $pdf, $lineHeight, $tamanoLetra)
   {
     $pdf->Cell(14, $lineHeight, "Fecha", 1, 0, "C");
     $pdf->Cell(10, $lineHeight, "Cantidad", 1, 0, "C");
@@ -84,7 +84,7 @@ class ReporteEstadoCuenta
     $pdf->Ln();
   }
 
-  function imprimirGruposTablaReporteEstadoCuenta(FPDF $pdf, $lineHeight, $tamanoLetra, $result)
+  function imprimirGruposTabla(FPDF $pdf, $lineHeight, $tamanoLetra, $result)
   {
     foreach ($result as $grupo => $detalles) {
       $pdf->SetFont('Arial', 'B', $tamanoLetra);
@@ -122,7 +122,7 @@ class ReporteEstadoCuenta
     $pdf->Ln();
   }
 
-  function imprimirTotalesReporteEstadoCuenta(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
+  function imprimirTotales(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
   {
     $pdf->SetFont('Arial', null, $tamanoLetra);
     $pdf->Cell(98, $lineHeight, "TOTAL CONSUMO: ", 0, 0, "R");

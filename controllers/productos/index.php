@@ -189,7 +189,7 @@ class ProductosController extends BaseController
 
           foreach ($insumos as $insumo) {
             $insumo = $this->mapJsonToClass($insumo, ProductoReceta::class);
-            $insumo->id_producto = $idReceta + 1;
+            $insumo->id_producto = $idReceta;
             $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
 
             $insumo->id_receta = $idInsumo;
