@@ -21,7 +21,7 @@ class PersonasDb extends Database
       $query = "SELECT * FROM $this->tableName WHERE nro_documento = :nro_documento";
       $params = array(["nombre" => "nro_documento", "valor" => $dni, "tipo" => PDO::PARAM_STR]);
 
-      return $this->executeQuery($query, $params, "select");
+      return $this->executeQuery($query, $params, "select-one");
     }
 
     $query = $this->prepareQuery("select");

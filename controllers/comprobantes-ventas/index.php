@@ -255,7 +255,7 @@ class ComprobantesVentasController extends BaseController
 
       // actualizar datos de la personanaturaljuridica
       $personasDb = new PersonasDb();
-      $persona = $personasDb->obtenerPersona($comprobante->nro_documento_cliente);
+      $persona = $personasDb->listarPersonas($comprobante->nro_documento_cliente);
 
       if ($persona) {
         $personaActualizar = new Persona();
@@ -264,6 +264,36 @@ class ComprobantesVentasController extends BaseController
         $personaActualizar->ciudad = $lugarCliente;
 
         $personasDb->actualizarPersona($persona->id_persona, $personaActualizar);
+      } else {
+        // crear la personanaturaljuridica
+        $personaCrear = new Persona();
+        $personaCrear->nro_documento = $comprobante->nro_documento_cliente;
+        $personaCrear->tipo_documento = $comprobante->tipo_documento_cliente;
+
+        // buscar la última coma
+        $posicionUltimaComa = strrpos($nombre, ",");
+
+        if ($posicionUltimaComa !== false) {
+          $apellidos = trim(substr($nombre, 0, $posicionUltimaComa));
+          $nombres = trim(substr($nombre, $posicionUltimaComa + 1));
+        } else {
+          // buscar el último espacio en blanco
+          $posicionUltimoEspacio = strrpos($nombre, " ");
+          if ($posicionUltimoEspacio !== false) {
+            $apellidos = trim(substr($nombre, 0, $posicionUltimoEspacio));
+            $nombres = trim(substr($nombre, $posicionUltimoEspacio + 1));
+          } else {
+            $apellidos = $nombre;
+            $nombres = "";
+          }
+        }
+
+        $personaCrear->apellidos = $apellidos;
+        $personaCrear->nombres = $nombres;
+        $personaCrear->direccion = $comprobante->direccion_cliente;
+        $personaCrear->ciudad = $lugarCliente;
+
+        $personasDb->crearPersona($personaCrear);
       }
 
       // actualizar datos del checkin
@@ -364,7 +394,7 @@ class ComprobantesVentasController extends BaseController
         $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
         return;
       }
-      
+
       // comprobar que el usuario y contraseña sean correctos
       $usuariosDb = new UsuariosDb();
       $result = $usuariosDb->loginAdministrador($body->usuario, $body->clave);

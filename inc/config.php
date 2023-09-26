@@ -1,5 +1,5 @@
 <?php
-define("ENV", "dev");
+define("ENV", "lan");
 
 switch (ENV) {
   case 'dev':
