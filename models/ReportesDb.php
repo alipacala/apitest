@@ -113,5 +113,28 @@ class ReportesDb extends Database
 
     return $this->executeQuery($query, $params);
   }
+
+  public function generarComprobante($nroComprobante)
+  {
+    $query = "SELECT
+      co.fecha_documento AS fecha, co.hora_documento AS hora, co.nro_comprobante, co.tipo_comprobante AS tipo_doc, co.forma_de_pago,
+      co.nro_documento_cliente AS ruc, fc.rznSocialUsuario AS nombre, co.direccion_cliente AS direccion,
+      pr.nombre_producto, cd.cantidad, cd.precio_unitario, cd.precio_total,
+      co.subtotal, co.igv, co.total
+
+      FROM comprobante_ventas co
+      INNER JOIN comprobante_detalle cd
+      ON co.id_comprobante_ventas = cd.id_comprobante_ventas
+      INNER JOIN fe_comprobante fc
+      ON co.id_comprobante_ventas = fc.NroMov
+      INNER JOIN productos pr
+      ON cd.id_producto = pr.id_producto
+      WHERE co.nro_comprobante = :nro_comprobante";
+
+    $params = array(
+      ["nombre" => "nro_comprobante", "valor" => $nroComprobante, "tipo" => PDO::PARAM_STR]
+    );
+    return $this->executeQuery($query, $params);
+  }
 }
 ?>

@@ -38,29 +38,35 @@ class ComprobantesVentasDb extends Database
       $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
     }
 
-    if ($fecha) {
-      $query = "SELECT co.*, fc.rznSocialUsuario, us.usuario
+    if ($fecha || ($mes && $anio)) {
+
+      if ($fecha) {
+        $query = "SELECT co.*, fc.rznSocialUsuario, us.usuario
         FROM $this->tableName AS co
         INNER JOIN fe_comprobante AS fc ON co.id_comprobante_ventas = fc.NroMov
         INNER JOIN usuarios AS us ON co.id_usuario = us.id_usuario
         WHERE DATE(fecha_documento) = STR_TO_DATE(:fecha, '%Y-%m-%d')";
-      $params = array(["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]);
-    }
+        $params = array(["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]);
+      }
 
-    if ($mes && $anio) {
-      $query = "SELECT co.*, fc.rznSocialUsuario, us.usuario
+      if ($mes && $anio) {
+        $query = "SELECT co.*, fc.rznSocialUsuario, us.usuario
         FROM $this->tableName AS co
         INNER JOIN fe_comprobante AS fc ON co.id_comprobante_ventas = fc.NroMov
         INNER JOIN usuarios AS us ON co.id_usuario = us.id_usuario
         WHERE MONTH(fecha_documento) = :mes AND YEAR(fecha_documento) = :anio";
-      $params = array(
-        ["nombre" => "mes", "valor" => $mes, "tipo" => PDO::PARAM_INT],
-        ["nombre" => "anio", "valor" => $anio, "tipo" => PDO::PARAM_INT]
-      );
-    }
+        $params = array(
+          ["nombre" => "mes", "valor" => $mes, "tipo" => PDO::PARAM_INT],
+          ["nombre" => "anio", "valor" => $anio, "tipo" => PDO::PARAM_INT]
+        );
+      }
 
-    if ($soloBolFact) {
-      $query .= " AND (tipo_comprobante = '01' OR tipo_comprobante = '03')";
+      if ($soloBolFact) {
+        $query .= " AND (tipo_comprobante = '01' OR tipo_comprobante = '03')";
+      }
+
+      $query .= " ORDER BY co.fecha_documento DESC, co.nro_comprobante ASC";
+
     }
 
     return $this->executeQuery($query, $params);
@@ -95,7 +101,8 @@ class ComprobantesVentasDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
-  public function anularComprobanteVentas($id) {
+  public function anularComprobanteVentas($id)
+  {
     $query = "UPDATE $this->tableName SET estado = 0, por_pagar = total WHERE $this->idName = :id_comprobante";
     $params = array(["nombre" => "id_comprobante", "valor" => $id, "tipo" => PDO::PARAM_INT]);
 

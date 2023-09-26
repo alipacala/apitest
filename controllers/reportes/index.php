@@ -7,11 +7,13 @@ require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
 require_once PROJECT_ROOT_PATH . "/models/GruposDeLaCartaDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteEstadoCuenta.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteRegistroVentas.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ComprobanteImprimible.php";
 
 class ReportesController extends BaseController
 {
@@ -29,6 +31,8 @@ class ReportesController extends BaseController
 
     $consumos = $params['consumos'] ?? null;
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
+
+    $nroComprobante = $params['nro_comprobante'] ?? null;
 
     $reportesDb = new ReportesDb();
 
@@ -100,6 +104,14 @@ class ReportesController extends BaseController
       $reporteRegistroVentas = new ReporteRegistroVentas();
       $this->sendResponse($reporteRegistroVentas->generarReporte($result, $usuario, $fecha, $mes, $anio), 200);
 
+    } else if ($tipo == "generar-factura") {
+      $result = $reportesDb->generarComprobante($nroComprobante);
+
+      $configDb = new ConfigDb();
+      $porcIGV = $configDb->obtenerConfig(17)->numero_correlativo; // 17 = ID DEL PORCENTAJE IGV
+
+      $comprobanteImprimible = new ComprobanteImprimible();
+      $this->sendResponse($comprobanteImprimible->generarReporte($result, $porcIGV), 200);      
     } else {
       // no hay ese tipo de reporte
       $this->sendResponse([

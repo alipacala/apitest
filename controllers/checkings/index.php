@@ -79,8 +79,28 @@ class CheckingsController extends BaseController
           $titular->tipo_persona = "NATU";
           $titular->tipo_documento = "0";
           $titular->nro_documento = $titularDelBody->nro_documento;
-          $titular->apellidos = trim(explode(",", $titularDelBody->apellidos_y_nombres)[0]);
-          $titular->nombres = trim(explode(",", $titularDelBody->apellidos_y_nombres)[1]);
+
+          // buscar la última coma
+          $posicionUltimaComa = strrpos($titularDelBody->apellidos_y_nombres, ",");
+
+          if ($posicionUltimaComa !== false) {
+            $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimaComa));
+            $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimaComa + 1));
+          } else {
+            // buscar el último espacio en blanco
+            $posicionUltimoEspacio = strrpos($titularDelBody->apellidos_y_nombres, " ");
+            if ($posicionUltimoEspacio !== false) {
+              $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimoEspacio));
+              $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimoEspacio + 1));
+            } else {
+              $apellidos = $titularDelBody->apellidos_y_nombres;
+              $nombres = "";
+            }
+          }
+
+          $titular->apellidos = $apellidos;
+          $titular->nombres = $nombres;
+                    
           $titular->sexo = $titularDelBody->sexo;
           $titular->edad = $titularDelBody->edad;
           $titular->fecha_creacion = $personasDb->obtenerFechaYHora()['fecha_y_hora'];

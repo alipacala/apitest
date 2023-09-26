@@ -88,8 +88,8 @@ class ReporteRegistroVentas
     $pdf->Cell(12, $lineHeight, "TIPO DOC", 1, 0, "C");
     $pdf->Cell(24, $lineHeight, "NRO COMPROBANTE", 1, 0, "C");
     $pdf->Cell(96, $lineHeight, "NOMBRE", 1, 0, "C");
-    $pdf->Cell(14, $lineHeight, "ESTADO", 1, 0, "C");
     $pdf->Cell(16, $lineHeight, "DNI/RUC", 1, 0, "C");
+    $pdf->Cell(14, $lineHeight, "ESTADO", 1, 0, "C");
     $pdf->Cell(14, $lineHeight, "MONTO", 1, 0, "C");
     $pdf->Ln();
   }
@@ -103,8 +103,8 @@ class ReporteRegistroVentas
       $pdf->Cell(12, $lineHeight, $comprobante["tipo_doc"], 0, 0, "C");
       $pdf->Cell(24, $lineHeight, $comprobante["nro_comprobante"]);
       $pdf->Cell(96, $lineHeight, $comprobante["nombre"]);
-      $pdf->Cell(14, $lineHeight, $comprobante["estado"], 0, 0, "C");
       $pdf->Cell(16, $lineHeight, $comprobante["dni_ruc"], 0, 0, "C");
+      $pdf->Cell(14, $lineHeight, $comprobante["estado"], 0, 0, "C");
       $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($comprobante["monto"]), 0, 0, "R");
       $pdf->Ln();
     }
@@ -117,7 +117,7 @@ class ReporteRegistroVentas
     $pdf->Cell(176, $lineHeight, "TOTAL: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', $tamanoLetra);
-    $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($header["TOTAL"]), 0, 0, "R");
+    $pdf->Cell(14, $lineHeight, "S/ " . $this->darFormatoMoneda($header["TOTAL"]), 0, 0, "R");
     $pdf->Ln();
   }
 

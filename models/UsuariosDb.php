@@ -17,11 +17,11 @@ class UsuariosDb extends Database
     return $this->executeQuery($query, $params);
   }
 
-  public function login($usuario, $clave)
+  public function loginAdministrador($usuario, $clave)
   {
     $query = "SELECT COUNT(*) AS logueado
      FROM usuarios us
-     WHERE us.usuario = :usuario AND us.clave = :clave";
+     WHERE us.usuario = :usuario AND us.clave = :clave AND us.id_tipo_de_usuario = 11";
     $params = array(
       ["nombre" => "usuario", "valor" => $usuario, "tipo" => PDO::PARAM_STR],
       ["nombre" => "clave", "valor" => $clave, "tipo" => PDO::PARAM_STR]

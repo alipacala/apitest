@@ -408,9 +408,9 @@ class ProductosController extends BaseController
           // calcular el costo unitario sumando los precios de los productos
           $producto->costo_unitario = 0;
           foreach ($insumos as $insumo) {
-            $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_insumo);
+            $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_producto);
             if (!$productoInsumo) {
-              $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $insumo->id_producto_insumo], 400);
+              $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $insumo->id_producto_producto], 400);
               return;
             }
             $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;

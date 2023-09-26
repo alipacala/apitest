@@ -367,7 +367,7 @@ class ComprobantesVentasController extends BaseController
       
       // comprobar que el usuario y contraseña sean correctos
       $usuariosDb = new UsuariosDb();
-      $result = $usuariosDb->login($body->usuario, $body->clave);
+      $result = $usuariosDb->loginAdministrador($body->usuario, $body->clave);
 
       if (!$result[0]["logueado"]) {
         $this->sendResponse(["mensaje" => "Usuario o contraseña incorrectos"], 400);
