@@ -67,7 +67,6 @@ class ReportesDb extends Database
   {
     $query = "SELECT
     ch.tipo_de_servicio,
-    ch.nro_habitacion,
     ch.nombre AS titular,
     ch.fecha_in,
 
@@ -78,6 +77,7 @@ class ReportesDb extends Database
     dd.cantidad,
     dd.precio_unitario,
     dd.precio_total,
+    dd.nro_habitacion,
   
     dd.fecha_servicio,
 
