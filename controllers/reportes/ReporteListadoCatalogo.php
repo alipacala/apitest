@@ -120,6 +120,7 @@ class ReporteListadoCatalogo
         $pdf->SetFont('Arial', null, $tamanoLetra);
         $pdf->Cell(40, $lineHeight, "");
         $pdf->Cell(50, $lineHeight, "No hay productos en este grupo");
+        $pdf->Ln();
       }
 
       if (isset($grupo["subgrupos"])) {
@@ -143,6 +144,7 @@ class ReporteListadoCatalogo
             $pdf->SetFont('Arial', null, $tamanoLetra);
             $pdf->Cell(40, $lineHeight, "");
             $pdf->Cell(50, $lineHeight, "No hay productos en este subgrupo");
+            $pdf->Ln();
           }
         }
       }
