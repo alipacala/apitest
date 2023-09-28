@@ -32,6 +32,14 @@ class ReporteListadoCatalogo
     // buscar el nombre del grupo seleccionado
     $header["GRUPO_SELECCIONADO"] = $result[0]["nombre_grupo"];
 
+    // mapear el nombre de los grupos, subgrupos y productos a UTF8
+    foreach ($result as $key => $value) {
+      $result[$key]["nombre_grupo"] = $this->aUTF8($value["nombre_grupo"]);
+      $result[$key]["nombre_subgrupo"] = $this->aUTF8($value["nombre_subgrupo"]);
+      $result[$key]["nombre_producto"] = $this->aUTF8($value["nombre_producto"]);
+    }
+
+
     // agrupar productos por id_grupo y nombre_grupo, es decir, que el nombre_grupo sea el encabezado pero que el id_grupo sea el que agrupe
 
     $productosAgrupados = [];
@@ -81,7 +89,9 @@ class ReporteListadoCatalogo
     $pdf->Ln();
 
     $pdf->SetFont('Arial', null, $tamanoLetra);
+    $pdf->Cell(132, $lineHeight, "");
     $pdf->Cell(0, $lineHeight, "FECHA: " . $header["FECHA"], 0, 1);
+    $pdf->Cell(132, $lineHeight, "");
     $pdf->Cell(0, $lineHeight, "HORA: " . $header["HORA"], 0, 1);
     $pdf->Ln();
   }
@@ -90,11 +100,12 @@ class ReporteListadoCatalogo
   {
     $pdf->SetFont('Arial', 'B', $tamanoLetra);
 
-    $pdf->Cell(40, $lineHeight, "GRUPO / SUBGRUPOS", 1, 0, "C");
-    $pdf->Cell(50, $lineHeight, "NOMBRE", 1, 0, "C");
-    $pdf->Cell(30, $lineHeight, "PRECIO VENTA 01", 1, 0, "C");
-    $pdf->Cell(30, $lineHeight, "PRECIO VENTA 02", 1, 0, "C");
-    $pdf->Cell(30, $lineHeight, "PRECIO VENTA 03", 1, 0, "C");
+    $pdf->Cell(37, $lineHeight, "");
+    $pdf->Cell(30, $lineHeight, "GRUPO / SUBGRUPOS", 1, 0, "C");
+    $pdf->Cell(36, $lineHeight, "NOMBRE", 1, 0, "C");
+    $pdf->Cell(16, $lineHeight, "PRECIO V.01", 1, 0, "C");
+    $pdf->Cell(16, $lineHeight, "PRECIO V.02", 1, 0, "C");
+    $pdf->Cell(16, $lineHeight, "PRECIO V.03", 1, 0, "C");
 
     $pdf->Ln();
   }
@@ -103,47 +114,53 @@ class ReporteListadoCatalogo
   {
     foreach ($result as $grupo) {
       $pdf->SetFont('Arial', 'B', $tamanoLetra);
+      $pdf->Cell(37, $lineHeight, "");
       $pdf->Cell(0, $lineHeight, $grupo["nombre_grupo"], 0, 1);
 
       if (isset($grupo["productos"])) {
         foreach ($grupo["productos"] as $producto) {
           $pdf->SetFont('Arial', null, $tamanoLetra);
-          $pdf->Cell(40, $lineHeight, "");
-          $pdf->Cell(50, $lineHeight, $producto["nombre_producto"]);
-          $pdf->Cell(30, $lineHeight, $producto["precio_venta_01"] ?? "---", 0, 0, "R");
-          $pdf->Cell(30, $lineHeight, $producto["precio_venta_02"] ?? "---", 0, 0, "R");
-          $pdf->Cell(30, $lineHeight, $producto["precio_venta_03"] ?? "---", 0, 0, "R");
+          $pdf->Cell(37, $lineHeight, "");
+          $pdf->Cell(30, $lineHeight, "");
+          $pdf->Cell(36, $lineHeight, $producto["nombre_producto"]);
+          $pdf->Cell(16, $lineHeight, $producto["precio_venta_01"] ?? "---", 0, 0, "R");
+          $pdf->Cell(16, $lineHeight, $producto["precio_venta_02"] ?? "---", 0, 0, "R");
+          $pdf->Cell(16, $lineHeight, $producto["precio_venta_03"] ?? "---", 0, 0, "R");
 
           $pdf->Ln();
         }
       } else {
         $pdf->SetFont('Arial', null, $tamanoLetra);
-        $pdf->Cell(40, $lineHeight, "");
-        $pdf->Cell(50, $lineHeight, "No hay productos en este grupo");
+        $pdf->Cell(37, $lineHeight, "");
+        $pdf->Cell(30, $lineHeight, "");
+        $pdf->Cell(36, $lineHeight, "No hay productos en este grupo");
         $pdf->Ln();
       }
 
       if (isset($grupo["subgrupos"])) {
         foreach ($grupo["subgrupos"] as $subgrupo) {
           $pdf->SetFont('Arial', 'B', $tamanoLetra);
+          $pdf->Cell(37, $lineHeight, "");
           $pdf->Cell(10, $lineHeight, "");
           $pdf->Cell(0, $lineHeight, $subgrupo["nombre_subgrupo"], 0, 1);
 
           if (count($subgrupo["productos"]) > 0) {
             foreach ($subgrupo["productos"] as $producto) {
               $pdf->SetFont('Arial', null, $tamanoLetra);
-              $pdf->Cell(40, $lineHeight, "");
-              $pdf->Cell(50, $lineHeight, $producto["nombre_producto"]);
-              $pdf->Cell(30, $lineHeight, $producto["precio_venta_01"] ?? "---", 0, 0, "R");
-              $pdf->Cell(30, $lineHeight, $producto["precio_venta_02"] ?? "---", 0, 0, "R");
-              $pdf->Cell(30, $lineHeight, $producto["precio_venta_03"] ?? "---", 0, 0, "R");
+              $pdf->Cell(37, $lineHeight, "");
+              $pdf->Cell(30, $lineHeight, "");
+              $pdf->Cell(36, $lineHeight, $producto["nombre_producto"]);
+              $pdf->Cell(16, $lineHeight, $producto["precio_venta_01"] ?? "---", 0, 0, "R");
+              $pdf->Cell(16, $lineHeight, $producto["precio_venta_02"] ?? "---", 0, 0, "R");
+              $pdf->Cell(16, $lineHeight, $producto["precio_venta_03"] ?? "---", 0, 0, "R");
 
               $pdf->Ln();
             }
           } else {
             $pdf->SetFont('Arial', null, $tamanoLetra);
-            $pdf->Cell(40, $lineHeight, "");
-            $pdf->Cell(50, $lineHeight, "No hay productos en este subgrupo");
+            $pdf->Cell(37, $lineHeight, "");
+            $pdf->Cell(30, $lineHeight, "");
+            $pdf->Cell(36, $lineHeight, "No hay productos en este subgrupo");
             $pdf->Ln();
           }
         }
