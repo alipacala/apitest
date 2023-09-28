@@ -45,23 +45,25 @@ class ComprobanteImprimible
     $header["TIPO_DOC"] = $tiposDoc[$result[0]["tipo_doc"]];
     $header["TIPO_DOC_CLIENTE"] = $tiposDocCliente[$result[0]["tipo_documento_cliente"]];
     $header["RUC"] = $result[0]["ruc"];
-    $header["NOMBRE"] = $result[0]["nombre"];
-    $header["DIRECCION"] = $result[0]["direccion"];
-    $header["LUGAR"] = $result[0]["ciudad"]; // TODO: TEMPORAL
+    $header["NOMBRE"] = $this->aUTF8($result[0]["nombre"]);
+    $header["DIRECCION"] = $this->aUTF8($result[0]["direccion"]);
+    $header["LUGAR"] = $result[0]["ciudad"];
     $header["FORMA_PAGO"] = "CONTADO"; // TODO: TEMPORAL
 
     $header["IGV"] = $porcIGV;
     $header["MONTO_IGV"] = $result[0]["igv"];
     $header["OPE_GRAVADA"] = $result[0]["subtotal"];
-    $header["OPE_NO_GRAVADA"] = $this->darFormatoMoneda(0); // TODO: TEMPORAL
+    $header["OPE_NO_GRAVADA"] = $this->darFormatoMoneda(0);
     $header["TOTAL"] = $result[0]["total"];
 
+    $soles = floor($header["TOTAL"]);
+    $centimos = $header["TOTAL"] - $soles;
+    
     $formatterES = new \NumberFormatter("es", \NumberFormatter::SPELLOUT);
-    $centimos = $header["TOTAL"] - floor($header["TOTAL"]);
-    $header["TOTAL_LITERAL"] = strtoupper($formatterES->format($header["TOTAL"])) . " Y " . str_pad(round($centimos * 100), 2, "0") . "/100";
+    $header["TOTAL_LITERAL"] = $this->aUTF8(strtoupper($this->quitarTildes($formatterES->format($soles)))) . " Y " . str_pad(round($centimos * 100), 2, "0") . "/100 SOLES";
 
     $result = array_map(function ($comprobante) {
-      $comprobante["nombre_producto"] = mb_convert_encoding($comprobante["nombre_producto"], "ISO-8859-1", "UTF-8");
+      $comprobante["nombre_producto"] = $this->aUTF8($comprobante["nombre_producto"]);
       $comprobante["cantidad"] = intval($comprobante["cantidad"]);
       $comprobante["precio_unitario"] = $this->darFormatoMoneda($comprobante["precio_unitario"]);
       $comprobante["precio_total"] = $this->darFormatoMoneda($comprobante["precio_total"]);
@@ -77,7 +79,7 @@ class ComprobanteImprimible
     $pdf->Ln();
     $pdf->Cell(0, $lineHeight, "DOM. FISCAL: AV. Tarapaca Nro. 379", 0, 0, "C");
     $pdf->Ln();
-    $pdf->Cell(0, $lineHeight, mb_convert_encoding("DIRECCIÓN: CALLE LAS VILCAS B1 - URB. LOS OLIVOS", "ISO-8859-1", "UTF-8"), 0, 0, "C");
+    $pdf->Cell(0, $lineHeight, $this->aUTF8("DIRECCIÓN: CALLE LAS VILCAS B1 - URB. LOS OLIVOS"), 0, 0, "C");
     $pdf->Ln();
     $pdf->Cell(0, $lineHeight, "TACNA - TACNA - TACNA", 0, 0, "C");
     $pdf->Ln();
@@ -193,6 +195,23 @@ class ComprobanteImprimible
   function darFormatoMoneda($monto)
   {
     return number_format($monto, 2, '.', ',');
+  }
+
+  function aUTF8($string)
+  {
+    return mb_convert_encoding($string, "ISO-8859-1", "UTF-8");
+  }
+
+  // quita las tildes simples de las vocales
+  function quitarTildes($string)
+  {
+    $string = str_replace(
+      array('Á', 'á', 'É', 'é', 'Í', 'í', 'Ó', 'ó', 'Ú', 'ú'),
+      array('A', 'a', 'E', 'e', 'I', 'i', 'O', 'o', 'U', 'u'),
+      $string
+    );
+
+    return $string;
   }
 }
 

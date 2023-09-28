@@ -119,7 +119,7 @@ class CheckingsController extends BaseController
           }
 
           $dni = $titularDelBody->nro_documento;
-          $titular = $personasDb->listarPersonas($dni)[0];
+          $titular = $personasDb->listarPersonas($dni);
 
           $edad = $titularDelBody->edad ?? null;
 

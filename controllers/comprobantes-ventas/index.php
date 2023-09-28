@@ -119,21 +119,26 @@ class ComprobantesVentasController extends BaseController
 
     $configDb = new ConfigDb();
 
+    $serie = "";
+
     if ($comprobante->tipo_comprobante === "03") {
       $serie = $configDb->obtenerConfig(13)->numero_correlativo; // 13 es el id de la serie de boletas
       $correlativoBoleta = $configDb->obtenerConfig(15)->numero_correlativo; // 15 es el id del correlativo de boletas
-      $comprobante->nro_comprobante = "B";
+      $serie = "B";
     } else if ($comprobante->tipo_comprobante === "01") {
       $serie = $configDb->obtenerConfig(14)->numero_correlativo; // 14 es el id de la serie de facturas
       $correlativoBoleta = $configDb->obtenerConfig(16)->numero_correlativo; // 16 es el id del correlativo de facturas
-      $comprobante->nro_comprobante = "F";
+      $serie = "F";
     } else {
       $serie = "";
       $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
-      $comprobante->nro_comprobante = "PD";
+      $serie = "P";
     }
 
-    $comprobante->nro_comprobante .= str_pad($serie, 3, "0", STR_PAD_LEFT) . "-" . str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
+    $serie .= str_pad($serie, 3, "0", STR_PAD_LEFT);
+    $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
+
+    $comprobante->nro_comprobante = $serie . "-" . $nro;
 
     $comprobante->fecha_documento = $configDb->obtenerFechaYHora()["fecha"];
     $comprobante->hora_documento = $configDb->obtenerFechaYHora()["hora"];
@@ -194,9 +199,9 @@ class ComprobantesVentasController extends BaseController
 
       $feComprobante->NroMov = $idComprobante;
       // obtener los 4 primeros caracteres del nro_comprobante
-      $feComprobante->serieComprobante = substr($comprobante->nro_comprobante, 0, 4);
+      $feComprobante->serieComprobante = $serie;
       // obtener los 8 últimos caracteres del nro_comprobante
-      $feComprobante->nroComprobante = substr($comprobante->nro_comprobante, -8);
+      $feComprobante->nroComprobante = $nro;
       $feComprobante->tipOperacion = "0101";
       $feComprobante->fecEmision = $comprobante->fecha_documento;
       $feComprobante->fecPago = $comprobante->fecha_documento;
@@ -225,6 +230,9 @@ class ComprobantesVentasController extends BaseController
         $feItem->NroMov = $idComprobante;
         $feItem->codUnidadMedida = "NIU";
         $feItem->ctdUnidadItem = $comprobanteDetalle->cantidad;
+
+        $feItem->serieComprobante = $serie;
+        $feItem->nroComprobante = $nro;
 
         $producto = $productosDb->obtenerProducto($comprobanteDetalle->id_producto);
         $feItem->desItem = $producto->nombre_producto;

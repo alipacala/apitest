@@ -133,8 +133,10 @@ class ReportesDb extends Database
     ON co.id_comprobante_ventas = fc.NroMov
     INNER JOIN productos pr
     ON cd.id_producto = pr.id_producto
+    INNER JOIN cheking ch
+    ON co.nro_registro_maestro = ch.nro_registro_maestro
     INNER JOIN personanaturaljuridica pe
-    ON co.nro_documento_cliente = pe.nro_documento
+    ON ch.id_persona = pe.id_persona
     
     WHERE co.nro_comprobante = :nro_comprobante
 

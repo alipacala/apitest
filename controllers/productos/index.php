@@ -478,8 +478,15 @@ class ProductosController extends BaseController
       return;
     }
 
+    // quitar los campos que no tiene el producto de prevProducto
+    foreach ($prevProducto as $key => $value) {
+      if (!isset($producto->$key)) {
+        unset($prevProducto->$key);
+      }
+    }
+
     // si los datos son iguales, no se hace nada
-    if ($prevProducto == $productoDelBody) {
+    if ($prevProducto == $producto) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
