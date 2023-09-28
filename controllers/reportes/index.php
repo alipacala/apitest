@@ -15,6 +15,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteEstadoCuenta.php"
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteRegistroVentas.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ComprobanteImprimible.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDiarioCaja.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteListadoCatalogo.php";
 
 class ReportesController extends BaseController
 {
@@ -34,6 +35,8 @@ class ReportesController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
 
     $nroComprobante = $params['nro_comprobante'] ?? null;
+
+    $idGrupo = $params['id_grupo'] ?? null;
 
     $reportesDb = new ReportesDb();
 
@@ -114,6 +117,13 @@ class ReportesController extends BaseController
 
       $comprobanteImprimible = new ComprobanteImprimible();
       $this->sendResponse($comprobanteImprimible->generarReporte($result, $porcIGV), 200);
+
+    } else if ($tipo == "listado-catalogo") {
+      $result = $reportesDb->obtenerReporteListadoCatalogo($idGrupo);
+
+      $reporteListadoCatalogo = new ReporteListadoCatalogo();
+      $this->sendResponse($reporteListadoCatalogo->generarReporte($result), 200);
+
     } else {
       // no hay ese tipo de reporte
       $this->sendResponse([

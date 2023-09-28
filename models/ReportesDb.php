@@ -151,5 +151,38 @@ class ReportesDb extends Database
     );
     return $this->executeQuery($query, $params);
   }
+
+  public function obtenerReporteListadoCatalogo($idGrupo = '') {
+    $query = "SELECT
+      pr.id_producto,
+      pr.nombre_producto,
+      pr.precio_venta_01,
+      pr.precio_venta_02,
+      pr.precio_venta_03,
+      
+      pr.id_tipo_de_producto,
+
+      pr.id_grupo AS id_grupo_producto,
+      gr2.id_grupo AS id_grupo,
+      gr2.nombre_grupo AS nombre_grupo,
+      gr1.id_grupo AS id_subgrupo,
+      gr1.nombre_grupo AS nombre_subgrupo
+      
+      FROM
+        productos pr
+      RIGHT JOIN gruposdelacarta gr1 ON pr.id_grupo = gr1.id_grupo
+      INNER JOIN gruposdelacarta gr2 ON gr1.codigo_grupo = gr2.codigo_subgrupo
+
+      WHERE
+      (pr.id_tipo_de_producto IS NULL OR pr.id_tipo_de_producto IN (12, 13))
+      AND (:id_grupo1 IS NULL OR gr2.id_grupo = :id_grupo2 OR gr1.id_grupo = :id_grupo3)";
+      
+    $params = array(
+      ["nombre" => "id_grupo1", "valor" => $idGrupo, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_grupo2", "valor" => $idGrupo, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_grupo3", "valor" => $idGrupo, "tipo" => PDO::PARAM_INT]
+    );
+    return $this->executeQuery($query, $params);
+  }
 }
 ?>
