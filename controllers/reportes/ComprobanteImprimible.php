@@ -75,6 +75,11 @@ class ComprobanteImprimible
 
   function imprimirCabecera(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
   {
+    $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", 35, null, 30, 0, "PNG");
+
+    $pdf->Cell(0);
+    $pdf->Ln();
+
     $pdf->Cell(0, $lineHeight, "DAFFS S.A.C.", 0, 0, "C");
     $pdf->Ln();
     $pdf->Cell(0, $lineHeight, "DOM. FISCAL: AV. Tarapaca Nro. 379", 0, 0, "C");

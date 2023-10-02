@@ -22,7 +22,7 @@ class ReporteDiarioCaja
     $lineHeight = 4;
     $tamanoLetra = 6;
 
-    $this->imprimirCabecera($pdf, $header);
+    $this->imprimirCabecera($pdf, $lineHeight, $header);
     $this->imprimirCabeceraTabla($pdf, $lineHeight, $tamanoLetra);
     $this->imprimirComprobantesTabla($pdf, $lineHeight, $tamanoLetra, $result, $formasPago);
 
@@ -58,7 +58,7 @@ class ReporteDiarioCaja
         $nroRegistroMaestro = $comprobante['nro_registro_maestro'];
         $checking = array_values(array_filter($checkings, function ($item) use ($nroRegistroMaestro) {
           return $item->nro_registro_maestro == $nroRegistroMaestro;
-        }))[0];
+        }));
 
         $comprobantesAgrupados[] = [
           'nro_comprobante' => $comprobante['nro_comprobante'],
@@ -107,8 +107,13 @@ class ReporteDiarioCaja
     return [$result, $header];
   }
 
-  function imprimirCabecera(FPDF $pdf, $header)
+  function imprimirCabecera(FPDF $pdf, $lineHeight, $header)
   {
+    $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", null, null, 30, 0, "PNG");
+
+    $pdf->Cell(0);
+    $pdf->Ln();
+
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, 20, "REPORTE DIARIO DE CAJA - " . $header["FECHA"], 0, 0, "C");
     $pdf->Ln();

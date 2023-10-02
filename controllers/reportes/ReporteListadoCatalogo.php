@@ -83,6 +83,11 @@ class ReporteListadoCatalogo
 
   function imprimirCabecera($pdf, $lineHeight, $tamanoLetra, $header)
   {
+    $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", null, null, 30, 0, "PNG");
+
+    $pdf->Cell(0);
+    $pdf->Ln();
+    
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, $lineHeight, "LISTADO DE CATALOGO DE PRODUCTOS", 0, 0, "C");
     $pdf->Ln();

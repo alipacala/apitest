@@ -271,6 +271,11 @@ class ReportesController extends BaseController
     $pdf = new FPDF();
     $pdf->AddPage(null, 'A4');
 
+    $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", null, null, 30, 0, "PNG");
+
+    $pdf->Cell(0);
+    $pdf->Ln();
+
     $pdf->SetFont('Arial', 'B', 16);
     $pdf->Cell(0, 20, "REPORTE DE VENTAS DETALLE DE PRODUCTOS - $fecha", 0, 0, "C");
     $pdf->Ln();
