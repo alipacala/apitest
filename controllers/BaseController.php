@@ -179,22 +179,27 @@ class BaseController
   }
 
   /**
-   * Compara dos objetos y devuelve true si los campos del objeto1 existen en el objeto2 y tienen los mismos valores.
-   * @param $objeto1 Objeto con menos campos
-   * @param $objeto2 Objeto con más campos
-   * @return bool
+   * Compara dos objetos y determina si al menos un campo es diferente.
+   * @param $objToUpdate Objeto con menos campos
+   * @param $prevObj Objeto con más campos
+   * @return bool Devuelve false si al menos un campo es diferente, true si todos los campos son iguales
    */
-  function compararObjetos($objeto1, $objeto2)
+  function compararObjetoActualizar($objToUpdate, $prevObj)
   {
-    $array1 = (array) $objeto1;
-    $array2 = (array) $objeto2;
-
-    foreach ($array1 as $campo => $valor) {
-      if (!array_key_exists($campo, $array2) || $array2[$campo] != $valor) {
-        return false;
+      $arrayToUpdate = (array) $objToUpdate;
+      $arrayPrev = (array) $prevObj;
+  
+      if (count($arrayToUpdate) < 1) {
+          return true;
       }
-    }
-    return true;
+  
+      foreach ($arrayToUpdate as $campo => $valor) {
+          if (array_key_exists($campo, $arrayPrev) && $arrayPrev[$campo] != $valor) {
+              return false;
+          }
+      }
+  
+      return true;
   }
 }
 ?>

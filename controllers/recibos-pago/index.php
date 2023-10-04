@@ -79,7 +79,7 @@ class RecibosPagoController extends BaseController
       $nroComprobante = $comprobanteVenta->nro_comprobante;
 
       $documentosDetallesDb = new DocumentosDetallesDb();
-      $documentosDetalles = $documentosDetallesDb->listarDocumentosDetalles(null, $nroComprobante);
+      $documentosDetalles = $documentosDetallesDb->buscarDocumentosDetallesPorNroComprobanteVenta($nroComprobante);
 
       foreach ($documentosDetalles as $documentoDetalle) {
         $documentoDetalleActualizar = new DocumentoDetalle();
@@ -121,7 +121,7 @@ class RecibosPagoController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevReciboPago == $reciboPago) {
+    if ($this->compararObjetoActualizar($reciboPago, $prevReciboPago)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

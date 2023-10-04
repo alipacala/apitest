@@ -7,6 +7,12 @@ class UsuariosDb extends Database
   public $idName = "id_usuario";
   public $tableName = "usuarios";
 
+  public function listarUsuarios()
+  {
+    $query = $this->prepareQuery("select");
+    return $this->executeQuery($query, null, "select");
+  }
+
   public function obtenerNombreUsuario($id)
   {
     $query = "SELECT usuario FROM usuarios WHERE id_usuario = :id";
@@ -15,6 +21,25 @@ class UsuariosDb extends Database
     );
 
     return $this->executeQuery($query, $params);
+  }
+
+  public function obtenerUsuario($id)
+  {
+    $query = $this->prepareQuery("select-one", null);
+    $params = array(
+      ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function listarConPersonas()
+  {
+    $query = "SELECT u.id_usuario, u.nro_doc, p.apellidos, p.nombres, u.cargo, u.usuario, u.activo, u.fecha_cese
+    FROM usuarios u
+    INNER JOIN personanaturaljuridica p ON p.id_persona = u.id_persona";
+
+    return $this->executeQuery($query, null, "select");
   }
 
   public function loginAdministrador($usuario, $clave)
@@ -29,5 +54,24 @@ class UsuariosDb extends Database
 
     return $this->executeQuery($query, $params);
   }
+  
+  public function crearUsuario(Usuario $usuario)
+  {
+    $usuarioArray = $this->prepareData((array) $usuario, "insert");
+    $query = $this->prepareQuery("insert", $usuarioArray);
+    $params = $this->prepareParams($usuarioArray);
+
+    return $this->executeQuery($query, $params, "insert");
+  }
+
+  public function actualizarUsuario($id, Usuario $usuario)
+  {
+    $usuarioArray = $this->prepareData((array) $usuario);
+    $query = $this->prepareQuery("update", $usuarioArray);
+    $params = $this->prepareParams($usuarioArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
 }
 ?>

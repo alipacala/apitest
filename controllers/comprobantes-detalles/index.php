@@ -12,7 +12,14 @@ class ComprobantesDetallesController extends BaseController
     $comprobante = $params['comprobante'] ?? null;
 
     $comprobantesDetallesDb = new ComprobantesDetallesDb();
-    $result = $comprobantesDetallesDb->listarComprobantesDetalles($comprobante);
+
+    if ($comprobante) {
+      $result = $comprobantesDetallesDb->buscarComprobantesDetallesPorIdComprobante($comprobante);
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    $result = $comprobantesDetallesDb->listarComprobantesDetalles();
 
     $this->sendResponse($result, 200);
   }
@@ -22,7 +29,7 @@ class ComprobantesDetallesController extends BaseController
     $comprobantesDetallesDb = new ComprobantesDetallesDb();
     $comprobanteDetalle = $comprobantesDetallesDb->obtenerComprobanteDetalle($id);
 
-    $response = $comprobanteDetalle ? $comprobanteDetalle : ["mensaje" => "ComprobanteDetalle no encontrada"];
+    $response = $comprobanteDetalle ? $comprobanteDetalle : ["mensaje" => "Comprobante Detalle no encontrado"];
     $code = $comprobanteDetalle ? 200 : 404;
 
     $this->sendResponse($response, $code);

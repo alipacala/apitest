@@ -59,7 +59,7 @@ class HabilidadesProfesionalesController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevHabilidadProfesional == $habilidadProfesional) {
+    if ($this->compararObjetoActualizar($habilidadProfesional, $prevHabilidadProfesional)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

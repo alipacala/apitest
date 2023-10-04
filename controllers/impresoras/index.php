@@ -59,7 +59,7 @@ class ImpresorasController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevImpresora == $impresora) {
+    if ($this->compararObjetoActualizar($impresora, $prevImpresora)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

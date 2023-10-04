@@ -68,8 +68,8 @@ class ReporteDiarioCaja
           'nombre_razon_social' => $comprobante['nombre_razon_social'],
           'total_comprobante' => $comprobante['total_comprobante'],
           'por_pagar' => $comprobante['por_pagar'],
-          'tipo_de_servicio' => $checking->tipo_de_servicio ?? "",
-          'nro_habitacion' => $checking->nro_habitacion ?? "",
+          'tipo_de_servicio' => $checking['tipo_de_servicio'] ?? "",
+          'nro_habitacion' => $checking['nro_habitacion'] ?? "",
           'recibos' => [
             [
               'tipo_pago' => $comprobante['tipo_pago'] ?? "",

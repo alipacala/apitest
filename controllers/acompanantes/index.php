@@ -10,9 +10,16 @@ class AcompanantesController extends BaseController
   {
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
-    
+
     $acompanantesDb = new AcompanantesDb();
-    $result = $acompanantesDb->listarAcompanantes($nroRegistroMaestro);
+
+    if ($nroRegistroMaestro) {
+      $result = $acompanantesDb->buscarAcompanantePorNroRegistroMaestro($nroRegistroMaestro);
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    $result = $acompanantesDb->listarAcompanantes();
 
     $this->sendResponse($result, 200);
   }
@@ -62,7 +69,7 @@ class AcompanantesController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevAcompanante == $acompanante) {
+    if ($this->compararObjetoActualizar($acompanante, $prevAcompanante)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

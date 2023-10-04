@@ -12,6 +12,27 @@ class RoomingController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $idCheckin = $params['id_checkin'] ?? null;
 
+    $conDatos1 = boolval(($params['con-datos1'] ?? null) === "");
+
+    $conDatos2 = boolval(($params['con-datos2'] ?? null) === "");
+    $fecha = $params['fecha'] ?? null;
+
+    if($conDatos1) {
+      $roomingDb = new RoomingDb();
+      $result = $roomingDb->listarRoomingConDatos1();
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    if($conDatos2) {
+      $roomingDb = new RoomingDb();
+      $result = $roomingDb->listarRoomingConDatos2($fecha);
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
     $roomingDb = new RoomingDb();
     $result = $roomingDb->listarRooming($nroRegistroMaestro, $idCheckin);
 
@@ -63,7 +84,7 @@ class RoomingController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevRooming == $rooming) {
+    if ($this->compararObjetoActualizar($rooming, $prevRooming)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

@@ -15,25 +15,27 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarDocumentosDetalles($nroRegistroMaestro = null, $nroComprobanteVenta = null)
+  public function listarDocumentosDetalles()
   {
-    if ($nroRegistroMaestro) {
-      $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nivel_descargo != 2";
-      $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
-
-      return $this->executeQuery($query, $params, "select");
-    }
-
-    if ($nroComprobanteVenta) {
-      $query = "SELECT * FROM $this->tableName WHERE nro_comprobante = :nro_comprobante_venta";
-      $params = array(["nombre" => "nro_comprobante_venta", "valor" => $nroComprobanteVenta, "tipo" => PDO::PARAM_STR]);
-
-      return $this->executeQuery($query, $params, "select");
-    }
-
     $query = $this->prepareQuery("select");
 
     return $this->executeQuery($query, null, "select");
+  }
+
+  public function buscarDocumentosDetallesPorNroRegistroMaestro($nroRegistroMaestro)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nivel_descargo != 2";
+    $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select");
+  }
+
+  public function buscarDocumentosDetallesPorNroComprobanteVenta($nroComprobanteVenta)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_comprobante = :nro_comprobante_venta";
+    $params = array(["nombre" => "nro_comprobante_venta", "valor" => $nroComprobanteVenta, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select");
   }
 
   public function crearDocumentoDetalle(DocumentoDetalle $documentoDetalle)
@@ -45,23 +47,23 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "insert");
   }
 
-  public function actualizarDocumentoDetalle($id, DocumentoDetalle $documentoDetalle, $conSubproductos = false)
+  public function actualizarDocumentoDetalle($id, DocumentoDetalle $documentoDetalle)
   {
-    if ($conSubproductos) {
-
-      $query = "UPDATE $this->tableName SET nro_comprobante = :nro_comprobante WHERE $this->idName = :id OR id_item = :id_item";
-      $params = array(
-        ["nombre" => "nro_comprobante", "valor" => $documentoDetalle->nro_comprobante, "tipo" => PDO::PARAM_STR],
-        ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT],
-        ["nombre" => "id_item", "valor" => $id, "tipo" => PDO::PARAM_INT],
-      );
-
-      return $this->executeQuery($query, $params, "update");
-    }
-
     $documentoDetalleArray = $this->prepareData((array) $documentoDetalle);
     $query = $this->prepareQuery("update", $documentoDetalleArray);
     $params = $this->prepareParams($documentoDetalleArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function actualizarConSubproductos($id, $nroComprobante)
+  {
+    $query = "UPDATE $this->tableName SET nro_comprobante = :nro_comprobante WHERE $this->idName = :id OR id_item = :id_item";
+    $params = array(
+      ["nombre" => "nro_comprobante", "valor" => $nroComprobante, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_item", "valor" => $id, "tipo" => PDO::PARAM_INT],
+    );
 
     return $this->executeQuery($query, $params, "update");
   }

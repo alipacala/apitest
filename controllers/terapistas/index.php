@@ -12,6 +12,7 @@ class TerapistasController extends BaseController
   {
     $params = $this->getParams();
     $conHabilidades = isset($params['con_habilidades']);
+    $nroDocumento = $params['nro_documento'] ?? null;
 
     $terapistasDb = new TerapistasDb();
 
@@ -43,6 +44,15 @@ class TerapistasController extends BaseController
       $result = array_values($result);
     }
 
+    if ($nroDocumento) {
+      $result = $terapistasDb->buscarPorNroDocumento($nroDocumento);
+
+      if (!$result) {
+        $this->sendResponse(["mensaje" => "No se encontraron personas naturales o jurídicas con el código proporcionado."], 404);
+        return;
+      }
+    }
+
     $this->sendResponse($result, 200);
   }
 
@@ -57,19 +67,75 @@ class TerapistasController extends BaseController
     $this->sendResponse($response, $code);
   }
 
+  public function obtenerEdadSegunFecha($fechaNacimiento)
+  {
+    $nacimiento = new DateTime($fechaNacimiento);
+    $ahora = new DateTime(date("Y-m-d"));
+    $diferencia = $ahora->diff($nacimiento);
+    return $diferencia->format("%y");
+  }
+
   public function create()
   {
     $terapistaDelBody = $this->getBody();
+
+    $habilidades = $terapistaDelBody['habilidades'];
+    unset($terapistaDelBody['habilidades']);
+
     $terapista = $this->mapJsonToClass($terapistaDelBody, Terapista::class);
 
-    $terapistasDb = new TerapistasDb();
-    $id = $terapistasDb->crearTerapista($terapista);
+    $terapista->tipo_documento = 0;
+    $terapista->fecha_ingreso = date("Y-m-d");
+    $terapista->baja = 0;
+    $terapista->fecha_de_baja = null;
 
-    $response = $id ? [
+    $persona = new Persona();
+
+    $persona->tipo_persona = "NATU";
+    $persona->fecha = date("Y-m-d");
+    $persona->id_usuario_creacion = 0; // TODO
+    $persona->nacionalidad = "PER";
+    $persona->pais = "PER";
+    $persona->email = $terapista->email;
+    $persona->ciudad = $terapista->provincia;
+    $persona->ocupacion = $terapista->cargo;
+    $persona->fecha_creacion = date("Y-m-d H:i:s");
+    $persona->edad = $this->obtenerEdadSegunFecha($terapista->fecha_nacimiento);
+
+    $terapistasDb = new TerapistasDb();
+    $personasDb = new PersonasDb();
+    $terapistasHabilidadesDb = new TerapistasHabilidadesDb();
+
+    try {
+      $terapistasDb->empezarTransaccion();
+      
+      $idPersona = $personasDb->crearPersona($persona);
+
+      $terapista->id_persona = $idPersona;
+      $idTerapista = $terapistasDb->crearTerapista($terapista);
+
+      foreach($habilidades as $habilidad) {
+        $terapistaHabilidad = new TerapistaHabilidad();
+        $terapistaHabilidad->id_persona = $idPersona;
+        $terapistaHabilidad->id_habilidad = $habilidad['id_habilidad'];
+
+        $terapistasHabilidadesDb->crearTerapistaHabilidad($terapistaHabilidad);
+      }
+
+      $terapistasDb->terminarTransaccion();
+    }
+    catch (Exception $e) {
+      $terapistasDb->cancelarTransaccion();
+      $newException = new Exception("Error al crear el terapista, la persona o sus habilidades", 0, $e);
+      throw $newException;
+    }
+
+    $seHaCreado = $idPersona && $idTerapista;
+    $response = $seHaCreado ? [
       "mensaje" => "Terapista creada correctamente",
-      "resultado" => array_merge([$terapistasDb->idName => intval($id)], (array) $terapistaDelBody)
+      "resultado" => array_merge([$terapistasDb->idName => intval($idTerapista)], (array) $terapistaDelBody)
     ] : ["mensaje" => "Error al crear la Terapista"];
-    $code = $id ? 201 : 400;
+    $code = $seHaCreado ? 201 : 400;
 
     $this->sendResponse($response, $code);
   }
@@ -91,7 +157,7 @@ class TerapistasController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevTerapista == $terapista) {
+    if ($this->compararObjetoActualizar($terapista, $prevTerapista)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

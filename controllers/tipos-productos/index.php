@@ -59,7 +59,7 @@ class TiposDeProductosController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevTipoDeProductos == $tipoDeProductos) {
+    if ($this->compararObjetoActualizar($tipoDeProductos, $prevTipoDeProductos)) {
       $this->sendResponse(["mensaje" => "No se han realizado cambios"], 200);
       return;
     }

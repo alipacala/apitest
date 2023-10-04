@@ -81,7 +81,7 @@ class GruposDeLaCartaController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevGrupoDeLaCarta == $grupoDeLaCarta) {
+    if ($this->compararObjetoActualizar($grupoDeLaCarta, $prevGrupoDeLaCarta)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

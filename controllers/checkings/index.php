@@ -15,11 +15,43 @@ class CheckingsController extends BaseController
   {
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
-    $cerrados = $params['cerrados'] ?? null;
-    $abiertos = $params['abiertos'] ?? null;
+    $nroHabitacion = $params['nro_habitacion'] ?? null;
+
+    $cerrados = isset($params['cerrados']);
+    $abiertos = isset($params['abiertos']);
+    $conTipoPrecio = isset($params['con_tipo_precio']);
 
     $checkingsDb = new CheckingsDb();
-    $result = $checkingsDb->listarCheckings($nroRegistroMaestro, $cerrados, $abiertos);
+
+    if($conTipoPrecio) {
+      $result = $checkingsDb->buscarPorNroRegistroMaestroYNroHabitacion($nroRegistroMaestro, $nroHabitacion);
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    if($nroRegistroMaestro) {
+      $result = $checkingsDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    if($cerrados) {
+      $result = $checkingsDb->listarCerrados();
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    if($abiertos) {
+      $result = $checkingsDb->listarAbiertos();
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    $result = $checkingsDb->listarCheckings();
 
     $this->sendResponse($result, 200);
   }
@@ -54,174 +86,171 @@ class CheckingsController extends BaseController
 
   public function createCustom($action)
   {
-    switch ($action) {
-      case 'spa':
-        $checkingDelBody = $this->getBody();
+    if ($action == 'spa') {
+      $checkingDelBody = $this->getBody();
 
-        $personasDb = new PersonasDb();
+      $personasDb = new PersonasDb();
 
-        $titularDelBody = $checkingDelBody->titular;
-        $nuevaPersona = $checkingDelBody->titular->es_nuevo;
+      $titularDelBody = $checkingDelBody->titular;
+      $nuevaPersona = $checkingDelBody->titular->es_nuevo;
 
-        unset($titularDelBody->es_nuevo);
+      unset($titularDelBody->es_nuevo);
 
-        if ($nuevaPersona) {
+      if ($nuevaPersona) {
 
-          $camposRequeridos = ["nro_documento", "apellidos_y_nombres", "sexo", "edad"];
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $titularDelBody);
+        $camposRequeridos = ["nro_documento", "apellidos_y_nombres", "sexo", "edad"];
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $titularDelBody);
 
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: " . implode(", ", $camposFaltantes)], 400);
-            return;
-          }
+        if (count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: " . implode(", ", $camposFaltantes)], 400);
+          return;
+        }
 
-          $titular = new Persona();
-          $titular->tipo_persona = "NATU";
-          $titular->tipo_documento = "0";
-          $titular->nro_documento = $titularDelBody->nro_documento;
+        $titular = new Persona();
+        $titular->tipo_persona = "NATU";
+        $titular->tipo_documento = "0";
+        $titular->nro_documento = $titularDelBody->nro_documento;
 
-          // buscar la última coma
-          $posicionUltimaComa = strrpos($titularDelBody->apellidos_y_nombres, ",");
+        // buscar la última coma
+        $posicionUltimaComa = strrpos($titularDelBody->apellidos_y_nombres, ",");
 
-          if ($posicionUltimaComa !== false) {
-            $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimaComa));
-            $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimaComa + 1));
-          } else {
-            // buscar el último espacio en blanco
-            $posicionUltimoEspacio = strrpos($titularDelBody->apellidos_y_nombres, " ");
-            if ($posicionUltimoEspacio !== false) {
-              $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimoEspacio));
-              $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimoEspacio + 1));
-            } else {
-              $apellidos = $titularDelBody->apellidos_y_nombres;
-              $nombres = "";
-            }
-          }
-
-          $titular->apellidos = $apellidos;
-          $titular->nombres = $nombres;
-                    
-          $titular->sexo = $titularDelBody->sexo;
-          $titular->edad = $titularDelBody->edad;
-          $titular->fecha_creacion = $personasDb->obtenerFechaYHora()['fecha_y_hora'];
-
-          $idTitular = $personasDb->crearPersona($titular);
-          $titular->id_persona = $idTitular;
-
+        if ($posicionUltimaComa !== false) {
+          $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimaComa));
+          $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimaComa + 1));
         } else {
-
-          $camposRequeridos = ["nro_documento"];
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $titularDelBody);
-
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: " . implode(", ", $camposFaltantes)], 400);
-            return;
-          }
-
-          $dni = $titularDelBody->nro_documento;
-          $titular = $personasDb->listarPersonas($dni);
-
-          $edad = $titularDelBody->edad ?? null;
-
-          if ($edad && $titular->edad != $edad) {
-            $personasDb->actualizarEdadPersona($titular->id_persona, $edad);
-          }
-          $idTitular = $titular->id_persona;
-        }
-
-        $titularCreado = $personasDb->obtenerPersona($idTitular);
-
-        $checking = new Checking();
-
-        $configDb = new ConfigDb();
-        $checking->nro_registro_maestro = $configDb->obtenerCodigo(4)['codigo'];
-
-        $checking->id_unidad_de_negocio = 3;
-        $checking->tipo_de_servicio = "SPA";
-        $checking->nombre = $titular->apellidos . ", " . $titular->nombres;
-        $checking->id_persona = $idTitular;
-        $checking->fecha_in = $personasDb->obtenerFechaYHora()['fecha'];
-        $checking->hora_in = $personasDb->obtenerFechaYHora()['hora'];
-
-        $checking->nro_personas = count($checkingDelBody->acompanantes) + 1;
-        $checking->nro_adultos = 1;
-        $checking->nro_ninos = 0;
-        $checking->nro_infantes = 0;
-
-        foreach ($checkingDelBody->acompanantes as $acompanante) {
-          if ($acompanante->edad < 3) {
-            $checking->nro_infantes++;
-          } else if ($acompanante->edad < 12) {
-            $checking->nro_ninos++;
+          // buscar el último espacio en blanco
+          $posicionUltimoEspacio = strrpos($titularDelBody->apellidos_y_nombres, " ");
+          if ($posicionUltimoEspacio !== false) {
+            $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimoEspacio));
+            $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimoEspacio + 1));
           } else {
-            $checking->nro_adultos++;
+            $apellidos = $titularDelBody->apellidos_y_nombres;
+            $nombres = "";
           }
         }
 
-        $checkingsDb = new CheckingsDb();
-        $idChecking = $checkingsDb->crearChecking($checking);
+        $titular->apellidos = $apellidos;
+        $titular->nombres = $nombres;
 
-        $configDb->incrementarCorrelativo(4);
+        $titular->sexo = $titularDelBody->sexo;
+        $titular->edad = $titularDelBody->edad;
+        $titular->fecha_creacion = $personasDb->obtenerFechaYHora()['fecha_y_hora'];
 
-        $checkingCreado = $checkingsDb->obtenerChecking($idChecking);
+        $idTitular = $personasDb->crearPersona($titular);
+        $titular->id_persona = $idTitular;
 
-        $acompanantesDb = new AcompanantesDb();
+      } else {
 
-        // crear el acompañante titular
-        $acompananteTitular = new Acompanante();
-        $acompananteTitular->nro_registro_maestro = $checking->nro_registro_maestro;
-        $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
-        $acompananteTitular->nro_de_orden_unico = 0;
-        $acompananteTitular->nro_documento = $titularCreado->nro_documento;
-        $acompananteTitular->apellidos_y_nombres = $titularCreado->apellidos . ", " . $titularCreado->nombres;
-        $acompananteTitular->sexo = $titularCreado->sexo;
-        $acompananteTitular->edad = $titularCreado->edad;
+        $camposRequeridos = ["nro_documento"];
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $titularDelBody);
 
-        $idAcompananteTitular = $acompanantesDb->crearAcompanante($acompananteTitular);
-
-        $acompanantesCreados = [];
-        $acompanantesCreados[] = $acompanantesDb->obtenerAcompanante($idAcompananteTitular);
-
-        $acompanantes = $checkingDelBody->acompanantes;
-
-        foreach ($acompanantes as $index => $acompanante) {
-
-          $acompanante = $this->mapJsonToClass($acompanante, Acompanante::class);
-
-          $camposRequeridos = ["apellidos_y_nombres", "sexo", "edad", "parentesco"];
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $acompanante);
-
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos en un acompañante: " . implode(", ", $camposFaltantes)], 400);
-            return;
-          }
-
-          $acompanante->nro_registro_maestro = $checking->nro_registro_maestro;
-          $acompanante->tipo_de_servicio = $checking->tipo_de_servicio;
-          $acompanante->nro_de_orden_unico = $index + 1;
-
-          $idAcompanante = $acompanantesDb->crearAcompanante($acompanante);
-
-          $acompananteCreado = $acompanantesDb->obtenerAcompanante($idAcompanante);
-          $acompanantesCreados[] = $acompananteCreado;
+        if (count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: " . implode(", ", $camposFaltantes)], 400);
+          return;
         }
 
-        $checkingYAcompanantesCreados = $checkingCreado && $titularCreado && count($acompanantesCreados) == count($acompanantes) + 1;
+        $dni = $titularDelBody->nro_documento;
+        $titular = $personasDb->listarPersonas($dni);
 
-        $response = $checkingYAcompanantesCreados ? [
-          "mensaje" => "Checking creado correctamente",
-          "resultado" => array_merge((array) $checkingCreado, ["titular" => $titularCreado], ["acompanantes" => $acompanantesCreados])
-        ] : ["mensaje" => "Error al crear el Checking"];
-        $code = $checkingYAcompanantesCreados ? 201 : 400;
+        $edad = $titularDelBody->edad ?? null;
 
-        $this->sendResponse($response, $code);
+        if ($edad && $titular->edad != $edad) {
+          $personasDb->actualizarEdadPersona($titular->id_persona, $edad);
+        }
+        $idTitular = $titular->id_persona;
+      }
 
-        break;
-      default:
-        $this->sendResponse(["mensaje" => "Acción no válida"], 404);
-        break;
+      $titularCreado = $personasDb->obtenerPersona($idTitular);
+
+      $checking = new Checking();
+
+      $configDb = new ConfigDb();
+      $checking->nro_registro_maestro = $configDb->obtenerCodigo(4)['codigo'];
+
+      $checking->id_unidad_de_negocio = 3;
+      $checking->tipo_de_servicio = "SPA";
+      $checking->nombre = $titular->apellidos . ", " . $titular->nombres;
+      $checking->id_persona = $idTitular;
+      $checking->fecha_in = $personasDb->obtenerFechaYHora()['fecha'];
+      $checking->hora_in = $personasDb->obtenerFechaYHora()['hora'];
+
+      $checking->nro_personas = count($checkingDelBody->acompanantes) + 1;
+      $checking->nro_adultos = 1;
+      $checking->nro_ninos = 0;
+      $checking->nro_infantes = 0;
+
+      foreach ($checkingDelBody->acompanantes as $acompanante) {
+        if ($acompanante->edad < 3) {
+          $checking->nro_infantes++;
+        } else if ($acompanante->edad < 12) {
+          $checking->nro_ninos++;
+        } else {
+          $checking->nro_adultos++;
+        }
+      }
+
+      $checkingsDb = new CheckingsDb();
+      $idChecking = $checkingsDb->crearChecking($checking);
+
+      $configDb->incrementarCorrelativo(4);
+
+      $checkingCreado = $checkingsDb->obtenerChecking($idChecking);
+
+      $acompanantesDb = new AcompanantesDb();
+
+      // crear el acompañante titular
+      $acompananteTitular = new Acompanante();
+      $acompananteTitular->nro_registro_maestro = $checking->nro_registro_maestro;
+      $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
+      $acompananteTitular->nro_de_orden_unico = 0;
+      $acompananteTitular->nro_documento = $titularCreado->nro_documento;
+      $acompananteTitular->apellidos_y_nombres = $titularCreado->apellidos . ", " . $titularCreado->nombres;
+      $acompananteTitular->sexo = $titularCreado->sexo;
+      $acompananteTitular->edad = $titularCreado->edad;
+
+      $idAcompananteTitular = $acompanantesDb->crearAcompanante($acompananteTitular);
+
+      $acompanantesCreados = [];
+      $acompanantesCreados[] = $acompanantesDb->obtenerAcompanante($idAcompananteTitular);
+
+      $acompanantes = $checkingDelBody->acompanantes;
+
+      foreach ($acompanantes as $index => $acompanante) {
+
+        $acompanante = $this->mapJsonToClass($acompanante, Acompanante::class);
+
+        $camposRequeridos = ["apellidos_y_nombres", "sexo", "edad", "parentesco"];
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $acompanante);
+
+        if (count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en un acompañante: " . implode(", ", $camposFaltantes)], 400);
+          return;
+        }
+
+        $acompanante->nro_registro_maestro = $checking->nro_registro_maestro;
+        $acompanante->tipo_de_servicio = $checking->tipo_de_servicio;
+        $acompanante->nro_de_orden_unico = $index + 1;
+
+        $idAcompanante = $acompanantesDb->crearAcompanante($acompanante);
+
+        $acompananteCreado = $acompanantesDb->obtenerAcompanante($idAcompanante);
+        $acompanantesCreados[] = $acompananteCreado;
+      }
+
+      $checkingYAcompanantesCreados = $checkingCreado && $titularCreado && count($acompanantesCreados) == count($acompanantes) + 1;
+
+      $response = $checkingYAcompanantesCreados ? [
+        "mensaje" => "Checking creado correctamente",
+        "resultado" => array_merge((array) $checkingCreado, ["titular" => $titularCreado], ["acompanantes" => $acompanantesCreados])
+      ] : ["mensaje" => "Error al crear el Checking"];
+      $code = $checkingYAcompanantesCreados ? 201 : 400;
+
+      $this->sendResponse($response, $code);
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }
   }
+
 
   public function update($id)
   {
@@ -240,7 +269,7 @@ class CheckingsController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevChecking == $checking) {
+    if ($this->compararObjetoActualizar($checking, $prevChecking)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
@@ -264,7 +293,7 @@ class CheckingsController extends BaseController
         $checking = $checkingsDb->obtenerChecking($id);
 
         $documentosDetallesDb = new DocumentosDetallesDb();
-        $detalles = $documentosDetallesDb->listarDocumentosDetalles($checking->nro_registro_maestro);
+        $detalles = $documentosDetallesDb->buscarDocumentosDetallesPorNroRegistroMaestro($checking->nro_registro_maestro);
 
         // filtrar los que tengan nivel_descargo = 1
         $detalles = array_filter($detalles, function ($detalle) {

@@ -120,25 +120,26 @@ class ComprobantesVentasController extends BaseController
     $configDb = new ConfigDb();
 
     $serie = "";
+    $pre = "";
 
     if ($comprobante->tipo_comprobante === "03") {
       $serie = $configDb->obtenerConfig(13)->numero_correlativo; // 13 es el id de la serie de boletas
       $correlativoBoleta = $configDb->obtenerConfig(15)->numero_correlativo; // 15 es el id del correlativo de boletas
-      $serie = "B";
+      $pre = "B";
     } else if ($comprobante->tipo_comprobante === "01") {
       $serie = $configDb->obtenerConfig(14)->numero_correlativo; // 14 es el id de la serie de facturas
       $correlativoBoleta = $configDb->obtenerConfig(16)->numero_correlativo; // 16 es el id del correlativo de facturas
-      $serie = "F";
+      $pre = "F";
     } else {
-      $serie = "";
+      $serie = "1"; // TODO: tal vez no sea necesario
       $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
-      $serie = "P";
+      $pre = "P";
     }
 
-    $serie .= str_pad($serie, 3, "0", STR_PAD_LEFT);
+    $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
     $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
 
-    $comprobante->nro_comprobante = $serie . "-" . $nro;
+    $comprobante->nro_comprobante =  $pre . $serie . "-" . $nro;
 
     $comprobante->fecha_documento = $configDb->obtenerFechaYHora()["fecha"];
     $comprobante->hora_documento = $configDb->obtenerFechaYHora()["hora"];
@@ -255,10 +256,8 @@ class ComprobantesVentasController extends BaseController
         $idDocumentoDetalle = $documentoDetalle->id_documentos_detalle;
         unset($documentoDetalle->id_documentos_detalle);
 
-        $detalleAActualizar = new DocumentoDetalle();
-        $detalleAActualizar->nro_comprobante = $comprobante->nro_comprobante;
-
-        $documentosDetallesDb->actualizarDocumentoDetalle($idDocumentoDetalle, $detalleAActualizar, true);
+        $nroComprobante = $comprobante->nro_comprobante;
+        $documentosDetallesDb->actualizarConSubproductos($idDocumentoDetalle, $nroComprobante);
       }
 
       // actualizar datos de la personanaturaljuridica
@@ -306,7 +305,7 @@ class ComprobantesVentasController extends BaseController
 
       // actualizar datos del checkin
       $checkingsDb = new CheckingsDb();
-      $checking = $checkingsDb->listarCheckings($comprobante->nro_registro_maestro);
+      $checking = $checkingsDb->buscarPorNroRegistroMaestro($comprobante->nro_registro_maestro);
 
       if ($checking) {
         $checkingActualizar = new Checking();
@@ -372,7 +371,7 @@ class ComprobantesVentasController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevComprobanteVentas == $comprobante) {
+    if ($this->compararObjetoActualizar($comprobante, $prevComprobanteVentas)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

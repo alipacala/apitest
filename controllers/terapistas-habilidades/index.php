@@ -21,7 +21,7 @@ class TerapistasHabilidadesController extends BaseController
     $terapistasHabilidadesDb = new TerapistasHabilidadesDb();
     $terapistaHabilidad = $terapistasHabilidadesDb->obtenerTerapistaHabilidad($id);
 
-    $response = $terapistaHabilidad ? $terapistaHabilidad : ["mensaje" => "Terapista Habilidad no encontrada"];
+    $response = $terapistaHabilidad ? $terapistaHabilidad : ["mensaje" => "Habilidad de Terapista no encontrada"];
     $code = $terapistaHabilidad ? 200 : 404;
 
     $this->sendResponse($response, $code);
@@ -36,7 +36,7 @@ class TerapistasHabilidadesController extends BaseController
     $id = $terapistasHabilidadesDb->crearTerapistaHabilidad($terapistaHabilidad);
 
     $response = $id ? [
-      "mensaje" => "Terapista Habilidad creada correctamente",
+      "mensaje" => "Habilidad de Terapista creada correctamente",
       "resultado" => array_merge([$terapistasHabilidadesDb->idName => intval($id)], (array) $terapistaHabilidadDelBody)
     ] : ["mensaje" => "Error al crear la TerapistaHabilidad"];
     $code = $id ? 201 : 400;
@@ -56,12 +56,12 @@ class TerapistasHabilidadesController extends BaseController
 
     // comprobar que la terapista exista
     if (!$prevTerapistaHabilidad) {
-      $this->sendResponse(["mensaje" => "Terapista Habilidad no encontrada"], 404);
+      $this->sendResponse(["mensaje" => "Habilidad de Terapista no encontrada"], 404);
       return;
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevTerapistaHabilidad == $terapistaHabilidad) {
+    if ($this->compararObjetoActualizar($terapistaHabilidad, $prevTerapistaHabilidad)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
@@ -69,9 +69,9 @@ class TerapistasHabilidadesController extends BaseController
     $result = $terapistasHabilidadesDb->actualizarTerapistaHabilidad($id, $terapistaHabilidad);
 
     $response = $result ? [
-      "mensaje" => "Terapista Habilidad actualizada correctamente",
+      "mensaje" => "Habilidad de Terapista actualizada correctamente",
       "resultado" => $terapistasHabilidadesDb->obtenerTerapistaHabilidad($id)
-    ] : ["mensaje" => "Error al actualizar la Terapista Habilidad"];
+    ] : ["mensaje" => "Error al actualizar la Habilidad de Terapista"];
     $code = $result ? 200 : 400;
 
     $this->sendResponse($response, $code);
@@ -84,16 +84,16 @@ class TerapistasHabilidadesController extends BaseController
 
     // comprobar que la terapista exista
     if (!$prevTerapistaHabilidad) {
-      $this->sendResponse(["mensaje" => "Terapista Habilidad no encontrada"], 404);
+      $this->sendResponse(["mensaje" => "Habilidad de Terapista no encontrada"], 404);
       return;
     }
 
     $result = $terapistasHabilidadesDb->eliminarTerapistaHabilidad($id);
 
     $response = $result ? [
-      "mensaje" => "Terapista Habilidad eliminada correctamente",
+      "mensaje" => "Habilidad de Terapista eliminada correctamente",
       "resultado" => $prevTerapistaHabilidad
-    ] : ["mensaje" => "Error al eliminar la Terapista Habilidad"];
+    ] : ["mensaje" => "Error al eliminar la Habilidad de Terapista"];
     $code = $result ? 200 : 400;
 
     $this->sendResponse($response, $code);

@@ -74,7 +74,7 @@ class DocumentosMovimientoController extends BaseController
 
       $documentoMovimiento->nro_de_comanda = $documentoMovimiento->nro_documento; // el mismo que el nro de documento
 
-      $documentoMovimiento->id_unidad_de_negocio = $checkingsDb->listarCheckings($documentoMovimiento->nro_registro_maestro)->id_unidad_de_negocio;
+      $documentoMovimiento->id_unidad_de_negocio = $checkingsDb->buscarPorNroRegistroMaestro($documentoMovimiento->nro_registro_maestro)->id_unidad_de_negocio;
 
       // comprobar que el documento movimiento tenga los datos necesarios
       $camposRequeridos = ["nro_registro_maestro", "id_usuario"];
@@ -352,7 +352,7 @@ class DocumentosMovimientoController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevDocumentoMovimiento == $documentoMovimiento) {
+    if ($this->compararObjetoActualizar($documentoMovimiento, $prevDocumentoMovimiento)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

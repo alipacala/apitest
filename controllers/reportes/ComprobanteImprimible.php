@@ -186,14 +186,12 @@ class ComprobanteImprimible
 
     if ($header["TIPO_DOC"] != "NOTA DE PEDIDO") {
       $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
-      $pdf->Cell(0, $lineHeight, "SON: " . $header["TOTAL_LITERAL"] . " SOLES");
+      $pdf->Cell(0, $lineHeight, "SON: " . $header["TOTAL_LITERAL"]);
       $pdf->Ln();
       $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
 
       $pdf->Ln();
       $pdf->Cell(0, $lineHeight, "REPRESENTACION IMPRESA DEL COMPROBANTE DE VENTA ELECTRONICA");
-      $pdf->Ln();
-      $pdf->Cell(0, $lineHeight, "SLOGAN...");
     }
   }
 

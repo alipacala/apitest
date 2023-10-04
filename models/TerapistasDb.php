@@ -32,6 +32,14 @@ class TerapistasDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function buscarPorNroDocumento($nroDocumento)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_documento = :nro_documento";
+    $params = array(["nombre" => "nro_documento", "valor" => $nroDocumento, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function crearTerapista(Terapista $terapista)
   {
     $terapistaArray = $this->prepareData((array) $terapista, "insert");

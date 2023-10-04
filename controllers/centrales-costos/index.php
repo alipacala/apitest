@@ -59,7 +59,7 @@ class CentralesDeCostosController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevCentralDeCostos == $centralDeCostos) {
+    if ($this->compararObjetoActualizar($centralDeCostos, $prevCentralDeCostos)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

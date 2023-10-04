@@ -15,18 +15,19 @@ class AcompanantesDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarAcompanantes($nroRegistroMaestro = null)
+  public function listarAcompanantes()
   {
-    if ($nroRegistroMaestro) {
-      $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro";
-      $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
-
-      return $this->executeQuery($query, $params, "select");
-    }
-
     $query = $this->prepareQuery("select");
-
+    
     return $this->executeQuery($query, null, "select");
+  }
+
+  public function buscarAcompanantePorNroRegistroMaestro($nroRegistroMaestro)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro";
+    $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select");
   }
 
   public function crearAcompanante(Acompanante $acompanante)

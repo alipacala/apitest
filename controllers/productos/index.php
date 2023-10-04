@@ -13,10 +13,34 @@ class ProductosController extends BaseController
   {
     $params = $this->getParams();
     $grupos = $params['grupos'] ?? null;
+    $nombreProducto = $params['nombre_producto'] ?? null;
+
+    $hospedajes = isset($params['hospedajes']);
 
     $productosDb = new ProductosDb();
 
-    $result = $productosDb->listarProductos($grupos);
+    if ($hospedajes) {
+      $result = $productosDb->listarHospedajes();
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    if ($grupos) {
+      $result = $productosDb->listarProductosPorGrupo($grupos);
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    if ($nombreProducto) {
+      $result = $productosDb->buscarPorNombre($nombreProducto);
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    $result = $productosDb->listarProductos();
 
     $this->sendResponse($result, 200);
   }
@@ -478,15 +502,8 @@ class ProductosController extends BaseController
       return;
     }
 
-    // quitar los campos que no tiene el producto de prevProducto
-    foreach ($prevProducto as $key => $value) {
-      if (!isset($producto->$key)) {
-        unset($prevProducto->$key);
-      }
-    }
-
     // si los datos son iguales, no se hace nada
-    if ($prevProducto == $producto) {
+    if ($this->compararObjetoActualizar($producto, $prevProducto)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
@@ -569,7 +586,7 @@ class ProductosController extends BaseController
           return;
         }
 
-        $sonProductosIguales = $this->compararObjetos($producto, $prevProducto);
+        $sonProductosIguales = $this->compararObjetoActualizar($producto, $prevProducto);
 
         // si los datos son iguales, no se hace nada
         if ($sonProductosIguales && count($insumosAgregados) === 0 && count($idsInsumosEliminados) === 0) {

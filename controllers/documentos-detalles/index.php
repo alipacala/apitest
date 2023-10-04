@@ -14,9 +14,10 @@ class DocumentosDetallesController extends BaseController
     $nroComprobanteVenta = $params['nro_comprobante_venta'] ?? null;
 
     $documentosDetallesDb = new DocumentosDetallesDb();
-    $result = $documentosDetallesDb->listarDocumentosDetalles($nroRegistroMaestro, $nroComprobanteVenta);
 
     if ($nroRegistroMaestro) {
+      $result = $documentosDetallesDb->buscarDocumentosDetallesPorNroRegistroMaestro($nroRegistroMaestro);
+
       $result = array_map(function ($documentoDetalle) {
         $recibosPagoDb = new RecibosPagoDb();
         $reciboPago = $recibosPagoDb->obtenerReciboPago($documentoDetalle->id_recibo_de_pago);
@@ -24,7 +25,19 @@ class DocumentosDetallesController extends BaseController
         $documentoDetalle->fecha_pago = $reciboPago ? date_format(date_create($reciboPago->fecha), "d/m H:i") : "";
         return $documentoDetalle;
       }, $result);
+
+      $this->sendResponse($result, 200);
+      return;
     }
+
+    if ($nroComprobanteVenta) {
+      $result = $documentosDetallesDb->buscarDocumentosDetallesPorNroComprobanteVenta($nroComprobanteVenta);
+
+      $this->sendResponse($result, 200);
+      return;
+    }
+
+    $result = $documentosDetallesDb->listarDocumentosDetalles($nroRegistroMaestro, $nroComprobanteVenta);
 
     $this->sendResponse($result, 200);
   }
@@ -74,7 +87,7 @@ class DocumentosDetallesController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevDocumentoDetalle == $documentoDetalle) {
+    if ($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
@@ -112,7 +125,8 @@ class DocumentosDetallesController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function deleteCustom($id, $action) {
+  public function deleteCustom($id, $action)
+  {
     switch ($action) {
       case "anular":
         $documentosDetallesDb = new DocumentosDetallesDb();

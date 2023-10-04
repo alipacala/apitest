@@ -62,7 +62,7 @@ class PersonasController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevPersona == $persona) {
+    if ($this->compararObjetoActualizar($persona, $prevPersona)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

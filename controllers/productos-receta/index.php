@@ -59,7 +59,7 @@ class ProductosRecetaController extends BaseController
     }
 
     // si los datos son iguales, no se hace nada
-    if ($prevProductoReceta == $productoReceta) {
+    if ($this->compararObjetoActualizar($productoReceta, $prevProductoReceta)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

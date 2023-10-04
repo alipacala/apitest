@@ -15,18 +15,19 @@ class ComprobantesDetallesDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarComprobantesDetalles($idComprobante = null)
+  public function listarComprobantesDetalles()
   {
-    if ($idComprobante) {
-      $query = "SELECT cd.*, dd.fecha_servicio FROM comprobante_detalle AS cd INNER JOIN documento_detalle AS dd ON cd.id_documentos_detalle = dd.id_documentos_detalle WHERE id_comprobante_ventas = :id_comprobante";
-      $params = array(["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT]);
-
-      return $this->executeQuery($query, $params, "select");
-    }
-
     $query = $this->prepareQuery("select");
 
     return $this->executeQuery($query, null, "select");
+  }
+
+  public function buscarComprobantesDetallesPorIdComprobante($idComprobante)
+  {
+    $query = "SELECT cd.*, dd.fecha_servicio FROM comprobante_detalle AS cd INNER JOIN documento_detalle AS dd ON cd.id_documentos_detalle = dd.id_documentos_detalle WHERE id_comprobante_ventas = :id_comprobante";
+    $params = array(["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "select");
   }
 
   public function crearComprobanteDetalle(ComprobanteDetalle $comprobanteDetalle)
