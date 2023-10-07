@@ -15,11 +15,10 @@ class ComprobantesDetallesController extends BaseController
 
     if ($comprobante) {
       $result = $comprobantesDetallesDb->buscarComprobantesDetallesPorIdComprobante($comprobante);
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    $result = $comprobantesDetallesDb->listarComprobantesDetalles();
+    if (count($params) === 0) {
+      $result = $comprobantesDetallesDb->listarComprobantesDetalles();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -40,11 +39,6 @@ try {
   $controller = new ComprobantesDetallesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

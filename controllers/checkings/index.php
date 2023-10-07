@@ -23,35 +23,21 @@ class CheckingsController extends BaseController
 
     $checkingsDb = new CheckingsDb();
 
-    if($conTipoPrecio) {
+    if ($conTipoPrecio) {
       $result = $checkingsDb->buscarPorNroRegistroMaestroYNroHabitacion($nroRegistroMaestro, $nroHabitacion);
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    if($nroRegistroMaestro) {
+    if ($nroRegistroMaestro) {
       $result = $checkingsDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    if($cerrados) {
+    if ($cerrados) {
       $result = $checkingsDb->listarCerrados();
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    if($abiertos) {
+    if ($abiertos) {
       $result = $checkingsDb->listarAbiertos();
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    $result = $checkingsDb->listarCheckings();
+    if (count($params) === 0) {
+      $result = $checkingsDb->listarCheckings();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -70,7 +56,8 @@ class CheckingsController extends BaseController
   public function create()
   {
     $checkingDelBody = $this->getBody();
-    $checking = $this->mapJsonToClass($checkingDelBody, Checking::class);
+    $checking = new Checking();
+    $this->mapJsonToObj($checkingDelBody, $checking);
 
     $checkingsDb = new CheckingsDb();
     $id = $checkingsDb->crearChecking($checking);
@@ -150,7 +137,7 @@ class CheckingsController extends BaseController
         }
 
         $dni = $titularDelBody->nro_documento;
-        $titular = $personasDb->listarPersonas($dni);
+        $titular = $personasDb->buscarPorDni($dni);
 
         $edad = $titularDelBody->edad ?? null;
 
@@ -217,7 +204,9 @@ class CheckingsController extends BaseController
 
       foreach ($acompanantes as $index => $acompanante) {
 
-        $acompanante = $this->mapJsonToClass($acompanante, Acompanante::class);
+        $acompananteTemp = $acompanante;
+        $acompanante = new Acompanante();
+        $this->mapJsonToObj($acompananteTemp, $acompanante);
 
         $camposRequeridos = ["apellidos_y_nombres", "sexo", "edad", "parentesco"];
         $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $acompanante);
@@ -255,7 +244,8 @@ class CheckingsController extends BaseController
   public function update($id)
   {
     $checkingDelBody = $this->getBody();
-    $checking = $this->mapJsonToClass($checkingDelBody, Checking::class);
+    $checking = new Checking();
+    $this->mapJsonToObj($checkingDelBody, $checking);
 
     $checkingsDb = new CheckingsDb();
 
@@ -293,7 +283,7 @@ class CheckingsController extends BaseController
         $checking = $checkingsDb->obtenerChecking($id);
 
         $documentosDetallesDb = new DocumentosDetallesDb();
-        $detalles = $documentosDetallesDb->buscarDocumentosDetallesPorNroRegistroMaestro($checking->nro_registro_maestro);
+        $detalles = $documentosDetallesDb->buscarPorNroRegistroMaestro($checking->nro_registro_maestro);
 
         // filtrar los que tengan nivel_descargo = 1
         $detalles = array_filter($detalles, function ($detalle) {
@@ -373,11 +363,6 @@ try {
   $controller = new CheckingsController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

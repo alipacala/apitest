@@ -22,7 +22,7 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function buscarDocumentosDetallesPorNroRegistroMaestro($nroRegistroMaestro)
+  public function buscarPorNroRegistroMaestro($nroRegistroMaestro)
   {
     $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nivel_descargo != 2";
     $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
@@ -30,7 +30,7 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
-  public function buscarDocumentosDetallesPorNroComprobanteVenta($nroComprobanteVenta)
+  public function buscarPorNroComprobanteVenta($nroComprobanteVenta)
   {
     $query = "SELECT * FROM $this->tableName WHERE nro_comprobante = :nro_comprobante_venta";
     $params = array(["nombre" => "nro_comprobante_venta", "valor" => $nroComprobanteVenta, "tipo" => PDO::PARAM_STR]);
@@ -104,6 +104,14 @@ class DocumentosDetallesDb extends Database
   {
     $query = $this->prepareQuery("delete");
     $params = $this->prepareParams(null, "delete", $id);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+
+  public function eliminarPorNroComprobante($nroComprobante)
+  {
+    $query = "DELETE FROM $this->tableName WHERE nro_comprobante = :nro_comprobante";
+    $params = array(["nombre" => "nro_comprobante", "valor" => $nroComprobante, "tipo" => PDO::PARAM_STR]);
 
     return $this->executeQuery($query, $params, "delete");
   }

@@ -3,7 +3,7 @@ require_once PROJECT_ROOT_PATH . "/entities/ComprobanteVentas.php";
 
 class ReportesDb extends Database
 {
-  public function obtenerReporteDiarioCaja($fecha = null)
+  public function obtenerReporteDiarioCaja($fecha)
   {
     $query = "SELECT
     co.fecha_documento,

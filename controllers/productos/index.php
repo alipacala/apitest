@@ -21,26 +21,16 @@ class ProductosController extends BaseController
 
     if ($hospedajes) {
       $result = $productosDb->listarHospedajes();
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
     if ($grupos) {
-      $result = $productosDb->listarProductosPorGrupo($grupos);
-
-      $this->sendResponse($result, 200);
-      return;
+      $result = $productosDb->listarPorGrupo($grupos);
     }
-
     if ($nombreProducto) {
       $result = $productosDb->buscarPorNombre($nombreProducto);
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    $result = $productosDb->listarProductos();
+    if (count($params) === 0) {
+      $result = $productosDb->listarProductos();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -90,7 +80,8 @@ class ProductosController extends BaseController
   public function create()
   {
     $productoDelBody = $this->getBody();
-    $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+    $producto = new Producto();
+    $this->mapJsonToObj($productoDelBody, $producto);
 
     $productosDb = new ProductosDb();
     $id = $productosDb->crearProducto($producto);
@@ -110,7 +101,8 @@ class ProductosController extends BaseController
       case "insumo-terminado":
 
         $productoDelBody = $this->getBody();
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         $producto->tipo = "PRD";
         $producto->activo = 1;
@@ -157,7 +149,8 @@ class ProductosController extends BaseController
         $insumos = $productoDelBody->insumos;
         unset($productoDelBody->insumos);
 
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         $producto->tipo = "RST";
         $producto->id_tipo_de_producto = 12;
@@ -182,7 +175,9 @@ class ProductosController extends BaseController
         $camposRequeridos = ["id_producto_insumo", "cantidad", "tipo_de_unidad"];
 
         foreach ($insumos as $insumo) {
-          $insumo = $this->mapJsonToClass($insumo, ProductoReceta::class);
+          $insumoTemp = $insumo;
+          $insumo = new ProductoReceta();
+          $this->mapJsonToObj($insumoTemp, $insumo);
           $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
           if (count($camposFaltantes) > 0) {
@@ -212,7 +207,10 @@ class ProductosController extends BaseController
           $insumosCreados = [];
 
           foreach ($insumos as $insumo) {
-            $insumo = $this->mapJsonToClass($insumo, ProductoReceta::class);
+            $insumoTemp = $insumo;
+            $insumo = new ProductoReceta();
+            $this->mapJsonToObj($insumoTemp, $insumo);
+
             $insumo->id_producto = $idReceta;
             $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
 
@@ -249,7 +247,8 @@ class ProductosController extends BaseController
       case "hospedaje":
 
         $productoDelBody = $this->getBody();
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         $producto->tipo = "SVH";
         $producto->id_tipo_de_producto = 12; // id de servicio
@@ -297,7 +296,8 @@ class ProductosController extends BaseController
         $insumos = $productoDelBody->insumos;
         unset($productoDelBody->insumos);
 
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         $producto->tipo = "SRV";
         $producto->id_tipo_de_producto = 12; // TODO: cambiar al id de servicio
@@ -321,7 +321,9 @@ class ProductosController extends BaseController
         // comprobar que los insumos tengan los datos necesarios
         $camposRequeridos = ["id_producto_insumo", "cantidad", "tipo_de_unidad"];
         foreach ($insumos as $insumo) {
-          $insumo = $this->mapJsonToClass($insumo, ProductoReceta::class);
+          $insumoTemp = $insumo;
+          $insumo = new ProductoReceta();
+          $this->mapJsonToObj($insumoTemp, $insumo);
           $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
           if (count($camposFaltantes) > 0) {
@@ -351,7 +353,10 @@ class ProductosController extends BaseController
           $insumosCreados = [];
 
           foreach ($insumos as $insumo) {
-            $insumo = $this->mapJsonToClass($insumo, ProductoReceta::class);
+            $insumoTemp = $insumo;
+            $insumo = new ProductoReceta();
+            $this->mapJsonToObj($insumoTemp, $insumo);
+
             $insumo->id_producto = $idServicio;
             $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
 
@@ -392,7 +397,8 @@ class ProductosController extends BaseController
         $insumos = $productoDelBody->insumos;
         unset($productoDelBody->insumos);
 
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         $producto->tipo = "PAQ";
         $producto->id_tipo_de_producto = 12; // TODO: cambiar al id de paquete
@@ -416,7 +422,10 @@ class ProductosController extends BaseController
         // comprobar que los insumos tengan los datos necesarios
         $camposRequeridos = ["id_producto_producto", "cantidad", "tipo_de_unidad"];
         foreach ($insumos as $insumo) {
-          $insumo = $this->mapJsonToClass($insumo, ProductoPaquete::class);
+          $insumoTemp = $insumo;
+          $insumo = new ProductoPaquete();
+          $this->mapJsonToObj($insumoTemp, $insumo);
+
           $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
           if (count($camposFaltantes) > 0) {
@@ -446,7 +455,10 @@ class ProductosController extends BaseController
           $insumosCreados = [];
 
           foreach ($insumos as $insumo) {
-            $insumo = $this->mapJsonToClass($insumo, ProductoPaquete::class);
+            $insumoTemp = $insumo;
+            $insumo = new ProductoPaquete();
+            $this->mapJsonToObj($insumoTemp, $insumo);
+
             $insumo->id_producto = $idPaquete;
             $idInsumo = $productosPaqueteDb->crearProductoPaquete($insumo);
 
@@ -489,7 +501,8 @@ class ProductosController extends BaseController
   public function update($id)
   {
     $productoDelBody = $this->getBody();
-    $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+    $producto = new Producto();
+    $this->mapJsonToObj($productoDelBody, $producto);
 
     $productosDb = new ProductosDb();
 
@@ -524,7 +537,8 @@ class ProductosController extends BaseController
     switch ($action) {
       case "costos-precios":
         $productoDelBody = $this->getBody();
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         // comprobar que el producto tenga los datos necesarios
         $camposRequeridos = ["costo_mano_de_obra", "costo_adicional", "porcentaje_margen", "precio_venta_01", "precio_venta_02", "precio_venta_03"];
@@ -574,7 +588,8 @@ class ProductosController extends BaseController
         $idsInsumosEliminados = $productoDelBody->ids_insumos_eliminados;
         unset($productoDelBody->ids_insumos_eliminados);
 
-        $producto = $this->mapJsonToClass($productoDelBody, Producto::class);
+        $producto = new Producto();
+        $this->mapJsonToObj($productoDelBody, $producto);
 
         $productosDb = new ProductosDb();
         $prevProducto = $productosDb->obtenerProducto($id);
@@ -597,7 +612,10 @@ class ProductosController extends BaseController
         // comprobar que los insumos tengan los datos necesarios
         $camposRequeridos = [$conInsumos ? 'id_producto_insumo' : 'id_producto_producto', "cantidad", "tipo_de_unidad"];
         foreach ($insumosAgregados as $insumo) {
-          $insumo = $this->mapJsonToClass($insumo, $conInsumos ? ProductoReceta::class : ProductoPaquete::class);
+          $insumoTemp = $insumo;
+          $insumo = $conInsumos ? new ProductoReceta() : new ProductoPaquete();
+          $this->mapJsonToObj($insumoTemp, $insumo);
+
           $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
           if (count($camposFaltantes) > 0) {
@@ -614,7 +632,10 @@ class ProductosController extends BaseController
         $insumosCreados = [];
 
         foreach ($insumosAgregados as $insumo) {
-          $insumo = $this->mapJsonToClass($insumo, $conInsumos ? ProductoReceta::class : ProductoPaquete::class);
+          $insumoTemp = $insumo;
+          $insumo = $conInsumos ? new ProductoReceta() : new ProductoPaquete();
+          $this->mapJsonToObj($insumoTemp, $insumo);
+
           $insumo->id_producto = $id;
 
           $idInsumo = $conInsumos ? $productosRecetaDb->crearProductoReceta($insumo) : $productosPaqueteDb->crearProductoPaquete($insumo);
@@ -681,11 +702,6 @@ try {
   $controller = new ProductosController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

@@ -28,7 +28,8 @@ class GruposModuloController extends BaseController
   public function create()
   {
     $grupoModuloDelBody = $this->getBody();
-    $grupoModulo = $this->mapJsonToClass($grupoModuloDelBody, GrupoModulo::class);
+    $grupoModulo = new GrupoModulo();
+    $this->mapJsonToObj($grupoModuloDelBody, $grupoModulo);
 
     $gruposModuloDb = new GruposModuloDb();
     $id = $gruposModuloDb->crearGrupoModulo($grupoModulo);
@@ -45,7 +46,8 @@ class GruposModuloController extends BaseController
   public function update($id)
   {
     $grupoModuloDelBody = $this->getBody();
-    $grupoModulo = $this->mapJsonToClass($grupoModuloDelBody, GrupoModulo::class);
+    $grupoModulo = new GrupoModulo();
+    $this->mapJsonToObj($grupoModuloDelBody, $grupoModulo);
 
     $gruposModuloDb = new GruposModuloDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new GruposModuloController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

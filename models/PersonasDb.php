@@ -15,18 +15,19 @@ class PersonasDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarPersonas($dni = null)
+  public function listarPersonas()
   {
-    if ($dni) {
-      $query = "SELECT * FROM $this->tableName WHERE nro_documento = :nro_documento";
-      $params = array(["nombre" => "nro_documento", "valor" => $dni, "tipo" => PDO::PARAM_STR]);
-
-      return $this->executeQuery($query, $params, "select-one");
-    }
-
     $query = $this->prepareQuery("select");
 
     return $this->executeQuery($query, null, "select");
+  }
+
+  public function buscarPorDni($dni)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_documento = :nro_documento";
+    $params = array(["nombre" => "nro_documento", "valor" => $dni, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select-one");
   }
 
   public function crearPersona(Persona $persona)

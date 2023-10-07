@@ -28,7 +28,8 @@ class UsuariosModulosController extends BaseController
   public function create()
   {
     $usuarioModuloDelBody = $this->getBody();
-    $usuarioModulo = $this->mapJsonToClass($usuarioModuloDelBody, UsuarioModulo::class);
+    $usuarioModulo = new UsuarioModulo();
+    $this->mapJsonToObj($usuarioModuloDelBody, $usuarioModulo);
 
     $usuarioModulo->apertura_fecha_hora = date("Y-m-d H:i:s");
     $usuarioModulo->cese_fecha_hora = date("Y-m-d H:i:s"); // TODO: está bien esto?
@@ -48,7 +49,8 @@ class UsuariosModulosController extends BaseController
   public function update($id)
   {
     $usuarioModuloDelBody = $this->getBody();
-    $usuarioModulo = $this->mapJsonToClass($usuarioModuloDelBody, UsuarioModulo::class);
+    $usuarioModulo = new UsuarioModulo();
+    $this->mapJsonToObj($usuarioModuloDelBody, $usuarioModulo);
 
     $usuariosModulosDb = new UsuariosModulosDb();
 
@@ -105,11 +107,6 @@ try {
   $controller = new UsuariosModulosController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

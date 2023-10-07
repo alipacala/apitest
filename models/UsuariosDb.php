@@ -42,6 +42,16 @@ class UsuariosDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function listarActivosConPersonas()
+  {
+    $query = "SELECT u.id_usuario, p.apellidos, p.nombres
+    FROM usuarios u
+    INNER JOIN personanaturaljuridica p ON p.id_persona = u.id_persona
+    WHERE u.activo = 1";
+
+    return $this->executeQuery($query, null, "select");
+  }
+
   public function loginAdministrador($usuario, $clave)
   {
     $query = "SELECT COUNT(*) AS logueado

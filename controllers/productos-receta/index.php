@@ -28,7 +28,8 @@ class ProductosRecetaController extends BaseController
   public function create()
   {
     $productoRecetaDelBody = $this->getBody();
-    $productoReceta = $this->mapJsonToClass($productoRecetaDelBody, ProductoReceta::class);
+    $productoReceta = new ProductoReceta();
+    $this->mapJsonToObj($productoRecetaDelBody, $productoReceta);
 
     $productosRecetaDb = new ProductosRecetaDb();
     $id = $productosRecetaDb->crearProductoReceta($productoReceta);
@@ -45,7 +46,8 @@ class ProductosRecetaController extends BaseController
   public function update($id)
   {
     $productoRecetaDelBody = $this->getBody();
-    $productoReceta = $this->mapJsonToClass($productoRecetaDelBody, ProductoReceta::class);
+    $productoReceta = new ProductoReceta();
+    $this->mapJsonToObj($productoRecetaDelBody, $productoReceta);
 
     $productosRecetaDb = new ProductosRecetaDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new ProductosRecetaController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

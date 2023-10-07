@@ -15,25 +15,27 @@ class RoomingDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarRooming($nroRegistroMaestro = null, $idCheckin = null)
+  public function listarRooming()
   {
-    if ($nroRegistroMaestro) {
-      $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro ORDER BY id_checkin DESC LIMIT 1";
-      $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
-
-      return $this->executeQuery($query, $params, "select-one");
-    }
-
-    if ($idCheckin) {
-      $query = "SELECT * FROM $this->tableName WHERE id_checkin = :id_checkin ORDER BY id_rooming DESC LIMIT 1";
-      $params = array(["nombre" => "id_checkin", "valor" => $idCheckin, "tipo" => PDO::PARAM_INT]);
-
-      return $this->executeQuery($query, $params, "select-one");
-    }
-
     $query = $this->prepareQuery("select");
 
     return $this->executeQuery($query, null, "select");
+  }
+
+  public function buscarPorNroRegistroMaestro($nroRegistroMaestro)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro ORDER BY id_checkin DESC LIMIT 1";
+    $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function buscarPorIdCheckin($idCheckin)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE id_checkin = :id_checkin ORDER BY id_rooming DESC LIMIT 1";
+    $params = array(["nombre" => "id_checkin", "valor" => $idCheckin, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "select-one");
   }
 
   public function listarRoomingConDatos1()

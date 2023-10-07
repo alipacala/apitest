@@ -28,7 +28,8 @@ class TiposDeUsuarioController extends BaseController
   public function create()
   {
     $tipoDeUsuarioDelBody = $this->getBody();
-    $tipoDeUsuario = $this->mapJsonToClass($tipoDeUsuarioDelBody, TipoDeUsuario::class);
+    $tipoDeUsuario = new TipoDeUsuario();
+    $this->mapJsonToObj($tipoDeUsuarioDelBody, $tipoDeUsuario);
 
     $tiposDeUsuarioDb = new TiposDeUsuarioDb();
     $id = $tiposDeUsuarioDb->crearTipoDeUsuario($tipoDeUsuario);
@@ -45,7 +46,8 @@ class TiposDeUsuarioController extends BaseController
   public function update($id)
   {
     $tipoDeUsuarioDelBody = $this->getBody();
-    $tipoDeUsuario = $this->mapJsonToClass($tipoDeUsuarioDelBody, TipoDeUsuario::class);
+    $tipoDeUsuario = new TipoDeUsuario();
+    $this->mapJsonToObj($tipoDeUsuarioDelBody, $tipoDeUsuario);
 
     $tiposDeUsuarioDb = new TiposDeUsuarioDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new TiposDeUsuarioController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

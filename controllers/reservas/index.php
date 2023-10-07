@@ -15,11 +15,10 @@ class ReservasController extends BaseController
 
     if ($conCantidadHabitaciones) {
       $result = $reservasDb->listarConCantidadHabitaciones();
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    $result = $reservasDb->listarReservas();
+    if (count($params) === 0) {
+      $result = $reservasDb->listarReservas();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -38,7 +37,8 @@ class ReservasController extends BaseController
   public function create()
   {
     $reservaDelBody = $this->getBody();
-    $reserva = $this->mapJsonToClass($reservaDelBody, Reserva::class);
+    $reserva = new Reserva();
+    $this->mapJsonToObj($reservaDelBody, $reserva);
 
     // TODO: aqui me quede
 
@@ -57,7 +57,8 @@ class ReservasController extends BaseController
   public function update($id)
   {
     $reservaDelBody = $this->getBody();
-    $reserva = $this->mapJsonToClass($reservaDelBody, Reserva::class);
+    $reserva = new Reserva();
+    $this->mapJsonToObj($reservaDelBody, $reserva);
 
     $reservasDb = new ReservasDb();
 
@@ -114,11 +115,6 @@ try {
   $controller = new ReservasController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

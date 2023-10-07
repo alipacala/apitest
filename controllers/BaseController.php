@@ -145,20 +145,17 @@ class BaseController
   }
 
   /**
-   * Mapea un objeto JSON a una clase. Los nombres de las propiedades del objeto JSON deben coincidir con los de la clase.
-   * @param $json
-   * @param $class
-   * @return mixed
+   * Mapea un objeto JSON a un objeto. Los nombres de las propiedades del objeto JSON deben coincidir con los de la clase.
+   * @param $json Objeto JSON
+   * @param $obj Objeto a mapear
    */
-  public function mapJsonToClass($json, $class)
+  public function mapJsonToObj($json, &$obj)
   {
-    $obj = new $class();
     foreach ($json as $key => $value) {
       if (property_exists($obj, $key)) {
         $obj->$key = $value;
       }
     }
-    return $obj;
   }
 
   /**
@@ -186,20 +183,35 @@ class BaseController
    */
   function compararObjetoActualizar($objToUpdate, $prevObj)
   {
-      $arrayToUpdate = (array) $objToUpdate;
-      $arrayPrev = (array) $prevObj;
-  
-      if (count($arrayToUpdate) < 1) {
-          return true;
-      }
-  
-      foreach ($arrayToUpdate as $campo => $valor) {
-          if (array_key_exists($campo, $arrayPrev) && $arrayPrev[$campo] != $valor) {
-              return false;
-          }
-      }
-  
+    $arrayToUpdate = (array) $objToUpdate;
+    $arrayPrev = (array) $prevObj;
+
+    if (count($arrayToUpdate) < 1) {
       return true;
+    }
+
+    foreach ($arrayToUpdate as $campo => $valor) {
+      if (array_key_exists($campo, $arrayPrev) && $arrayPrev[$campo] != $valor) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Devuelve un array con los datos del error.
+   * @param $e Excepción
+   * @return array
+   */
+  function errorResponse($e)
+  {
+    return [
+      "mensaje" => $e->getMessage(),
+      "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
+      "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
+      "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
+    ];
   }
 }
 ?>

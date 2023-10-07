@@ -28,7 +28,8 @@ class ImpresorasController extends BaseController
   public function create()
   {
     $impresoraDelBody = $this->getBody();
-    $impresora = $this->mapJsonToClass($impresoraDelBody, Impresora::class);
+    $impresora = new Impresora();
+    $this->mapJsonToObj($impresoraDelBody, $impresora);
 
     $impresorasDb = new ImpresorasDb();
     $id = $impresorasDb->crearImpresora($impresora);
@@ -45,7 +46,8 @@ class ImpresorasController extends BaseController
   public function update($id)
   {
     $impresoraDelBody = $this->getBody();
-    $impresora = $this->mapJsonToClass($impresoraDelBody, Impresora::class);
+    $impresora = new Impresora();
+    $this->mapJsonToObj($impresoraDelBody, $impresora);
 
     $impresorasDb = new ImpresorasDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new ImpresorasController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

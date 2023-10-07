@@ -28,7 +28,8 @@ class TiposDeProductosController extends BaseController
   public function create()
   {
     $tipoDeProductosDelBody = $this->getBody();
-    $tipoDeProductos = $this->mapJsonToClass($tipoDeProductosDelBody, TipoDeProductos::class);
+    $tipoDeProductos = new TipoDeProductos();
+    $this->mapJsonToObj($tipoDeProductosDelBody, $tipoDeProductos);
 
     $tiposDeProductosDb = new TiposDeProductosDb();
     $id = $tiposDeProductosDb->crearTipoDeProductos($tipoDeProductos);
@@ -45,7 +46,8 @@ class TiposDeProductosController extends BaseController
   public function update($id)
   {
     $tipoDeProductosDelBody = $this->getBody();
-    $tipoDeProductos = $this->mapJsonToClass($tipoDeProductosDelBody, TipoDeProductos::class);
+    $tipoDeProductos = new TipoDeProductos();
+    $this->mapJsonToObj($tipoDeProductosDelBody, $tipoDeProductos);
 
     $tiposDeProductosDb = new TiposDeProductosDb();
 
@@ -60,7 +62,7 @@ class TiposDeProductosController extends BaseController
 
     // si los datos son iguales, no se hace nada
     if ($this->compararObjetoActualizar($tipoDeProductos, $prevTipoDeProductos)) {
-      $this->sendResponse(["mensaje" => "No se han realizado cambios"], 200);
+      $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
 
@@ -109,11 +111,6 @@ try {
   $controller = new TiposDeProductosController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

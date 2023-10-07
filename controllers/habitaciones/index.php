@@ -14,13 +14,11 @@ class HabitacionesController extends BaseController
     $habitacionesDb = new HabitacionesDb();
 
     if ($deHotelArenasSpa) {
-      $result = $habitacionesDb->listarHabitacionesDeHotelArenasSpa();
-      $this->sendResponse($result, 200);
-      
-      return;
+      $result = $habitacionesDb->listarDeHotelArenasSpa();
     }
-
-    $result = $habitacionesDb->listarHabitaciones();
+    if (count($params) === 0) {
+      $result = $habitacionesDb->listarHabitaciones();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -39,7 +37,8 @@ class HabitacionesController extends BaseController
   public function create()
   {
     $habitacionDelBody = $this->getBody();
-    $habitacion = $this->mapJsonToClass($habitacionDelBody, Habitacion::class);
+    $habitacion = new Habitacion();
+    $this->mapJsonToObj($habitacionDelBody, $habitacion);
 
     $habitacionesDb = new HabitacionesDb();
     $id = $habitacionesDb->crearHabitacion($habitacion);
@@ -56,7 +55,8 @@ class HabitacionesController extends BaseController
   public function update($id)
   {
     $habitacionDelBody = $this->getBody();
-    $habitacion = $this->mapJsonToClass($habitacionDelBody, Habitacion::class);
+    $habitacion = new Habitacion();
+    $this->mapJsonToObj($habitacionDelBody, $habitacion);
 
     $habitacionesDb = new HabitacionesDb();
 
@@ -113,11 +113,6 @@ try {
   $controller = new HabitacionesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

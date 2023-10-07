@@ -22,7 +22,7 @@ class ProductosDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function listarProductosPorGrupo($grupos)
+  public function listarPorGrupo($grupos)
   {
     $grupos = explode(",", $grupos);
 

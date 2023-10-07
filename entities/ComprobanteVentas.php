@@ -20,6 +20,15 @@ class ComprobanteVentas
   public ?float $monto_inicial;
   public ?string $fecha_de_pago_credito;
   public ?float $monto_credito;
+  public ?float $por_pagar;
+  public ?string $nro_orden_pedido;
+  public ?int $id_usuario_responsable ;
+  public ?int $id_tipo_de_gasto ;
+  public ?float $gran_total;
+  public ?float $afecto_percepcion;
+  public ?float $porcentaje_percepcion;
+  public ?float $valor_percepcion;
+  public ?int $estado;
   public ?int $id_usuario;
   public ?string $fecha_hora_registro;
 }

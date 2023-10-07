@@ -28,7 +28,8 @@ class UnidadesDeNegocioController extends BaseController
   public function create()
   {
     $unidadDeNegocioDelBody = $this->getBody();
-    $unidadDeNegocio = $this->mapJsonToClass($unidadDeNegocioDelBody, UnidadDeNegocio::class);
+    $unidadDeNegocio = new UnidadDeNegocio();
+    $this->mapJsonToObj($unidadDeNegocioDelBody, $unidadDeNegocio);
 
     $unidadesDeNegocioDb = new UnidadesDeNegocioDb();
     $id = $unidadesDeNegocioDb->crearUnidadDeNegocio($unidadDeNegocio);
@@ -45,7 +46,8 @@ class UnidadesDeNegocioController extends BaseController
   public function update($id)
   {
     $unidadDeNegocioDelBody = $this->getBody();
-    $unidadDeNegocio = $this->mapJsonToClass($unidadDeNegocioDelBody, UnidadDeNegocio::class);
+    $unidadDeNegocio = new UnidadDeNegocio();
+    $this->mapJsonToObj($unidadDeNegocioDelBody, $unidadDeNegocio);
 
     $unidadesDeNegocioDb = new UnidadesDeNegocioDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new UnidadesDeNegocioController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

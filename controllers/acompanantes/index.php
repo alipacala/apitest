@@ -14,12 +14,11 @@ class AcompanantesController extends BaseController
     $acompanantesDb = new AcompanantesDb();
 
     if ($nroRegistroMaestro) {
-      $result = $acompanantesDb->buscarAcompanantePorNroRegistroMaestro($nroRegistroMaestro);
-      $this->sendResponse($result, 200);
-      return;
+      $result = $acompanantesDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
     }
-
-    $result = $acompanantesDb->listarAcompanantes();
+    if (count($params) === 0) {
+      $result = $acompanantesDb->listarAcompanantes();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -38,7 +37,8 @@ class AcompanantesController extends BaseController
   public function create()
   {
     $acompananteDelBody = $this->getBody();
-    $acompanante = $this->mapJsonToClass($acompananteDelBody, Acompanante::class);
+    $acompanante = new Acompanante();
+    $this->mapJsonToObj($acompananteDelBody, $acompanante);
 
     $acompanantesDb = new AcompanantesDb();
     $id = $acompanantesDb->crearAcompanante($acompanante);
@@ -55,7 +55,8 @@ class AcompanantesController extends BaseController
   public function update($id)
   {
     $acompananteDelBody = $this->getBody();
-    $acompanante = $this->mapJsonToClass($acompananteDelBody, Acompanante::class);
+    $acompanante = new Acompanante();
+    $this->mapJsonToObj($acompananteDelBody, $acompanante);
 
     $acompanantesDb = new AcompanantesDb();
 
@@ -112,11 +113,6 @@ try {
   $controller = new AcompanantesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

@@ -33,7 +33,8 @@ class DocumentosMovimientoController extends BaseController
   public function create()
   {
     $documentoMovimientoDelBody = $this->getBody();
-    $documentoMovimiento = $this->mapJsonToClass($documentoMovimientoDelBody, DocumentoMovimiento::class);
+    $documentoMovimiento = new DocumentoMovimiento();
+    $this->mapJsonToObj($documentoMovimientoDelBody, $documentoMovimiento);
 
     $documentosMovimientosDb = new DocumentosMovimientosDb();
     $id = $documentosMovimientosDb->crearDocumentoMovimiento($documentoMovimiento);
@@ -51,7 +52,8 @@ class DocumentosMovimientoController extends BaseController
   {
     if ($action == 'detalles') {
       $documentoMovimientoDelBody = $this->getBody();
-      $documentoMovimiento = $this->mapJsonToClass($documentoMovimientoDelBody, DocumentoMovimiento::class);
+      $documentoMovimiento = new DocumentoMovimiento();
+      $this->mapJsonToObj($documentoMovimientoDelBody, $documentoMovimiento);
 
       $documentosMovimientosDb = new DocumentosMovimientosDb();
       $configDb = new ConfigDb();
@@ -111,7 +113,9 @@ class DocumentosMovimientoController extends BaseController
       $idDocumento = $documentosMovimientosDb->crearDocumentoMovimiento($documentoMovimiento);
 
       foreach ($detalles as $detalle) {
-        $detalle = $this->mapJsonToClass($detalle, DocumentoDetalle::class);
+        $detalleTemp = $detalle;
+        $detalle = new DocumentoDetalle();
+        $this->mapJsonToObj($detalleTemp, $detalle);
         $producto = $productosDb->obtenerProducto($detalle->id_producto);
 
         if (!$producto) {
@@ -272,43 +276,6 @@ class DocumentosMovimientoController extends BaseController
         }
       }
 
-      // crear el documento movimiento
-      // $idDocumento = $documentosMovimientosDb->crearDocumentoMovimiento($documentoMovimiento);
-
-      /* // crear los detalles del documento movimiento con nivel_descargo 1
-      foreach ($detallesDescargo1 as $detalle) {
-        $detalle->id_documentos_detalle = $idDocumento;
-        
-        $documentosDetallesDb = new DocumentosDetallesDb();
-        $idDetalle = $documentosDetallesDb->crearDocumentoDetalle($detalle);
-        $detalle = $documentosDetallesDb->obtenerDocumentoDetalle($idDetalle);
-
-        $detallesCreados[] = $detalle;
-      }
-
-      // crear los detalles del documento movimiento con nivel_descargo 3
-      foreach ($detallesDescargo3 as $detalle) {
-        $detalle->id_documento_movimiento = $idDocumento;
-        
-        $documentosDetallesDb = new DocumentosDetallesDb();
-        $idDetalle = $documentosDetallesDb->crearDocumentoDetalle($detalle);
-        $detalle = $documentosDetallesDb->obtenerDocumentoDetalle($idDetalle);
-
-        $detallesCreados[] = $detalle;
-      }
-
-      // crear los detalles del documento movimiento con nivel_descargo 2
-      foreach ($detallesDescargo2 as $detalle) {
-        $detalle->id_documento_movimiento = $idDocumento;
-        //$detalle->id_item = $detallesCreados[array_search($detalle->id_item, array_column($detallesCreados, 'id_documentos_detalle'))]->id_documentos_detalle;
-
-        $documentosDetallesDb = new DocumentosDetallesDb();
-        $idDetalle = $documentosDetallesDb->crearDocumentoDetalle($detalle);
-        $detalle = $documentosDetallesDb->obtenerDocumentoDetalle($idDetalle);
-
-        $detallesCreados[] = $detalle;
-      } */
-
       $detallesCreados = array_merge($detallesDescargo1, $detallesDescargo2, $detallesDescargo3);
 
       $documentoMovimientoYDetallesCreados = $idDocumento && count($detallesCreados) >= count($detallesDescargo1);
@@ -338,7 +305,8 @@ class DocumentosMovimientoController extends BaseController
   public function update($id)
   {
     $documentoMovimientoDelBody = $this->getBody();
-    $documentoMovimiento = $this->mapJsonToClass($documentoMovimientoDelBody, DocumentoMovimiento::class);
+    $documentoMovimiento = new DocumentoMovimiento();
+    $this->mapJsonToObj($documentoMovimientoDelBody, $documentoMovimiento);
 
     $documentosMovimientosDb = new DocumentosMovimientosDb();
 
@@ -395,11 +363,6 @@ try {
   $controller = new DocumentosMovimientoController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

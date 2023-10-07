@@ -36,7 +36,6 @@ class ConfigController extends BaseController
   {
     if ($action == 'correlativo') {
       $configDb = new ConfigDb();
-
       $prevConfig = $configDb->obtenerConfig($id);
 
       // comprobar que el config exista
@@ -63,11 +62,6 @@ try {
   $controller = new ConfigController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

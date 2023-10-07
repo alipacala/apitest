@@ -16,7 +16,7 @@ class DocumentosDetallesController extends BaseController
     $documentosDetallesDb = new DocumentosDetallesDb();
 
     if ($nroRegistroMaestro) {
-      $result = $documentosDetallesDb->buscarDocumentosDetallesPorNroRegistroMaestro($nroRegistroMaestro);
+      $result = $documentosDetallesDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
 
       $result = array_map(function ($documentoDetalle) {
         $recibosPagoDb = new RecibosPagoDb();
@@ -25,19 +25,13 @@ class DocumentosDetallesController extends BaseController
         $documentoDetalle->fecha_pago = $reciboPago ? date_format(date_create($reciboPago->fecha), "d/m H:i") : "";
         return $documentoDetalle;
       }, $result);
-
-      $this->sendResponse($result, 200);
-      return;
     }
-
     if ($nroComprobanteVenta) {
-      $result = $documentosDetallesDb->buscarDocumentosDetallesPorNroComprobanteVenta($nroComprobanteVenta);
-
-      $this->sendResponse($result, 200);
-      return;
+      $result = $documentosDetallesDb->buscarPorNroComprobanteVenta($nroComprobanteVenta);
     }
-
-    $result = $documentosDetallesDb->listarDocumentosDetalles($nroRegistroMaestro, $nroComprobanteVenta);
+    if (count($params) === 0) {
+      $result = $documentosDetallesDb->listarDocumentosDetalles();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -56,7 +50,8 @@ class DocumentosDetallesController extends BaseController
   public function create()
   {
     $documentoDetalleDelBody = $this->getBody();
-    $documentoDetalle = $this->mapJsonToClass($documentoDetalleDelBody, DocumentoDetalle::class);
+    $documentoDetalle = new DocumentoDetalle();
+    $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
 
     $documentosDetallesDb = new DocumentosDetallesDb();
     $id = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
@@ -73,7 +68,8 @@ class DocumentosDetallesController extends BaseController
   public function update($id)
   {
     $documentoDetalleDelBody = $this->getBody();
-    $documentoDetalle = $this->mapJsonToClass($documentoDetalleDelBody, DocumentoDetalle::class);
+    $documentoDetalle = new DocumentoDetalle();
+    $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
 
     $documentosDetallesDb = new DocumentosDetallesDb();
 
@@ -155,11 +151,6 @@ try {
   $controller = new DocumentosDetallesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

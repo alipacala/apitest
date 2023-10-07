@@ -28,7 +28,8 @@ class CentralesDeCostosController extends BaseController
   public function create()
   {
     $centralDeCostosDelBody = $this->getBody();
-    $centralDeCostos = $this->mapJsonToClass($centralDeCostosDelBody, CentralDeCostos::class);
+    $centralDeCostos = new CentralDeCostos();
+    $this->mapJsonToObj($centralDeCostosDelBody, $centralDeCostos);
 
     $centralesDeCostosDb = new CentralesDeCostosDb();
     $id = $centralesDeCostosDb->crearCentralDeCostos($centralDeCostos);
@@ -45,7 +46,8 @@ class CentralesDeCostosController extends BaseController
   public function update($id)
   {
     $centralDeCostosDelBody = $this->getBody();
-    $centralDeCostos = $this->mapJsonToClass($centralDeCostosDelBody, CentralDeCostos::class);
+    $centralDeCostos = new CentralDeCostos();
+    $this->mapJsonToObj($centralDeCostosDelBody, $centralDeCostos);
 
     $centralesDeCostosDb = new CentralesDeCostosDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new CentralesDeCostosController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

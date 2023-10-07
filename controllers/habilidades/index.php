@@ -28,7 +28,8 @@ class HabilidadesProfesionalesController extends BaseController
   public function create()
   {
     $habilidadProfesionalDelBody = $this->getBody();
-    $habilidadProfesional = $this->mapJsonToClass($habilidadProfesionalDelBody, HabilidadProfesional::class);
+    $habilidadProfesional = new HabilidadProfesional();
+    $this->mapJsonToObj($habilidadProfesionalDelBody, $habilidadProfesional);
 
     $habilidadesProfesionalesDb = new HabilidadesProfesionalesDb();
     $id = $habilidadesProfesionalesDb->crearHabilidadProfesional($habilidadProfesional);
@@ -45,7 +46,8 @@ class HabilidadesProfesionalesController extends BaseController
   public function update($id)
   {
     $habilidadProfesionalDelBody = $this->getBody();
-    $habilidadProfesional = $this->mapJsonToClass($habilidadProfesionalDelBody, HabilidadProfesional::class);
+    $habilidadProfesional = new HabilidadProfesional();
+    $this->mapJsonToObj($habilidadProfesionalDelBody, $habilidadProfesional);
 
     $habilidadesProfesionalesDb = new HabilidadesProfesionalesDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new HabilidadesProfesionalesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

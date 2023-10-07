@@ -10,17 +10,20 @@ class UsuariosController extends BaseController
   public function get()
   {
     $params = $this->getParams();
-    $conPersonas = boolval(($params['con-personas'] ?? null) === "");
+    $conPersonas = isset($params['con-personas']);
+    $activos = isset($params['activos']);
 
     $usuariosDb = new UsuariosDb();
 
     if ($conPersonas) {
       $result = $usuariosDb->listarConPersonas();
-      $this->sendResponse($result, 200);
-      return;
     }
-
-    $result = $usuariosDb->listarUsuarios();
+    if ($activos) {
+      $result = $usuariosDb->listarActivosConPersonas();
+    }
+    if (count($params) === 0) {
+      $result = $usuariosDb->listarUsuarios();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -43,10 +46,11 @@ class UsuariosController extends BaseController
     $permisos = $usuarioDelBody["permisos"];
     unset($usuarioDelBody["permisos"]);
 
-    $usuario = $this->mapJsonToClass($usuarioDelBody, Usuario::class);
+    $usuario = new Usuario();
+    $this->mapJsonToObj($usuarioDelBody, $usuario);
 
     $usuariosDb = new UsuariosDb();
-    
+
     $idUsuario = null;
     try {
       $usuariosDb->empezarTransaccion();
@@ -56,7 +60,8 @@ class UsuariosController extends BaseController
         $permiso["id_usuario"] = $idUsuario;
         $permiso["cese_fecha_hora"] = null;
 
-        $usuarioModulo = $this->mapJsonToClass($permiso, UsuarioModulo::class);
+        $usuarioModulo = new UsuarioModulo();
+        $this->mapJsonToObj($permiso, $usuarioModulo);
         $usuariosModulosDb = new UsuariosModulosDb();
         $permiso->id_usuario_modulo = $usuariosModulosDb->crearUsuarioModulo($usuarioModulo);
       }
@@ -80,7 +85,8 @@ class UsuariosController extends BaseController
   public function update($id)
   {
     $usuarioDelBody = $this->getBody();
-    $usuario = $this->mapJsonToClass($usuarioDelBody, Usuario::class);
+    $usuario = new Usuario();
+    $this->mapJsonToObj($usuarioDelBody, $usuario);
 
     $usuariosDb = new UsuariosDb();
 
@@ -115,11 +121,6 @@ try {
   $controller = new UsuariosController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

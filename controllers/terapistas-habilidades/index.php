@@ -30,7 +30,8 @@ class TerapistasHabilidadesController extends BaseController
   public function create()
   {
     $terapistaHabilidadDelBody = $this->getBody();
-    $terapistaHabilidad = $this->mapJsonToClass($terapistaHabilidadDelBody, TerapistaHabilidad::class);
+    $terapistaHabilidad = new TerapistaHabilidad();
+    $this->mapJsonToObj($terapistaHabilidadDelBody, $terapistaHabilidad);
 
     $terapistasHabilidadesDb = new TerapistasHabilidadesDb();
     $id = $terapistasHabilidadesDb->crearTerapistaHabilidad($terapistaHabilidad);
@@ -47,7 +48,8 @@ class TerapistasHabilidadesController extends BaseController
   public function update($id)
   {
     $terapistaHabilidadDelBody = $this->getBody();
-    $terapistaHabilidad = $this->mapJsonToClass($terapistaHabilidadDelBody, TerapistaHabilidad::class);
+    $terapistaHabilidad = new TerapistaHabilidad();
+    $this->mapJsonToObj($terapistaHabilidadDelBody, $terapistaHabilidad);
 
     $terapistasHabilidadesDb = new TerapistasHabilidadesDb();
 
@@ -104,11 +106,6 @@ try {
   $controller = new TerapistasHabilidadesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

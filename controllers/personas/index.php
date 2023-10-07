@@ -12,7 +12,13 @@ class PersonasController extends BaseController
     $dni = $params['dni'] ?? null;
 
     $personasDb = new PersonasDb();
-    $result = $personasDb->listarPersonas($dni);
+
+    if ($dni) {
+      $result = $personasDb->buscarPorDni($dni);
+    }
+    if (count($params) === 0) {
+      $result = $personasDb->listarPersonas();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -31,7 +37,8 @@ class PersonasController extends BaseController
   public function create()
   {
     $personaDelBody = $this->getBody();
-    $persona = $this->mapJsonToClass($personaDelBody, Persona::class);
+    $persona = new Persona();
+    $this->mapJsonToObj($personaDelBody, $persona);
 
     $personasDb = new PersonasDb();
     $id = $personasDb->crearPersona($persona);
@@ -48,7 +55,8 @@ class PersonasController extends BaseController
   public function update($id)
   {
     $personaDelBody = $this->getBody();
-    $persona = $this->mapJsonToClass($personaDelBody, Persona::class);
+    $persona = new Persona();
+    $this->mapJsonToObj($personaDelBody, $persona);
 
     $personasDb = new PersonasDb();
 
@@ -105,11 +113,6 @@ try {
   $controller = new PersonasController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

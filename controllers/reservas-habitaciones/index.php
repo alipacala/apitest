@@ -52,7 +52,8 @@ class ReservasHabitacionesController extends BaseController
   public function create()
   {
     $reservaHabitacionDelBody = $this->getBody();
-    $reservaHabitacion = $this->mapJsonToClass($reservaHabitacionDelBody, ReservaHabitacion::class);
+    $reservaHabitacion = new ReservaHabitacion();
+    $this->mapJsonToObj($reservaHabitacionDelBody, $reservaHabitacion);
 
     $reservasHabitacionesDb = new ReservasHabitacionesDb();
     $id = $reservasHabitacionesDb->crearReservaHabitacion($reservaHabitacion);
@@ -69,7 +70,8 @@ class ReservasHabitacionesController extends BaseController
   public function update($id)
   {
     $reservaHabitacionDelBody = $this->getBody();
-    $reservaHabitacion = $this->mapJsonToClass($reservaHabitacionDelBody, ReservaHabitacion::class);
+    $reservaHabitacion = new ReservaHabitacion();
+    $this->mapJsonToObj($reservaHabitacionDelBody, $reservaHabitacion);
 
     $reservasHabitacionesDb = new ReservasHabitacionesDb();
 
@@ -126,11 +128,6 @@ try {
   $controller = new ReservasHabitacionesController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

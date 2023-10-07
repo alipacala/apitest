@@ -72,7 +72,7 @@ class TerapistasController extends BaseController
     $nacimiento = new DateTime($fechaNacimiento);
     $ahora = new DateTime(date("Y-m-d"));
     $diferencia = $ahora->diff($nacimiento);
-    return $diferencia->format("%y");
+    return intval($diferencia->format("%y"));
   }
 
   public function create()
@@ -82,7 +82,8 @@ class TerapistasController extends BaseController
     $habilidades = $terapistaDelBody['habilidades'];
     unset($terapistaDelBody['habilidades']);
 
-    $terapista = $this->mapJsonToClass($terapistaDelBody, Terapista::class);
+    $terapista = new Terapista();
+    $this->mapJsonToObj($terapistaDelBody, $terapista);
 
     $terapista->tipo_documento = 0;
     $terapista->fecha_ingreso = date("Y-m-d");
@@ -96,11 +97,11 @@ class TerapistasController extends BaseController
     $persona->id_usuario_creacion = 0; // TODO
     $persona->nacionalidad = "PER";
     $persona->pais = "PER";
-    $persona->email = $terapista->email;
+    $persona->email = $terapista->Email;
     $persona->ciudad = $terapista->provincia;
     $persona->ocupacion = $terapista->cargo;
     $persona->fecha_creacion = date("Y-m-d H:i:s");
-    $persona->edad = $this->obtenerEdadSegunFecha($terapista->fecha_nacimiento);
+    $persona->edad = $this->obtenerEdadSegunFecha($terapista->fecha_de_nacimiento);
 
     $terapistasDb = new TerapistasDb();
     $personasDb = new PersonasDb();
@@ -143,7 +144,8 @@ class TerapistasController extends BaseController
   public function update($id)
   {
     $terapistaDelBody = $this->getBody();
-    $terapista = $this->mapJsonToClass($terapistaDelBody, Terapista::class);
+    $terapista = new Terapista();
+    $this->mapJsonToObj($terapistaDelBody, $terapista);
 
     $terapistasDb = new TerapistasDb();
 
@@ -200,11 +202,6 @@ try {
   $controller = new TerapistasController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

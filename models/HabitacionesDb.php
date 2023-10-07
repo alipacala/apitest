@@ -22,7 +22,7 @@ class HabitacionesDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function listarHabitacionesDeHotelArenasSpa()
+  public function listarDeHotelArenasSpa()
   {
     $query = "SELECT h.id_habitacion, h.nro_habitacion
     FROM $this->tableName h WHERE h.id_unidad_de_negocio = 3";

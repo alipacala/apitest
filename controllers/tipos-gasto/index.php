@@ -28,7 +28,8 @@ class TiposGastoController extends BaseController
   public function create()
   {
     $tipoGastoDelBody = $this->getBody();
-    $tipoGasto = $this->mapJsonToClass($tipoGastoDelBody, TipoGasto::class);
+    $tipoGasto = new TipoGasto();
+    $this->mapJsonToObj($tipoGastoDelBody, $tipoGasto);
 
     $tiposGastoDb = new TiposGastoDb();
     $id = $tiposGastoDb->crearTipoGasto($tipoGasto);
@@ -45,7 +46,8 @@ class TiposGastoController extends BaseController
   public function update($id)
   {
     $tipoGastoDelBody = $this->getBody();
-    $tipoGasto = $this->mapJsonToClass($tipoGastoDelBody, TipoGasto::class);
+    $tipoGasto = new TipoGasto();
+    $this->mapJsonToObj($tipoGastoDelBody, $tipoGasto);
 
     $tiposGastoDb = new TiposGastoDb();
 
@@ -102,11 +104,6 @@ try {
   $controller = new TiposGastoController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

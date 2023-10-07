@@ -24,14 +24,23 @@ class ComprobantesVentasController extends BaseController
     $fecha = $params['fecha'] ?? null;
     $mes = $params['mes'] ?? null;
     $anio = $params['anio'] ?? null;
-    $soloBolFact = boolval(($params['solo_bol_fact'] ?? null) === "");
+    $soloBolFact = isset($params['solo_bol_fact']);
+
+    $compras = isset($params['compras']);
+
+    $fechaInicio = $params['fecha_inicio'] ?? null;
+    $fechaFin = $params['fecha_fin'] ?? null;
 
     $comprobantesVentasDb = new ComprobantesVentasDb();
-    $result = $comprobantesVentasDb->listarComprobantesVentas($nroRegistroMaestro, $fecha, $mes, $anio, $soloBolFact);
+
+    $result = null;
 
     if ($nroRegistroMaestro) {
+      $result = $comprobantesVentasDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+
       $result = array_map(function ($recibo) {
         return [
+          "id_comprobante" => $recibo["id_comprobante_ventas"],
           "fecha_comprobante" => $recibo["fecha_documento"],
           "nro_comprobante" => $recibo["nro_comprobante"],
           "nro_doc_cliente" => $recibo["nro_documento_cliente"],
@@ -45,8 +54,34 @@ class ComprobantesVentasController extends BaseController
           "estado" => $recibo["estado"]
         ];
       }, $result);
+    }
 
-    } else {
+    if ($compras && $fechaInicio && $fechaFin)
+    {
+      $result = $comprobantesVentasDb->listarComprasEnRangoFechas($fechaInicio, $fechaFin);
+
+      $result = array_map(function ($comprobante) {
+        $proveedor = in_array($comprobante["tipo_documento_cliente"], [1, 7]) ? $comprobante["nombres"] . ", " . $comprobante["apellidos"] : $comprobante["apellidos"];
+
+        return [
+          "id_comprobante" => $comprobante["id_comprobante_ventas"],
+          "fecha" => $comprobante["fecha_documento"],
+          "nro_comprobante" => $comprobante["nro_comprobante"],
+          "ruc" => $comprobante["nro_documento_cliente"],
+          "proveedor" => $proveedor,
+          "subtotal" => $comprobante["subtotal"],
+          "igv" => $comprobante["igv"],
+          "total" => $comprobante["total"],
+          "percepcion" => $comprobante["valor_percepcion"],
+          "gran_total"=> $comprobante["gran_total"],
+          "estado" => $comprobante["estado"],
+          "por_pagar" => $comprobante["por_pagar"],
+        ];
+      }, $result);
+    }
+
+    if ($fecha || ($mes && $anio)) {
+      $result = $comprobantesVentasDb->listarComprobantesVentas($fecha, $mes, $anio, $soloBolFact);
 
       $result = array_map(function ($comprobante) {
         $tiposDoc = [
@@ -68,7 +103,6 @@ class ComprobantesVentasController extends BaseController
         ];
       }, $result);
     }
-
     $this->sendResponse($result, 200);
   }
 
@@ -95,7 +129,8 @@ class ComprobantesVentasController extends BaseController
     unset($comprobanteDelBody->nombre);
     unset($comprobanteDelBody->lugar_cliente);
 
-    $comprobante = $this->mapJsonToClass($comprobanteDelBody, ComprobanteVentas::class);
+    $comprobante = new ComprobanteVentas();
+    $this->mapJsonToObj($comprobanteDelBody, $comprobante);
 
     // comprobar que el comprobante tenga los datos necesarios
     $camposRequeridos = ["tipo_comprobante", "tipo_documento_cliente", "id_usuario", "nro_registro_maestro"];
@@ -139,7 +174,7 @@ class ComprobantesVentasController extends BaseController
     $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
     $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
 
-    $comprobante->nro_comprobante =  $pre . $serie . "-" . $nro;
+    $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
 
     $comprobante->fecha_documento = $configDb->obtenerFechaYHora()["fecha"];
     $comprobante->hora_documento = $configDb->obtenerFechaYHora()["hora"];
@@ -186,7 +221,9 @@ class ComprobantesVentasController extends BaseController
       foreach ($documentosDetalles as $documentoDetalle) {
         // convertir el documentoDetalle en un comprobanteDetalle
         $documentoDetalleArray = get_object_vars($documentoDetalle);
-        $comprobanteDetalle = $this->mapJsonToClass($documentoDetalleArray, ComprobanteDetalle::class);
+        $comprobanteDetalle = new ComprobanteDetalle();
+        $this->mapJsonToObj($documentoDetalleArray, $comprobanteDetalle);
+
         $comprobanteDetalle->id_comprobante_ventas = $idComprobante;
         $comprobanteDetalle->id_usuario = $comprobante->id_usuario;
 
@@ -262,7 +299,7 @@ class ComprobantesVentasController extends BaseController
 
       // actualizar datos de la personanaturaljuridica
       $personasDb = new PersonasDb();
-      $persona = $personasDb->listarPersonas($comprobante->nro_documento_cliente);
+      $persona = $personasDb->buscarPorDni($comprobante->nro_documento_cliente);
 
       if ($persona) {
         $personaActualizar = new Persona();
@@ -354,10 +391,234 @@ class ComprobantesVentasController extends BaseController
     $this->sendResponse($response, $code);
   }
 
+  public function createCustom($action)
+  {
+    if ($action == 'compra') {
+      $comprobanteDelBody = $this->getBody();
+
+      $detalles = $comprobanteDelBody->detalles;
+      $nombreCliente = $comprobanteDelBody->nombre_cliente;
+      $lugarCliente = $comprobanteDelBody->lugar_cliente;
+      $direccionCliente = $comprobanteDelBody->direccion_cliente;
+
+      unset($comprobanteDelBody->detalles);
+      unset($comprobanteDelBody->nombre_cliente);
+      unset($comprobanteDelBody->lugar_cliente);
+      unset($comprobanteDelBody->direccion_cliente);
+
+      $comprobante = new ComprobanteVentas();
+      $this->mapJsonToObj($comprobanteDelBody, $comprobante);
+
+      // comprobar que el comprobante tenga los datos necesarios
+      $camposRequeridos = ["tipo_comprobante", "fecha_documento", "tipo_documento_cliente", "nro_documento_cliente", "nro_orden_pedido", "id_usuario_responsable", "id_tipo_de_gasto", "id_unidad_de_negocio", "afecto_percepcion"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $comprobante);
+
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
+
+      // comprobar que los detalles sea un array con los datos necesarios
+      foreach ($detalles as $detalle) {
+        $camposRequeridos = ["id_producto", "tipo_de_unidad", "cantidad", "precio_unitario"];
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $detalle);
+
+        if (count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en uno de los detalles: " . implode(", ", $camposFaltantes)], 400);
+          return;
+        }
+      }
+
+      $comprobante->tipo_movimiento = "IN";
+
+      $configDb = new ConfigDb();
+
+      if ($comprobante->tipo_comprobante == '00') {
+        $serie = "1"; // TODO: tal vez no sea necesario
+        $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
+        $pre = "P";
+
+        $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
+        $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
+
+        $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
+      } else if ($comprobante->tipo_comprobante == '05') {
+        $serie = "1"; // TODO: tal vez no sea necesario
+        $correlativoBoleta = $configDb->obtenerConfig(23)->numero_correlativo; // 23 es el id del correlativo de los comprobantes de servicios
+        $pre = "C";
+
+        $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
+        $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
+
+        $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
+      }
+
+      $comprobante->monto_inicial = 0;
+      $comprobante->por_pagar = 0;
+      $comprobante->id_usuario = $comprobante->id_usuario_responsable;
+
+      $comprobante->fecha_hora_registro = $configDb->obtenerFechaYHora()["fecha_y_hora"];
+
+      // crear el comprobante y los detalles
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+      $comprobantesDetallesDb = new ComprobantesDetallesDb();
+      $documentosDetallesDb = new DocumentosDetallesDb();
+      $productosDb = new ProductosDb();
+
+      $porcentajeIGV = $configDb->obtenerConfig(17)->numero_correlativo; // 17 es el id del porcentaje de igv
+      $porcentajePercepcion = $configDb->obtenerConfig(22)->numero_correlativo; // 22 es el id del porcentaje de percepcion
+
+      $comprobantesDetalles = [];
+
+      // calcular el subtotal sumando los precios de los detalles
+      $comprobante->subtotal = 0;
+      foreach ($detalles as $detalle) {
+        $producto = $productosDb->obtenerProducto($detalle->id_producto);
+        if (!$producto) {
+          $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $detalle->id_producto], 400);
+          return;
+        }
+
+        $comprobante->subtotal += $detalle->precio_unitario * $detalle->cantidad;
+        $comprobantesDetalles[] = $detalle;
+      }
+
+      $comprobante->porcentaje_igv = $porcentajeIGV / 100;
+      $comprobante->subtotal = $comprobante->subtotal / (1 + $comprobante->porcentaje_igv);
+      $comprobante->igv = $comprobante->subtotal * $comprobante->porcentaje_igv;
+      $comprobante->total = $comprobante->subtotal + $comprobante->igv;
+      $comprobante->estado = 1;
+      
+      if ($comprobante->afecto_percepcion) {
+        $comprobante->porcentaje_percepcion = $porcentajePercepcion / 100;
+        $comprobante->valor_percepcion = $comprobante->total * $comprobante->porcentaje_percepcion;
+        $comprobante->gran_total = $comprobante->total + $comprobante->valor_percepcion;
+      } else {
+        $comprobante->gran_total = $comprobante->total;
+      }
+      
+      $comprobante->por_pagar = $comprobante->gran_total;
+
+      try {
+        $comprobantesVentasDb->empezarTransaccion();
+
+        $idComprobante = $comprobantesVentasDb->crearComprobanteVentas($comprobante);
+
+        $comprobantesDetallesCreados = [];
+        $documentosDetallesCreados = [];
+
+        foreach ($comprobantesDetalles as $comprobanteDetalle) {
+          $comprobanteDetalleArray = get_object_vars($comprobanteDetalle);
+          $comprobanteDetalle = new ComprobanteDetalle();
+          $this->mapJsonToObj($comprobanteDetalleArray, $comprobanteDetalle);
+
+          $comprobanteDetalle->id_comprobante_ventas = $idComprobante;
+          $comprobanteDetalle->id_usuario = $comprobante->id_usuario;
+
+          $idComprobanteDetalle = $comprobantesDetallesDb->crearComprobanteDetalle($comprobanteDetalle);
+          $comprobanteDetalle->id_comprobante_detalle = $idComprobanteDetalle;
+
+          $comprobantesDetallesCreados[] = $idComprobanteDetalle;
+
+          // convertir a documentoDetalle
+          $documentoDetalle = new DocumentoDetalle();
+          $documentoDetalle->nro_comprobante = $comprobante->nro_comprobante;
+          $documentoDetalle->id_producto = $comprobanteDetalle->id_producto;
+          $documentoDetalle->cantidad = $comprobanteDetalle->cantidad;
+          $documentoDetalle->precio_unitario = $comprobanteDetalle->precio_unitario;
+
+          $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
+          $documentoDetalle->id_documentos_detalle = $idDocumentoDetalle;
+
+          $documentosDetallesCreados[] = $documentoDetalle;
+        }
+
+        // crear o actualizar la persona
+        $personasDb = new PersonasDb();
+        $personaPrev = $personasDb->buscarPorDni($comprobante->nro_documento_cliente);
+
+        if ($personaPrev) {
+          $personaActualizar = new Persona();
+          $personaActualizar->direccion = $direccionCliente;
+          $personaActualizar->ciudad = $lugarCliente;
+
+          $personasDb->actualizarPersona($personaPrev->id_persona, $personaActualizar);
+        } else {
+          $personaCrear = new Persona();
+          $personaCrear->nro_documento = $comprobante->nro_documento_cliente;
+          $personaCrear->tipo_documento = $comprobante->tipo_documento_cliente;
+          if (in_array($personaCrear->tipo_documento, [1, 7])) {
+
+            // buscar la última coma
+            $posicionUltimaComa = strrpos($nombreCliente, ",");
+
+            if ($posicionUltimaComa !== false) {
+              $apellidos = trim(substr($nombreCliente, 0, $posicionUltimaComa));
+              $nombres = trim(substr($nombreCliente, $posicionUltimaComa + 1));
+            } else {
+              // buscar el último espacio en blanco
+              $posicionUltimoEspacio = strrpos($nombreCliente, " ");
+              if ($posicionUltimoEspacio !== false) {
+                $apellidos = trim(substr($nombreCliente, 0, $posicionUltimoEspacio));
+                $nombres = trim(substr($nombreCliente, $posicionUltimoEspacio + 1));
+              } else {
+                $apellidos = $nombreCliente;
+                $nombres = "";
+              }
+            }
+
+            $personaCrear->nombres = $nombres;
+            $personaCrear->apellidos = $apellidos;
+          } else {
+            $personaCrear->apellidos = $nombreCliente;
+          }
+          $personaCrear->direccion = $direccionCliente;
+          $personaCrear->ciudad = $lugarCliente;
+
+          $personasDb->crearPersona($personaCrear);
+        }
+
+        $seHaCreadoComprobante = $idComprobante && count($comprobantesDetallesCreados) === count($comprobantesDetalles) && count($documentosDetallesCreados) === count($comprobantesDetallesCreados);
+
+        // incrementar el correlativo
+        if ($comprobante->tipo_comprobante == '00') {
+          $configDb->incrementarCorrelativo(20); // 20 es el id del correlativo de pedidos
+        } else if ($comprobante->tipo_comprobante == '05') {
+          $configDb->incrementarCorrelativo(23); // 23 es el id del correlativo de comprobantes de servicios
+        }
+
+        $comprobantesVentasDb->terminarTransaccion();
+
+        if ($seHaCreadoComprobante) {
+          $response = [
+            "mensaje" => "Comprobante y sus detalles se han creado correctamente",
+            "resultado" => [
+                "comprobante" => array_merge([$comprobantesVentasDb->idName => intval($idComprobante)], (array) $comprobante, ["detalles" => $comprobantesDetallesCreados]),
+                "documentos_detalles" => $documentosDetallesCreados
+              ]
+          ];
+          $code = 201;
+        } else {
+          $response = ["mensaje" => "Error al crear el Comprobante"];
+          $code = 400;
+        }
+
+        $this->sendResponse($response, $code);
+      } catch (Exception $e) {
+        $comprobantesVentasDb->cancelarTransaccion();
+        $newException = new Exception("Error al crear el comprobante, los detalles de comprobante, los detalles de documento, o actualizar/crear la persona", 0, $e);
+        throw $newException;
+      }
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
+    }
+  }
+
   public function update($id)
   {
     $comprobanteDelBody = $this->getBody();
-    $comprobante = $this->mapJsonToClass($comprobanteDelBody, ComprobanteVentas::class);
+    $comprobante = new ComprobanteVentas();
+    $this->mapJsonToObj($comprobanteDelBody, $comprobante);
 
     $comprobantesVentasDb = new ComprobantesVentasDb();
 
@@ -474,17 +735,61 @@ class ComprobantesVentasController extends BaseController
       $this->sendResponse(["mensaje" => "Acción no permitida"], 400);
     }
   }
+
+  public function deleteCustom($id, $action)
+  {
+    if ($action == 'compra')
+    {
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+      $comprobante = $comprobantesVentasDb->obtenerComprobanteVentas($id);
+
+      if (!$comprobante) {
+        $this->sendResponse(["mensaje" => "Comprobante de Ventas no encontrada"], 404);
+        return;
+      }
+
+      $seEliminoComprobante = true;
+
+      try {
+        $comprobantesVentasDb->empezarTransaccion();
+
+        // borrar los detalles de comprobante
+        $comprobantesDetallesDb = new ComprobantesDetallesDb();
+        $comprobanteDetallesEliminados = $comprobantesDetallesDb->eliminarComprobanteDetallePorIdComprobante($id);
+
+        $documentosDetallesDb = new DocumentosDetallesDb();
+        $documentosDetallesActualizados = $documentosDetallesDb->eliminarPorNroComprobante($comprobante->nro_comprobante);
+
+        // eliminar el comprobante
+        $comprobanteEliminado = $comprobantesVentasDb->eliminarComprobanteVentas($id);
+
+        $comprobantesVentasDb->terminarTransaccion();
+
+      } catch (Exception $e) {
+        $comprobantesVentasDb->cancelarTransaccion();
+        $seEliminoComprobante = false;
+        $newException = new Exception("Error al anular el comprobante, el fe_comprobante o actualizar los detalles de documento", 0, $e);
+        throw $newException;
+      }
+      
+      $response = $seEliminoComprobante ? [
+        "mensaje" => "Comprobante de Ventas eliminado correctamente",
+        "resultado" => $comprobante
+      ] : ["mensaje" => "Error al eliminar el Comprobante de Ventas"];
+      $code = $seEliminoComprobante ? 200 : 400;
+
+      $this->sendResponse($response, $code);
+    }
+    else {
+      $this->sendResponse(["mensaje" => "Acción no permitida"], 404);
+    }
+  }
 }
 
 try {
   $controller = new ComprobantesVentasController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

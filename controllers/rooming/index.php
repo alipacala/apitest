@@ -12,29 +12,28 @@ class RoomingController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $idCheckin = $params['id_checkin'] ?? null;
 
-    $conDatos1 = boolval(($params['con-datos1'] ?? null) === "");
+    $conDatos1 = isset($params['con-datos1']);
 
-    $conDatos2 = boolval(($params['con-datos2'] ?? null) === "");
+    $conDatos2 = isset($params['con-datos2']);
     $fecha = $params['fecha'] ?? null;
 
-    if($conDatos1) {
-      $roomingDb = new RoomingDb();
-      $result = $roomingDb->listarRoomingConDatos1();
-
-      $this->sendResponse($result, 200);
-      return;
-    }
-
-    if($conDatos2) {
-      $roomingDb = new RoomingDb();
-      $result = $roomingDb->listarRoomingConDatos2($fecha);
-
-      $this->sendResponse($result, 200);
-      return;
-    }
-
     $roomingDb = new RoomingDb();
-    $result = $roomingDb->listarRooming($nroRegistroMaestro, $idCheckin);
+
+    if ($conDatos1) {
+      $result = $roomingDb->listarRoomingConDatos1();
+    }
+    if ($conDatos2) {
+      $result = $roomingDb->listarRoomingConDatos2($fecha);
+    }
+    if ($nroRegistroMaestro) {
+      $result = $roomingDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+    }
+    if ($idCheckin) {
+      $result = $roomingDb->buscarPorIdCheckin($idCheckin);
+    }
+    if (count($params) === 0) {
+      $result = $roomingDb->listarRooming();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -53,7 +52,8 @@ class RoomingController extends BaseController
   public function create()
   {
     $roomingDelBody = $this->getBody();
-    $rooming = $this->mapJsonToClass($roomingDelBody, Rooming::class);
+    $rooming = new Rooming();
+    $this->mapJsonToObj($roomingDelBody, $rooming);
 
     $roomingDb = new RoomingDb();
     $id = $roomingDb->crearRooming($rooming);
@@ -70,7 +70,8 @@ class RoomingController extends BaseController
   public function update($id)
   {
     $roomingDelBody = $this->getBody();
-    $rooming = $this->mapJsonToClass($roomingDelBody, Rooming::class);
+    $rooming = new Rooming();
+    $this->mapJsonToObj($roomingDelBody, $rooming);
 
     $roomingDb = new RoomingDb();
 
@@ -127,11 +128,6 @@ try {
   $controller = new RoomingController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>

@@ -31,7 +31,8 @@ class RecibosPagoController extends BaseController
   public function create()
   {
     $reciboPagoDelBody = $this->getBody();
-    $reciboPago = $this->mapJsonToClass($reciboPagoDelBody, ReciboPago::class);
+    $reciboPago = new ReciboPago();
+    $this->mapJsonToObj($reciboPagoDelBody, $reciboPago);
 
     $camposRequeridos = ["id_comprobante_ventas", "medio_pago", "total", "id_usuario"];
     $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $reciboPago);
@@ -79,7 +80,7 @@ class RecibosPagoController extends BaseController
       $nroComprobante = $comprobanteVenta->nro_comprobante;
 
       $documentosDetallesDb = new DocumentosDetallesDb();
-      $documentosDetalles = $documentosDetallesDb->buscarDocumentosDetallesPorNroComprobanteVenta($nroComprobante);
+      $documentosDetalles = $documentosDetallesDb->buscarPorNroComprobanteVenta($nroComprobante);
 
       foreach ($documentosDetalles as $documentoDetalle) {
         $documentoDetalleActualizar = new DocumentoDetalle();
@@ -107,7 +108,8 @@ class RecibosPagoController extends BaseController
   public function update($id)
   {
     $reciboPagoDelBody = $this->getBody();
-    $reciboPago = $this->mapJsonToClass($reciboPagoDelBody, ReciboPago::class);
+    $reciboPago = new ReciboPago();
+    $this->mapJsonToObj($reciboPagoDelBody, $reciboPago);
 
     $recibosPagoDb = new RecibosPagoDb();
 
@@ -194,11 +196,6 @@ try {
   $controller = new RecibosPagoController();
   $controller->route();
 } catch (Exception $e) {
-  $controller->sendResponse([
-    "mensaje" => $e->getMessage(),
-    "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
-    "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
-    "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
-  ], 500);
+  $controller->sendResponse($controller->errorResponse($e), 500);
 }
 ?>
