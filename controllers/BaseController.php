@@ -153,6 +153,8 @@ class BaseController
   {
     foreach ($json as $key => $value) {
       if (property_exists($obj, $key)) {
+        if ($value === "")
+          $value = null;
         $obj->$key = $value;
       }
     }

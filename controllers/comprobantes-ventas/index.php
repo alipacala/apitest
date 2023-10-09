@@ -512,6 +512,8 @@ class ComprobantesVentasController extends BaseController
           $comprobanteDetalle->id_comprobante_ventas = $idComprobante;
           $comprobanteDetalle->id_usuario = $comprobante->id_usuario;
 
+          $comprobanteDetalle->precio_total = $comprobanteDetalle->precio_unitario * $comprobanteDetalle->cantidad;
+
           $idComprobanteDetalle = $comprobantesDetallesDb->crearComprobanteDetalle($comprobanteDetalle);
           $comprobanteDetalle->id_comprobante_detalle = $idComprobanteDetalle;
 
@@ -523,6 +525,8 @@ class ComprobantesVentasController extends BaseController
           $documentoDetalle->id_producto = $comprobanteDetalle->id_producto;
           $documentoDetalle->cantidad = $comprobanteDetalle->cantidad;
           $documentoDetalle->precio_unitario = $comprobanteDetalle->precio_unitario;
+
+          $documentoDetalle->precio_total = $comprobanteDetalle->precio_total;
 
           $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
           $documentoDetalle->id_documentos_detalle = $idDocumentoDetalle;

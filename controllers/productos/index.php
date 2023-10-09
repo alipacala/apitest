@@ -108,7 +108,7 @@ class ProductosController extends BaseController
         $producto->activo = 1;
 
         // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["nombre_producto", "codigo", "tipo_de_unidad", "id_grupo", "id_central_de_costos", "id_tipo_de_producto", "fecha_de_vigencia", "stock_min_temporada_baja", "stock_max_temporada_baja", "stock_min_temporada_alta", "stock_max_temporada_alta", "cantidad_de_fracciones"];
+        $camposRequeridos = ["nombre_producto", "codigo", "tipo_de_unidad", "id_tipo_de_producto", "fecha_de_vigencia", "stock_min_temporada_baja", "stock_max_temporada_baja", "stock_min_temporada_alta", "stock_max_temporada_alta", "cantidad_de_fracciones"];
         $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
 
         if (count($camposFaltantes) > 0) {

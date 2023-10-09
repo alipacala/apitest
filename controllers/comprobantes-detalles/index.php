@@ -10,12 +10,18 @@ class ComprobantesDetallesController extends BaseController
   {
     $params = $this->getParams();
     $comprobante = $params['comprobante'] ?? null;
+    $comprobanteCompra = $params['comprobante_compra'] ?? null;
 
     $comprobantesDetallesDb = new ComprobantesDetallesDb();
 
     if ($comprobante) {
       $result = $comprobantesDetallesDb->buscarComprobantesDetallesPorIdComprobante($comprobante);
     }
+
+    if ($comprobanteCompra) {
+      $result = $comprobantesDetallesDb->buscarDetallesCompraPorIdComprobante($comprobanteCompra);
+    }
+
     if (count($params) === 0) {
       $result = $comprobantesDetallesDb->listarComprobantesDetalles();
     }
