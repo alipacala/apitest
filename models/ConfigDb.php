@@ -32,10 +32,16 @@ class ConfigDb extends Database
           "codigo" => substr($año, -2) . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
         );
         break;
+      case 20:
+        $result = array(
+          "codigo" => "P001-" .
+            str_pad($result->numero_correlativo, 8, "0", STR_PAD_LEFT)
+        );
+        break;
       default:
         $result = array(
           "codigo" => $result->codigo .
-          str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
+            str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
         );
         break;
     }

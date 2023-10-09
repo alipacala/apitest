@@ -442,15 +442,6 @@ class ComprobantesVentasController extends BaseController
         $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
 
         $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
-      } else if ($comprobante->tipo_comprobante == '05') {
-        $serie = "1"; // TODO: tal vez no sea necesario
-        $correlativoBoleta = $configDb->obtenerConfig(23)->numero_correlativo; // 23 es el id del correlativo de los comprobantes de servicios
-        $pre = "C";
-
-        $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
-        $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
-
-        $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
       }
 
       $comprobante->monto_inicial = 0;
@@ -465,7 +456,7 @@ class ComprobantesVentasController extends BaseController
       $documentosDetallesDb = new DocumentosDetallesDb();
       $productosDb = new ProductosDb();
 
-      $porcentajeIGV = $configDb->obtenerConfig(17)->numero_correlativo; // 17 es el id del porcentaje de igv
+      $porcentajeIGV = $configDb->obtenerConfig(24)->numero_correlativo; // 17 es el id del porcentaje de igv para las compras
       $porcentajePercepcion = $configDb->obtenerConfig(22)->numero_correlativo; // 22 es el id del porcentaje de percepcion
 
       $comprobantesDetalles = [];
@@ -482,10 +473,16 @@ class ComprobantesVentasController extends BaseController
         $comprobante->subtotal += $detalle->precio_unitario * $detalle->cantidad;
         $comprobantesDetalles[] = $detalle;
       }
+      
+      // si es una factura
+      if ($comprobante->tipo_comprobante == '01') {
+        $comprobante->porcentaje_igv = $porcentajeIGV / 100;
+        $comprobante->igv = $comprobante->subtotal * $comprobante->porcentaje_igv;
+      } else {
+        $comprobante->porcentaje_igv = 0;
+        $comprobante->igv = 0;
+      }
 
-      $comprobante->porcentaje_igv = $porcentajeIGV / 100;
-      $comprobante->subtotal = $comprobante->subtotal / (1 + $comprobante->porcentaje_igv);
-      $comprobante->igv = $comprobante->subtotal * $comprobante->porcentaje_igv;
       $comprobante->total = $comprobante->subtotal + $comprobante->igv;
       $comprobante->estado = 1;
       
