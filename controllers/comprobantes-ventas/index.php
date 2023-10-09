@@ -496,6 +496,10 @@ class ComprobantesVentasController extends BaseController
       
       $comprobante->por_pagar = $comprobante->gran_total;
 
+      // debug on production
+      $this->sendResponse($comprobante, 200);
+      return;
+
       try {
         $comprobantesVentasDb->empezarTransaccion();
 
