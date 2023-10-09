@@ -258,10 +258,6 @@ class ComprobantesVentasController extends BaseController
       $feComprobantesDb = new FeComprobantesDb();
       $productosDb = new ProductosDb();
 
-      // debug
-      $this->sendResponse($feComprobante, 200);
-      return;
-
       $idFeComprobante = $feComprobantesDb->crearFeComprobante($feComprobante);
 
       $feItemsCreados = [];
