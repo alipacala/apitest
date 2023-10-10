@@ -277,62 +277,60 @@ class CheckingsController extends BaseController
 
   public function updatePartial($id, $action = null)
   {
-    switch ($action) {
-      case 'cerrar':
-        $checkingsDb = new CheckingsDb();
-        $checking = $checkingsDb->obtenerChecking($id);
+    if ($action == 'cerrar') {
+      $checkingsDb = new CheckingsDb();
+      $checking = $checkingsDb->obtenerChecking($id);
 
-        $documentosDetallesDb = new DocumentosDetallesDb();
-        $detalles = $documentosDetallesDb->buscarPorNroRegistroMaestro($checking->nro_registro_maestro);
+      $documentosDetallesDb = new DocumentosDetallesDb();
+      $detalles = $documentosDetallesDb->buscarPorNroRegistroMaestro($checking->nro_registro_maestro);
 
-        // filtrar los que tengan nivel_descargo = 1
-        $detalles = array_filter($detalles, function ($detalle) {
-          return $detalle->nivel_descargo == 1;
-        });
+      // filtrar los que tengan nivel_descargo = 1
+      $detalles = array_filter($detalles, function ($detalle) {
+        return $detalle->nivel_descargo == 1;
+      });
 
-        // comprobar que todos los detalles tengan nro_comprobante
-        foreach ($detalles as $detalle) {
-          if (!$detalle->nro_comprobante) {
-            $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay detalles sin nro_comprobante"], 400);
-            return;
-          }
+      // comprobar que todos los detalles tengan nro_comprobante
+      foreach ($detalles as $detalle) {
+        if (!$detalle->nro_comprobante) {
+          $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay detalles sin nro_comprobante"], 400);
+          return;
         }
+      }
 
-        // comprobar que los comprobantes tengan por_pagar = 0
-        $comprobantesVentasDb = new ComprobantesVentasDb();
-        $comprobantes = $comprobantesVentasDb->listarComprobantesVentas($checking->nro_registro_maestro);
+      // comprobar que los comprobantes tengan por_pagar = 0
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+      $comprobantes = $comprobantesVentasDb->listarComprobantesVentas($checking->nro_registro_maestro);
 
-        // filtrar anulados
-        $comprobantes = array_filter($comprobantes, function ($comprobante) {
-          return $comprobante["estado"] == 1;
-        });
+      // filtrar anulados
+      $comprobantes = array_filter($comprobantes, function ($comprobante) {
+        return $comprobante["estado"] == 1;
+      });
 
-        foreach ($comprobantes as $comprobante) {
-          if (floatval($comprobante["por_pagar"]) > 0) {
-            $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay comprobantes por pagar"], 400);
-            return;
-          }
+      foreach ($comprobantes as $comprobante) {
+        if (floatval($comprobante["por_pagar"]) > 0) {
+          $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay comprobantes por pagar"], 400);
+          return;
         }
+      }
 
-        // actualizar el checking con el campo cerrado
-        $checkingAActualizar = new Checking();
-        $checkingAActualizar->cerrada = 1;
-        $checkingAActualizar->fecha_cerrada = $checkingsDb->obtenerFechaYHora()['fecha'];
-        $checkingAActualizar->hora_cerrada = $checkingsDb->obtenerFechaYHora()['hora'];
+      // actualizar el checking con el campo cerrado
+      $checkingAActualizar = new Checking();
+      $checkingAActualizar->cerrada = 1;
+      $checkingAActualizar->fecha_cerrada = $checkingsDb->obtenerFechaYHora()['fecha'];
+      $checkingAActualizar->hora_cerrada = $checkingsDb->obtenerFechaYHora()['hora'];
 
-        $result = $checkingsDb->actualizarChecking($id, $checkingAActualizar);
+      $result = $checkingsDb->actualizarChecking($id, $checkingAActualizar);
 
-        $response = $result ? [
-          "mensaje" => "Checking cerrado correctamente",
-          "resultado" => $checkingsDb->obtenerChecking($id)
-        ] : ["mensaje" => "Error al cerrar el Checking"];
-        $code = $result ? 200 : 400;
+      $response = $result ? [
+        "mensaje" => "Checking cerrado correctamente",
+        "resultado" => $checkingsDb->obtenerChecking($id)
+      ] : ["mensaje" => "Error al cerrar el Checking"];
+      $code = $result ? 200 : 400;
 
-        $this->sendResponse($response, $code);
-        break;
-      default:
-        $this->sendResponse(["mensaje" => "Acción no válida"], 404);
-        break;
+      $this->sendResponse($response, $code);
+
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }
   }
 

@@ -22,28 +22,26 @@ class ConfigDb extends Database
 
     $result = $this->executeQuery($query, $params, "select-one");
 
-    switch ($id) {
-      case 5:
-        $fechaYHora = $this->obtenerFechaYHora();
-        $date = DateTime::createFromFormat("Y-m-d", $fechaYHora['fecha']);
-        $año = $date->format("y");
+    if ($id == 5) {
+      $fechaYHora = $this->obtenerFechaYHora();
+      $date = DateTime::createFromFormat("Y-m-d", $fechaYHora['fecha']);
+      $año = $date->format("y");
 
-        $result = array(
-          "codigo" => substr($año, -2) . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
-        );
-        break;
-      case 20:
-        $result = array(
-          "codigo" => "P001-" .
-            str_pad($result->numero_correlativo, 8, "0", STR_PAD_LEFT)
-        );
-        break;
-      default:
-        $result = array(
-          "codigo" => $result->codigo .
-            str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
-        );
-        break;
+      $result = array(
+        "codigo" => substr($año, -2) . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
+      );
+
+    } else if ($id == 20) {
+      $result = array(
+        "codigo" => "P001-" .
+          str_pad($result->numero_correlativo, 8, "0", STR_PAD_LEFT)
+      );
+
+    } else {
+      $result = array(
+        "codigo" => $result->codigo .
+          str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
+      );
     }
     return $result;
   }

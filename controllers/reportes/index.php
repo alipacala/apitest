@@ -17,6 +17,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ComprobanteImprimible.ph
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDiarioCaja.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDiarioDetalles.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteListadoCatalogo.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteCompras.php";
 
 class ReportesController extends BaseController
 {
@@ -38,6 +39,9 @@ class ReportesController extends BaseController
     $nroComprobante = $params['nro_comprobante'] ?? null;
 
     $idGrupo = $params['id_grupo'] ?? null;
+    
+    $fechaInicio = $params['fecha_inicio'] ?? null;
+    $fechaFin = $params['fecha_fin'] ?? null;
 
     $reportesDb = new ReportesDb();
 
@@ -124,6 +128,32 @@ class ReportesController extends BaseController
 
       $reporteListadoCatalogo = new ReporteListadoCatalogo();
       $this->sendResponse($reporteListadoCatalogo->generarReporte($result), 200);
+
+    } else if ($tipo == "compras") {
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+      $result = $comprobantesVentasDb->listarComprasEnRangoFechas($fechaInicio, $fechaFin);
+
+      $result = array_map(function ($comprobante) {
+        $proveedor = in_array($comprobante["tipo_documento_cliente"], [1, 7]) ? $comprobante["nombres"] . ", " . $comprobante["apellidos"] : $comprobante["apellidos"];
+
+        return [
+          "id_comprobante" => $comprobante["id_comprobante_ventas"],
+          "fecha" => $comprobante["fecha_documento"],
+          "nro_comprobante" => $comprobante["nro_comprobante"],
+          "ruc" => $comprobante["nro_documento_cliente"],
+          "proveedor" => $proveedor,
+          "subtotal" => $comprobante["subtotal"],
+          "igv" => $comprobante["igv"],
+          "total" => $comprobante["total"],
+          "percepcion" => $comprobante["valor_percepcion"],
+          "gran_total"=> $comprobante["gran_total"],
+          "estado" => $comprobante["estado"],
+          "por_pagar" => $comprobante["por_pagar"],
+        ];
+      }, $result);
+
+      $reporteCompras = new ReporteCompras();
+      $this->sendResponse($reporteCompras->generarReporte($result, $fechaInicio, $fechaFin), 200);
 
     } else {
       // no hay ese tipo de reporte

@@ -97,404 +97,397 @@ class ProductosController extends BaseController
 
   public function createCustom($action)
   {
-    switch ($action) {
-      case "insumo-terminado":
+    if ($action == "insumo-terminado") {
 
-        $productoDelBody = $this->getBody();
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
+      $productoDelBody = $this->getBody();
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
 
-        $producto->tipo = "PRD";
-        $producto->activo = 1;
+      $producto->tipo = "PRD";
+      $producto->activo = 1;
 
-        // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["nombre_producto", "codigo", "tipo_de_unidad", "id_tipo_de_producto", "fecha_de_vigencia", "stock_min_temporada_baja", "stock_max_temporada_baja", "stock_min_temporada_alta", "stock_max_temporada_alta", "cantidad_de_fracciones"];
-        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+      // comprobar que el producto tenga los datos necesarios
+      $camposRequeridos = ["nombre_producto", "codigo", "tipo_de_unidad", "id_tipo_de_producto", "fecha_de_vigencia", "stock_min_temporada_baja", "stock_max_temporada_baja", "stock_min_temporada_alta", "stock_max_temporada_alta", "cantidad_de_fracciones"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
+
+      // si la fecha_vigencia es hoy, se guarda como null
+      $fechaHoy = date("Y-m-d");
+      if ($producto->fecha_de_vigencia == $fechaHoy) {
+        $producto->fecha_de_vigencia = null;
+      }
+
+      $productosDb = new ProductosDb();
+      $id = $productosDb->crearProducto($producto);
+
+      if ($id) {
+        $configDb = new ConfigDb();
+        $configDb->incrementarCorrelativo(6); // 6 es el id de la configuración de productos
+
+        $response = [
+          "mensaje" => "Insumo creado correctamente",
+          "resultado" => array_merge([$productosDb->idName => intval($id)], (array) $producto)
+        ];
+        $code = 201;
+      } else {
+        $response = ["mensaje" => "Error al crear el Insumo"];
+        $code = 400;
+      }
+
+      $this->sendResponse($response, $code);
+
+    } else if ($action == "receta") {
+
+      $productoDelBody = $this->getBody();
+
+      $insumos = $productoDelBody->insumos;
+      unset($productoDelBody->insumos);
+
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
+
+      $producto->tipo = "RST";
+      $producto->id_tipo_de_producto = 12;
+      $producto->activo = 1;
+
+      // comprobar que el producto tenga los datos necesarios
+      $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "id_central_de_costos", "fecha_de_vigencia", "tiempo_estimado", "preparacion"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
+
+      // si la fecha_vigencia es hoy, se guarda como null
+      $fechaHoy = date("Y-m-d");
+      if ($producto->fecha_de_vigencia == $fechaHoy) {
+        $producto->fecha_de_vigencia = null;
+      }
+
+      // comprobar que los insumos tengan los datos necesarios
+      $camposRequeridos = ["id_producto_insumo", "cantidad", "tipo_de_unidad"];
+
+      foreach ($insumos as $insumo) {
+        $insumoTemp = $insumo;
+        $insumo = new ProductoReceta();
+        $this->mapJsonToObj($insumoTemp, $insumo);
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
         if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
           return;
         }
+      }
 
-        // si la fecha_vigencia es hoy, se guarda como null
-        $fechaHoy = date("Y-m-d");
-        if ($producto->fecha_de_vigencia == $fechaHoy) {
-          $producto->fecha_de_vigencia = null;
-        }
-
+      try {
         $productosDb = new ProductosDb();
-        $id = $productosDb->crearProducto($producto);
+        $productosDb->empezarTransaccion();
 
-        if ($id) {
-          $configDb = new ConfigDb();
-          $configDb->incrementarCorrelativo(6); // 6 es el id de la configuración de productos
-
-          $response = [
-            "mensaje" => "Insumo creado correctamente",
-            "resultado" => array_merge([$productosDb->idName => intval($id)], (array) $producto)
-          ];
-          $code = 201;
-        } else {
-          $response = ["mensaje" => "Error al crear el Insumo"];
-          $code = 400;
+        // calcular el costo unitario sumando los precios de los insumos
+        $producto->costo_unitario = 0;
+        foreach ($insumos as $insumo) {
+          $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_insumo);
+          if (!$productoInsumo) {
+            $this->sendResponse(["mensaje" => "No se encontró el insumo con id " . $insumo->id_producto_insumo], 400);
+            return;
+          }
+          $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;
         }
 
-        $this->sendResponse($response, $code);
+        $idReceta = $productosDb->crearProducto($producto);
 
-        break;
-      case "receta":
-
-        $productoDelBody = $this->getBody();
-
-        $insumos = $productoDelBody->insumos;
-        unset($productoDelBody->insumos);
-
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
-
-        $producto->tipo = "RST";
-        $producto->id_tipo_de_producto = 12;
-        $producto->activo = 1;
-
-        // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "id_central_de_costos", "fecha_de_vigencia", "tiempo_estimado", "preparacion"];
-        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
-
-        if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
-          return;
-        }
-
-        // si la fecha_vigencia es hoy, se guarda como null
-        $fechaHoy = date("Y-m-d");
-        if ($producto->fecha_de_vigencia == $fechaHoy) {
-          $producto->fecha_de_vigencia = null;
-        }
-
-        // comprobar que los insumos tengan los datos necesarios
-        $camposRequeridos = ["id_producto_insumo", "cantidad", "tipo_de_unidad"];
+        $productosRecetaDb = new ProductosRecetaDb();
+        $insumosCreados = [];
 
         foreach ($insumos as $insumo) {
           $insumoTemp = $insumo;
           $insumo = new ProductoReceta();
           $this->mapJsonToObj($insumoTemp, $insumo);
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
+          $insumo->id_producto = $idReceta;
+          $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
+
+          $insumo->id_receta = $idInsumo;
+          $insumosCreados[] = $insumo;
+        }
+
+        $productosDb->terminarTransaccion();
+      } catch (Exception $e) {
+        $productosDb->cancelarTransaccion();
+        $newException = new Exception("Error al crear la Receta", 0, $e);
+        throw $newException;
+      }
+
+      $recetaEInsumosCreados = $idReceta && count($insumos) === count($insumosCreados);
+
+      if ($recetaEInsumosCreados) {
+        $configDb = new ConfigDb();
+        $configDb->incrementarCorrelativo(7); // 7 es el id de la configuración de recetas
+
+        $response = [
+          "mensaje" => "Receta creada correctamente",
+          "resultado" => array_merge([$productosDb->idName => intval($idReceta)], (array) $producto, ["insumos" => $insumosCreados])
+        ];
+        $code = 201;
+      } else {
+        $response = ["mensaje" => "Error al crear la Receta"];
+        $code = 400;
+      }
+
+      $this->sendResponse($response, $code);
+
+    } else if ($action == "hospedaje") {
+
+      $productoDelBody = $this->getBody();
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
+
+      $producto->tipo = "SVH";
+      $producto->id_tipo_de_producto = 12; // id de servicio
+      $producto->activo = 1;
+
+      // comprobar que el producto tenga los datos necesarios
+      $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "id_central_de_costos", "fecha_de_vigencia"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
+
+      // si la fecha_vigencia es hoy, se guarda como null
+      $fechaHoy = date("Y-m-d");
+      if ($producto->fecha_de_vigencia == $fechaHoy) {
+        $producto->fecha_de_vigencia = null;
+      }
+
+      $productosDb = new ProductosDb();
+      $id = $productosDb->crearProducto($producto);
+
+      if ($id) {
+        $configDb = new ConfigDb();
+        $configDb->incrementarCorrelativo(8); // 8 es el id de la configuración de hospedajes
+
+        $response = [
+          "mensaje" => "Hospedaje creado correctamente",
+          "resultado" => array_merge([$productosDb->idName => intval($id)], (array) $producto)
+        ];
+        $code = 201;
+      } else {
+        $response = ["mensaje" => "Error al crear el Hospedaje"];
+        $code = 400;
+      }
+
+      $this->sendResponse($response, $code);
+
+    } else if ($action == "servicio") {
+
+      $productoDelBody = $this->getBody();
+
+      $insumos = $productoDelBody->insumos;
+      unset($productoDelBody->insumos);
+
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
+
+      $producto->tipo = "SRV";
+      $producto->id_tipo_de_producto = 12; // TODO: cambiar al id de servicio
+      $producto->activo = 1;
+
+      // comprobar que el producto tenga los datos necesarios
+      $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "id_central_de_costos", "fecha_de_vigencia", "requiere_programacion", "tiempo_estimado", "codigo_habilidad"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
+
+      // si la fecha_vigencia es hoy, se guarda como null
+      $fechaHoy = date("Y-m-d");
+      if ($producto->fecha_de_vigencia == $fechaHoy) {
+        $producto->fecha_de_vigencia = null;
+      }
+
+      // comprobar que los insumos tengan los datos necesarios
+      $camposRequeridos = ["id_producto_insumo", "cantidad", "tipo_de_unidad"];
+      foreach ($insumos as $insumo) {
+        $insumoTemp = $insumo;
+        $insumo = new ProductoReceta();
+        $this->mapJsonToObj($insumoTemp, $insumo);
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
+
+        if (count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
+          return;
+        }
+      }
+
+      try {
+        $productosDb = new ProductosDb();
+        $productosDb->empezarTransaccion();
+
+        // calcular el costo unitario sumando los precios de los insumos
+        $producto->costo_unitario = 0;
+        foreach ($insumos as $insumo) {
+          $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_insumo);
+          if (!$productoInsumo) {
+            $this->sendResponse(["mensaje" => "No se encontró el insumo con id " . $insumo->id_producto_insumo], 400);
             return;
           }
+          $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;
         }
 
-        try {
-          $productosDb = new ProductosDb();
-          $productosDb->empezarTransaccion();
+        $idServicio = $productosDb->crearProducto($producto);
 
-          // calcular el costo unitario sumando los precios de los insumos
-          $producto->costo_unitario = 0;
-          foreach ($insumos as $insumo) {
-            $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_insumo);
-            if (!$productoInsumo) {
-              $this->sendResponse(["mensaje" => "No se encontró el insumo con id " . $insumo->id_producto_insumo], 400);
-              return;
-            }
-            $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;
-          }
+        $productosRecetaDb = new ProductosRecetaDb();
+        $insumosCreados = [];
 
-          $idReceta = $productosDb->crearProducto($producto);
-
-          $productosRecetaDb = new ProductosRecetaDb();
-          $insumosCreados = [];
-
-          foreach ($insumos as $insumo) {
-            $insumoTemp = $insumo;
-            $insumo = new ProductoReceta();
-            $this->mapJsonToObj($insumoTemp, $insumo);
-
-            $insumo->id_producto = $idReceta;
-            $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
-
-            $insumo->id_receta = $idInsumo;
-            $insumosCreados[] = $insumo;
-          }
-
-          $productosDb->terminarTransaccion();
-        } catch (Exception $e) {
-          $productosDb->cancelarTransaccion();
-          $newException = new Exception("Error al crear la Receta", 0, $e);
-          throw $newException;
-        }
-
-        $recetaEInsumosCreados = $idReceta && count($insumos) === count($insumosCreados);
-
-        if ($recetaEInsumosCreados) {
-          $configDb = new ConfigDb();
-          $configDb->incrementarCorrelativo(7); // 7 es el id de la configuración de recetas
-
-          $response = [
-            "mensaje" => "Receta creada correctamente",
-            "resultado" => array_merge([$productosDb->idName => intval($idReceta)], (array) $producto, ["insumos" => $insumosCreados])
-          ];
-          $code = 201;
-        } else {
-          $response = ["mensaje" => "Error al crear la Receta"];
-          $code = 400;
-        }
-
-        $this->sendResponse($response, $code);
-
-        break;
-      case "hospedaje":
-
-        $productoDelBody = $this->getBody();
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
-
-        $producto->tipo = "SVH";
-        $producto->id_tipo_de_producto = 12; // id de servicio
-        $producto->activo = 1;
-
-        // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "id_central_de_costos", "fecha_de_vigencia"];
-        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
-
-        if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
-          return;
-        }
-
-        // si la fecha_vigencia es hoy, se guarda como null
-        $fechaHoy = date("Y-m-d");
-        if ($producto->fecha_de_vigencia == $fechaHoy) {
-          $producto->fecha_de_vigencia = null;
-        }
-
-        $productosDb = new ProductosDb();
-        $id = $productosDb->crearProducto($producto);
-
-        if ($id) {
-          $configDb = new ConfigDb();
-          $configDb->incrementarCorrelativo(8); // 8 es el id de la configuración de hospedajes
-
-          $response = [
-            "mensaje" => "Hospedaje creado correctamente",
-            "resultado" => array_merge([$productosDb->idName => intval($id)], (array) $producto)
-          ];
-          $code = 201;
-        } else {
-          $response = ["mensaje" => "Error al crear el Hospedaje"];
-          $code = 400;
-        }
-
-        $this->sendResponse($response, $code);
-
-        break;
-      case "servicio":
-
-        $productoDelBody = $this->getBody();
-
-        $insumos = $productoDelBody->insumos;
-        unset($productoDelBody->insumos);
-
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
-
-        $producto->tipo = "SRV";
-        $producto->id_tipo_de_producto = 12; // TODO: cambiar al id de servicio
-        $producto->activo = 1;
-
-        // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "id_central_de_costos", "fecha_de_vigencia", "requiere_programacion", "tiempo_estimado", "codigo_habilidad"];
-        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
-
-        if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
-          return;
-        }
-
-        // si la fecha_vigencia es hoy, se guarda como null
-        $fechaHoy = date("Y-m-d");
-        if ($producto->fecha_de_vigencia == $fechaHoy) {
-          $producto->fecha_de_vigencia = null;
-        }
-
-        // comprobar que los insumos tengan los datos necesarios
-        $camposRequeridos = ["id_producto_insumo", "cantidad", "tipo_de_unidad"];
         foreach ($insumos as $insumo) {
           $insumoTemp = $insumo;
           $insumo = new ProductoReceta();
           $this->mapJsonToObj($insumoTemp, $insumo);
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
-            return;
-          }
+          $insumo->id_producto = $idServicio;
+          $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
+
+          $insumo->id_receta = $idInsumo;
+          $insumosCreados[] = $insumo;
         }
 
-        try {
-          $productosDb = new ProductosDb();
-          $productosDb->empezarTransaccion();
+        $productosDb->terminarTransaccion();
+      } catch (Exception $e) {
+        $productosDb->cancelarTransaccion();
+        $newException = new Exception("Error al crear el Servicio", 0, $e);
+        throw $newException;
+      }
 
-          // calcular el costo unitario sumando los precios de los insumos
-          $producto->costo_unitario = 0;
-          foreach ($insumos as $insumo) {
-            $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_insumo);
-            if (!$productoInsumo) {
-              $this->sendResponse(["mensaje" => "No se encontró el insumo con id " . $insumo->id_producto_insumo], 400);
-              return;
-            }
-            $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;
-          }
+      $servicioEInsumosCreados = $idServicio && count($insumos) === count($insumosCreados);
 
-          $idServicio = $productosDb->crearProducto($producto);
+      if ($servicioEInsumosCreados) {
+        $configDb = new ConfigDb();
+        $configDb->incrementarCorrelativo(9); // 9 es el id de la configuración de servicios
 
-          $productosRecetaDb = new ProductosRecetaDb();
-          $insumosCreados = [];
+        $response = [
+          "mensaje" => "Servicio creado correctamente",
+          "resultado" => array_merge([$productosDb->idName => intval($idServicio)], (array) $producto, ["insumos" => $insumosCreados])
+        ];
+        $code = 201;
+      } else {
+        $response = ["mensaje" => "Error al crear el Servicio"];
+        $code = 400;
+      }
 
-          foreach ($insumos as $insumo) {
-            $insumoTemp = $insumo;
-            $insumo = new ProductoReceta();
-            $this->mapJsonToObj($insumoTemp, $insumo);
+      $this->sendResponse($response, $code);
 
-            $insumo->id_producto = $idServicio;
-            $idInsumo = $productosRecetaDb->crearProductoReceta($insumo);
+    } else if ($action == "paquete") {
 
-            $insumo->id_receta = $idInsumo;
-            $insumosCreados[] = $insumo;
-          }
+      $productoDelBody = $this->getBody();
 
-          $productosDb->terminarTransaccion();
-        } catch (Exception $e) {
-          $productosDb->cancelarTransaccion();
-          $newException = new Exception("Error al crear el Servicio", 0, $e);
-          throw $newException;
-        }
+      $insumos = $productoDelBody->insumos;
+      unset($productoDelBody->insumos);
 
-        $servicioEInsumosCreados = $idServicio && count($insumos) === count($insumosCreados);
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
 
-        if ($servicioEInsumosCreados) {
-          $configDb = new ConfigDb();
-          $configDb->incrementarCorrelativo(9); // 9 es el id de la configuración de servicios
+      $producto->tipo = "PAQ";
+      $producto->id_tipo_de_producto = 12; // TODO: cambiar al id de paquete
+      $producto->activo = 1;
 
-          $response = [
-            "mensaje" => "Servicio creado correctamente",
-            "resultado" => array_merge([$productosDb->idName => intval($idServicio)], (array) $producto, ["insumos" => $insumosCreados])
-          ];
-          $code = 201;
-        } else {
-          $response = ["mensaje" => "Error al crear el Servicio"];
-          $code = 400;
-        }
+      // comprobar que el producto tenga los datos necesarios
+      $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "fecha_de_vigencia"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
 
-        $this->sendResponse($response, $code);
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
 
-        break;
-      case "paquete":
+      // si la fecha_vigencia es hoy, se guarda como null
+      $fechaHoy = date("Y-m-d");
+      if ($producto->fecha_de_vigencia == $fechaHoy) {
+        $producto->fecha_de_vigencia = null;
+      }
 
-        $productoDelBody = $this->getBody();
+      // comprobar que los insumos tengan los datos necesarios
+      $camposRequeridos = ["id_producto_producto", "cantidad", "tipo_de_unidad"];
+      foreach ($insumos as $insumo) {
+        $insumoTemp = $insumo;
+        $insumo = new ProductoPaquete();
+        $this->mapJsonToObj($insumoTemp, $insumo);
 
-        $insumos = $productoDelBody->insumos;
-        unset($productoDelBody->insumos);
-
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
-
-        $producto->tipo = "PAQ";
-        $producto->id_tipo_de_producto = 12; // TODO: cambiar al id de paquete
-        $producto->activo = 1;
-
-        // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["nombre_producto", "descripcion_del_producto", "codigo", "id_grupo", "fecha_de_vigencia"];
-        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
         if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
           return;
         }
+      }
 
-        // si la fecha_vigencia es hoy, se guarda como null
-        $fechaHoy = date("Y-m-d");
-        if ($producto->fecha_de_vigencia == $fechaHoy) {
-          $producto->fecha_de_vigencia = null;
+      try {
+        $productosDb = new ProductosDb();
+        $productosDb->empezarTransaccion();
+
+        // calcular el costo unitario sumando los precios de los productos
+        $producto->costo_unitario = 0;
+        foreach ($insumos as $insumo) {
+          $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_producto);
+          if (!$productoInsumo) {
+            $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $insumo->id_producto_producto], 400);
+            return;
+          }
+          $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;
         }
 
-        // comprobar que los insumos tengan los datos necesarios
-        $camposRequeridos = ["id_producto_producto", "cantidad", "tipo_de_unidad"];
+        $idPaquete = $productosDb->crearProducto($producto);
+
+        $productosPaqueteDb = new ProductosPaqueteDb();
+        $insumosCreados = [];
+
         foreach ($insumos as $insumo) {
           $insumoTemp = $insumo;
           $insumo = new ProductoPaquete();
           $this->mapJsonToObj($insumoTemp, $insumo);
 
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
+          $insumo->id_producto = $idPaquete;
+          $idInsumo = $productosPaqueteDb->crearProductoPaquete($insumo);
 
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
-            return;
-          }
+          $insumo->id_paquete = $idInsumo;
+          $insumosCreados[] = $insumo;
         }
 
-        try {
-          $productosDb = new ProductosDb();
-          $productosDb->empezarTransaccion();
+        $productosDb->terminarTransaccion();
+      } catch (Exception $e) {
+        $productosDb->cancelarTransaccion();
+        $newException = new Exception("Error al crear el Paquete", 0, $e);
+        throw $newException;
+      }
 
-          // calcular el costo unitario sumando los precios de los productos
-          $producto->costo_unitario = 0;
-          foreach ($insumos as $insumo) {
-            $productoInsumo = $productosDb->obtenerProducto($insumo->id_producto_producto);
-            if (!$productoInsumo) {
-              $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $insumo->id_producto_producto], 400);
-              return;
-            }
-            $producto->costo_unitario += $productoInsumo->costo_unitario * $insumo->cantidad;
-          }
+      $recetaEInsumosCreados = $idPaquete && count($insumos) === count($insumosCreados);
 
-          $idPaquete = $productosDb->crearProducto($producto);
+      if ($recetaEInsumosCreados) {
+        $configDb = new ConfigDb();
+        $configDb->incrementarCorrelativo(10); // 10 es el id de la configuración de paquetes
 
-          $productosPaqueteDb = new ProductosPaqueteDb();
-          $insumosCreados = [];
+        $response = [
+          "mensaje" => "Paquete creado correctamente",
+          "resultado" => array_merge([$productosDb->idName => intval($idPaquete)], (array) $producto, ["insumos" => $insumosCreados])
+        ];
+        $code = 201;
+      } else {
+        $response = ["mensaje" => "Error al crear el Paquete"];
+        $code = 400;
+      }
 
-          foreach ($insumos as $insumo) {
-            $insumoTemp = $insumo;
-            $insumo = new ProductoPaquete();
-            $this->mapJsonToObj($insumoTemp, $insumo);
+      $this->sendResponse($response, $code);
 
-            $insumo->id_producto = $idPaquete;
-            $idInsumo = $productosPaqueteDb->crearProductoPaquete($insumo);
-
-            $insumo->id_paquete = $idInsumo;
-            $insumosCreados[] = $insumo;
-          }
-
-          $productosDb->terminarTransaccion();
-        } catch (Exception $e) {
-          $productosDb->cancelarTransaccion();
-          $newException = new Exception("Error al crear el Paquete", 0, $e);
-          throw $newException;
-        }
-
-        $recetaEInsumosCreados = $idPaquete && count($insumos) === count($insumosCreados);
-
-        if ($recetaEInsumosCreados) {
-          $configDb = new ConfigDb();
-          $configDb->incrementarCorrelativo(10); // 10 es el id de la configuración de paquetes
-
-          $response = [
-            "mensaje" => "Paquete creado correctamente",
-            "resultado" => array_merge([$productosDb->idName => intval($idPaquete)], (array) $producto, ["insumos" => $insumosCreados])
-          ];
-          $code = 201;
-        } else {
-          $response = ["mensaje" => "Error al crear el Paquete"];
-          $code = 400;
-        }
-
-        $this->sendResponse($response, $code);
-
-        break;
-      default:
-        $this->sendResponse(["mensaje" => "Acción no válida"], 400);
-        break;
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no válida"], 400);
     }
   }
 
@@ -534,144 +527,141 @@ class ProductosController extends BaseController
 
   public function updatePartial($id, $action = null)
   {
-    switch ($action) {
-      case "costos-precios":
-        $productoDelBody = $this->getBody();
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
+    if ($action == "costos-precios") {
 
-        // comprobar que el producto tenga los datos necesarios
-        $camposRequeridos = ["costo_mano_de_obra", "costo_adicional", "porcentaje_margen", "precio_venta_01", "precio_venta_02", "precio_venta_03"];
-        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+      $productoDelBody = $this->getBody();
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
+
+      // comprobar que el producto tenga los datos necesarios
+      $camposRequeridos = ["costo_mano_de_obra", "costo_adicional", "porcentaje_margen", "precio_venta_01", "precio_venta_02", "precio_venta_03"];
+      $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
+
+      if (count($camposFaltantes) > 0) {
+        $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+        return;
+      }
+
+      $productosDb = new ProductosDb();
+
+      $prevProducto = $productosDb->obtenerProducto($id);
+      unset($prevProducto->id_producto);
+
+      // comprobar que el producto exista
+      if (!$prevProducto) {
+        $this->sendResponse(["mensaje" => "Producto no encontrado"], 404);
+        return;
+      }
+
+      // si los datos son iguales, no se hace nada
+      if ($prevProducto == $productoDelBody) {
+        $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
+        return;
+      }
+
+      $result = $productosDb->actualizarProducto($id, $producto);
+
+      $response = $result ? [
+        "mensaje" => "Producto actualizado correctamente",
+        "resultado" => $productosDb->obtenerProducto($id)
+      ] : ["mensaje" => "Error al actualizar el Producto"];
+      $code = $result ? 200 : 400;
+
+      $this->sendResponse($response, $code);
+
+    } else if ($action == "con-insumos" || $action == "con-subproductos") {
+
+      $conInsumos = $action == 'con-insumos';
+
+      $productoDelBody = $this->getBody();
+
+      $insumosAgregados = $productoDelBody->insumos_agregados;
+      unset($productoDelBody->insumos_agregados);
+      $idsInsumosEliminados = $productoDelBody->ids_insumos_eliminados;
+      unset($productoDelBody->ids_insumos_eliminados);
+
+      $producto = new Producto();
+      $this->mapJsonToObj($productoDelBody, $producto);
+
+      $productosDb = new ProductosDb();
+      $prevProducto = $productosDb->obtenerProducto($id);
+      unset($prevProducto->id_producto);
+
+      // comprobar que el producto exista
+      if (!$prevProducto) {
+        $this->sendResponse(["mensaje" => "Producto no encontrado"], 404);
+        return;
+      }
+
+      $sonProductosIguales = $this->compararObjetoActualizar($producto, $prevProducto);
+
+      // si los datos son iguales, no se hace nada
+      if ($sonProductosIguales && count($insumosAgregados) === 0 && count($idsInsumosEliminados) === 0) {
+        $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
+        return;
+      }
+
+      // comprobar que los insumos tengan los datos necesarios
+      $camposRequeridos = [$conInsumos ? 'id_producto_insumo' : 'id_producto_producto', "cantidad", "tipo_de_unidad"];
+      foreach ($insumosAgregados as $insumo) {
+        $insumoTemp = $insumo;
+        $insumo = $conInsumos ? new ProductoReceta() : new ProductoPaquete();
+        $this->mapJsonToObj($insumoTemp, $insumo);
+
+        $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
 
         if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos: " . implode(", ", $camposFaltantes)], 400);
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
           return;
         }
+      }
 
-        $productosDb = new ProductosDb();
+      if ($conInsumos) {
+        $productosRecetaDb = new ProductosRecetaDb();
+      } else {
+        $productosPaqueteDb = new ProductosPaqueteDb();
+      }
+      $insumosCreados = [];
 
-        $prevProducto = $productosDb->obtenerProducto($id);
-        unset($prevProducto->id_producto);
+      foreach ($insumosAgregados as $insumo) {
+        $insumoTemp = $insumo;
+        $insumo = $conInsumos ? new ProductoReceta() : new ProductoPaquete();
+        $this->mapJsonToObj($insumoTemp, $insumo);
 
-        // comprobar que el producto exista
-        if (!$prevProducto) {
-          $this->sendResponse(["mensaje" => "Producto no encontrado"], 404);
-          return;
-        }
+        $insumo->id_producto = $id;
 
-        // si los datos son iguales, no se hace nada
-        if ($prevProducto == $productoDelBody) {
-          $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
-          return;
-        }
-
-        $result = $productosDb->actualizarProducto($id, $producto);
-
-        $response = $result ? [
-          "mensaje" => "Producto actualizado correctamente",
-          "resultado" => $productosDb->obtenerProducto($id)
-        ] : ["mensaje" => "Error al actualizar el Producto"];
-        $code = $result ? 200 : 400;
-
-        $this->sendResponse($response, $code);
-
-        break;
-      case "con-insumos":
-      case "con-subproductos":
-        $conInsumos = $action == 'con-insumos';
-
-        $productoDelBody = $this->getBody();
-
-        $insumosAgregados = $productoDelBody->insumos_agregados;
-        unset($productoDelBody->insumos_agregados);
-        $idsInsumosEliminados = $productoDelBody->ids_insumos_eliminados;
-        unset($productoDelBody->ids_insumos_eliminados);
-
-        $producto = new Producto();
-        $this->mapJsonToObj($productoDelBody, $producto);
-
-        $productosDb = new ProductosDb();
-        $prevProducto = $productosDb->obtenerProducto($id);
-        unset($prevProducto->id_producto);
-
-        // comprobar que el producto exista
-        if (!$prevProducto) {
-          $this->sendResponse(["mensaje" => "Producto no encontrado"], 404);
-          return;
-        }
-
-        $sonProductosIguales = $this->compararObjetoActualizar($producto, $prevProducto);
-
-        // si los datos son iguales, no se hace nada
-        if ($sonProductosIguales && count($insumosAgregados) === 0 && count($idsInsumosEliminados) === 0) {
-          $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
-          return;
-        }
-
-        // comprobar que los insumos tengan los datos necesarios
-        $camposRequeridos = [$conInsumos ? 'id_producto_insumo' : 'id_producto_producto', "cantidad", "tipo_de_unidad"];
-        foreach ($insumosAgregados as $insumo) {
-          $insumoTemp = $insumo;
-          $insumo = $conInsumos ? new ProductoReceta() : new ProductoPaquete();
-          $this->mapJsonToObj($insumoTemp, $insumo);
-
-          $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $insumo);
-
-          if (count($camposFaltantes) > 0) {
-            $this->sendResponse(["mensaje" => "Faltan los siguientes campos de un insumo: " . implode(", ", $camposFaltantes)], 400);
-            return;
-          }
-        }
+        $idInsumo = $conInsumos ? $productosRecetaDb->crearProductoReceta($insumo) : $productosPaqueteDb->crearProductoPaquete($insumo);
 
         if ($conInsumos) {
-          $productosRecetaDb = new ProductosRecetaDb();
+          $insumo->id_receta = $idInsumo;
         } else {
-          $productosPaqueteDb = new ProductosPaqueteDb();
-        }
-        $insumosCreados = [];
-
-        foreach ($insumosAgregados as $insumo) {
-          $insumoTemp = $insumo;
-          $insumo = $conInsumos ? new ProductoReceta() : new ProductoPaquete();
-          $this->mapJsonToObj($insumoTemp, $insumo);
-
-          $insumo->id_producto = $id;
-
-          $idInsumo = $conInsumos ? $productosRecetaDb->crearProductoReceta($insumo) : $productosPaqueteDb->crearProductoPaquete($insumo);
-
-          if ($conInsumos) {
-            $insumo->id_receta = $idInsumo;
-          } else {
-            $insumo->id_paquete = $idInsumo;
-          }
-
-          $insumosCreados[] = $insumo;
+          $insumo->id_paquete = $idInsumo;
         }
 
-        $insumosEliminados = 0;
-        foreach ($idsInsumosEliminados as $idInsumo) {
-          $insumosEliminados += $conInsumos ?
-            $productosRecetaDb->eliminarProductoReceta($idInsumo)
-            : $productosPaqueteDb->eliminarProductoPaquete($idInsumo);
-        }
+        $insumosCreados[] = $insumo;
+      }
 
-        $result = $productosDb->actualizarProducto($id, $producto);
+      $insumosEliminados = 0;
+      foreach ($idsInsumosEliminados as $idInsumo) {
+        $insumosEliminados += $conInsumos ?
+          $productosRecetaDb->eliminarProductoReceta($idInsumo)
+          : $productosPaqueteDb->eliminarProductoPaquete($idInsumo);
+      }
 
-        $productoSeActualizo = $result || count($insumosAgregados) === count($insumosCreados) || $insumosEliminados === count($idsInsumosEliminados);
+      $result = $productosDb->actualizarProducto($id, $producto);
 
-        $response = $productoSeActualizo ? [
-          "mensaje" => "Producto actualizado correctamente",
-          "resultado" => array_merge([$productosDb->idName => intval($id)], (array) $producto, ["insumos_agregados" => $insumosCreados, "ids_insumos_eliminados" => $idsInsumosEliminados])
-        ] : ["mensaje" => "Error al actualizar el Producto"];
-        $code = $productoSeActualizo ? 200 : 400;
+      $productoSeActualizo = $result || count($insumosAgregados) === count($insumosCreados) || $insumosEliminados === count($idsInsumosEliminados);
 
-        $this->sendResponse($response, $code);
+      $response = $productoSeActualizo ? [
+        "mensaje" => "Producto actualizado correctamente",
+        "resultado" => array_merge([$productosDb->idName => intval($id)], (array) $producto, ["insumos_agregados" => $insumosCreados, "ids_insumos_eliminados" => $idsInsumosEliminados])
+      ] : ["mensaje" => "Error al actualizar el Producto"];
+      $code = $productoSeActualizo ? 200 : 400;
 
-        break;
-      default:
-        $this->sendResponse(["mensaje" => "Acción no válida"], 400);
-        break;
+      $this->sendResponse($response, $code);
+
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no válida"], 400);
     }
   }
 

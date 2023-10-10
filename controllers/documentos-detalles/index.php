@@ -123,26 +123,23 @@ class DocumentosDetallesController extends BaseController
 
   public function deleteCustom($id, $action)
   {
-    switch ($action) {
-      case "anular":
-        $documentosDetallesDb = new DocumentosDetallesDb();
+    if ($action == "anular") {
+      $documentosDetallesDb = new DocumentosDetallesDb();
 
-        try {
-          $documentosDetallesDb->empezarTransaccion();
+      try {
+        $documentosDetallesDb->empezarTransaccion();
 
-          $documentosDetallesDb->anularDocumentoDetalle($id);
-          $this->sendResponse(["mensaje" => "Documento Detalle anulado correctamente"], 200);
+        $documentosDetallesDb->anularDocumentoDetalle($id);
+        $this->sendResponse(["mensaje" => "Documento Detalle anulado correctamente"], 200);
 
-          $documentosDetallesDb->terminarTransaccion();
-        } catch (Exception $e) {
-          $documentosDetallesDb->cancelarTransaccion();
-          $this->sendResponse(["mensaje" => $e->getMessage()], 400);
-        }
+        $documentosDetallesDb->terminarTransaccion();
+      } catch (Exception $e) {
+        $documentosDetallesDb->cancelarTransaccion();
+        $this->sendResponse(["mensaje" => $e->getMessage()], 400);
+      }
 
-        break;
-      default:
-        $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
-        break;
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
     }
   }
 }

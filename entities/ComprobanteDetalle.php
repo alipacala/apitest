@@ -7,6 +7,7 @@ class ComprobanteDetalle
   public ?string $nro_registro_maestro;
   public ?int $id_comprobante_ventas;
   public ?int $id_producto;
+  public ?string $descripcion;
   public ?float $cantidad;
   public ?string $tipo_de_unidad;
   public ?float $precio_unitario;

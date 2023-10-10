@@ -13,6 +13,7 @@ require_once PROJECT_ROOT_PATH . "/models/PersonasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
 require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
 require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
+require_once PROJECT_ROOT_PATH . "/models/UnidadesDeNegocioDb.php";
 
 class ComprobantesVentasController extends BaseController
 {
@@ -56,8 +57,7 @@ class ComprobantesVentasController extends BaseController
       }, $result);
     }
 
-    if ($compras && $fechaInicio && $fechaFin)
-    {
+    if ($compras && $fechaInicio && $fechaFin) {
       $result = $comprobantesVentasDb->listarComprasEnRangoFechas($fechaInicio, $fechaFin);
 
       $result = array_map(function ($comprobante) {
@@ -73,7 +73,7 @@ class ComprobantesVentasController extends BaseController
           "igv" => $comprobante["igv"],
           "total" => $comprobante["total"],
           "percepcion" => $comprobante["valor_percepcion"],
-          "gran_total"=> $comprobante["gran_total"],
+          "gran_total" => $comprobante["gran_total"],
           "estado" => $comprobante["estado"],
           "por_pagar" => $comprobante["por_pagar"],
         ];
@@ -149,7 +149,13 @@ class ComprobantesVentasController extends BaseController
       }
     }
 
-    $comprobante->id_unidad_de_negocio = 3; // es el id del Hotel Arenas Spa
+    // buscar el usuario
+    $usuariosDb = new UsuariosDb();
+    $usuario = $usuariosDb->obtenerUsuario($comprobante->id_usuario);
+
+    // asignar la unidad de negocio del usuario al comprobante
+    $comprobante->id_unidad_de_negocio = $usuario->id_unidad_de_negocio;
+
     $comprobante->tipo_movimiento = "SA";
 
     $configDb = new ConfigDb();
@@ -240,10 +246,17 @@ class ComprobantesVentasController extends BaseController
       $feComprobante->serieComprobante = $serie;
       // obtener los 8 últimos caracteres del nro_comprobante
       $feComprobante->nroComprobante = $nro;
-      $feComprobante->tipOperacion = "0101";
+      $feComprobante->tipOperacion = "0101"; // TODO: pendiente de revisar
       $feComprobante->fecEmision = $comprobante->fecha_documento;
       $feComprobante->fecPago = $comprobante->fecha_documento;
-      $feComprobante->codLocalEmisor = "0000";
+
+      // obtener la unidad de negocio
+      $unidadesDeNegocioDb = new UnidadesDeNegocioDb();
+      $unidadDeNegocio = $unidadesDeNegocioDb->obtenerUnidadDeNegocio($comprobante->id_unidad_de_negocio);
+
+      // asignar el código de la unidad de negocio
+      $feComprobante->codLocalEmisor = $unidadDeNegocio->codigo_unidad_de_negocio;
+
       $feComprobante->TipDocUsuario = $comprobante->tipo_documento_cliente === "D" ? "1" : "6";
       $feComprobante->rznSocialUsuario = $nombre;
 
@@ -404,7 +417,6 @@ class ComprobantesVentasController extends BaseController
       unset($comprobanteDelBody->detalles);
       unset($comprobanteDelBody->nombre_cliente);
       unset($comprobanteDelBody->lugar_cliente);
-      unset($comprobanteDelBody->direccion_cliente);
 
       $comprobante = new ComprobanteVentas();
       $this->mapJsonToObj($comprobanteDelBody, $comprobante);
@@ -420,7 +432,7 @@ class ComprobantesVentasController extends BaseController
 
       // comprobar que los detalles sea un array con los datos necesarios
       foreach ($detalles as $detalle) {
-        $camposRequeridos = ["id_producto", "tipo_de_unidad", "cantidad", "precio_unitario"];
+        $camposRequeridos = ["id_producto", "descripcion", "tipo_de_unidad", "cantidad", "precio_unitario"];
         $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $detalle);
 
         if (count($camposFaltantes) > 0) {
@@ -446,7 +458,9 @@ class ComprobantesVentasController extends BaseController
 
       $comprobante->monto_inicial = 0;
       $comprobante->por_pagar = 0;
+
       $comprobante->id_usuario = $comprobante->id_usuario_responsable;
+      $comprobante->hora_documento = $configDb->obtenerFechaYHora()["hora"];
 
       $comprobante->fecha_hora_registro = $configDb->obtenerFechaYHora()["fecha_y_hora"];
 
@@ -464,16 +478,10 @@ class ComprobantesVentasController extends BaseController
       // calcular el subtotal sumando los precios de los detalles
       $comprobante->subtotal = 0;
       foreach ($detalles as $detalle) {
-        $producto = $productosDb->obtenerProducto($detalle->id_producto);
-        if (!$producto) {
-          $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $detalle->id_producto], 400);
-          return;
-        }
-
         $comprobante->subtotal += $detalle->precio_unitario * $detalle->cantidad;
         $comprobantesDetalles[] = $detalle;
       }
-      
+
       // si es una factura
       if ($comprobante->tipo_comprobante == '01') {
         $comprobante->porcentaje_igv = $porcentajeIGV / 100;
@@ -485,7 +493,7 @@ class ComprobantesVentasController extends BaseController
 
       $comprobante->total = $comprobante->subtotal + $comprobante->igv;
       $comprobante->estado = 1;
-      
+
       if ($comprobante->afecto_percepcion) {
         $comprobante->porcentaje_percepcion = $porcentajePercepcion / 100;
         $comprobante->valor_percepcion = $comprobante->total * $comprobante->porcentaje_percepcion;
@@ -493,7 +501,7 @@ class ComprobantesVentasController extends BaseController
       } else {
         $comprobante->gran_total = $comprobante->total;
       }
-      
+
       $comprobante->por_pagar = $comprobante->gran_total;
 
       try {
@@ -511,27 +519,38 @@ class ComprobantesVentasController extends BaseController
 
           $comprobanteDetalle->id_comprobante_ventas = $idComprobante;
           $comprobanteDetalle->id_usuario = $comprobante->id_usuario;
+          $comprobanteDetalle->tipo_movimiento = $comprobante->tipo_movimiento;
 
           $comprobanteDetalle->precio_total = $comprobanteDetalle->precio_unitario * $comprobanteDetalle->cantidad;
+
+          $documentoDetalle = new DocumentoDetalle();
+          // convertir a documentoDetalle
+          if ($comprobanteDetalle->id_producto != 0) {
+            $documentoDetalle->nro_comprobante = $comprobante->nro_comprobante;
+            $documentoDetalle->id_producto = $comprobanteDetalle->id_producto;
+            $documentoDetalle->tipo_movimiento = $comprobante->tipo_movimiento;
+            $documentoDetalle->id_usuario = $comprobante->id_usuario;
+            $documentoDetalle->fecha_hora_registro = $configDb->obtenerFechaYHora()["fecha_y_hora"];
+
+            $documentoDetalle->cantidad = $comprobanteDetalle->cantidad;
+            $documentoDetalle->precio_unitario = $comprobanteDetalle->precio_unitario;
+            $documentoDetalle->tipo_de_unidad = $comprobanteDetalle->tipo_de_unidad;
+
+            $documentoDetalle->precio_total = $comprobanteDetalle->precio_total;
+
+            $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
+            $documentoDetalle->id_documentos_detalle = $idDocumentoDetalle;
+
+            // relaciona el comprobanteDetalle con el documentoDetalle
+            $comprobanteDetalle->id_documentos_detalle = $documentoDetalle->id_documentos_detalle;
+
+            $documentosDetallesCreados[] = $documentoDetalle;
+          }
 
           $idComprobanteDetalle = $comprobantesDetallesDb->crearComprobanteDetalle($comprobanteDetalle);
           $comprobanteDetalle->id_comprobante_detalle = $idComprobanteDetalle;
 
           $comprobantesDetallesCreados[] = $idComprobanteDetalle;
-
-          // convertir a documentoDetalle
-          $documentoDetalle = new DocumentoDetalle();
-          $documentoDetalle->nro_comprobante = $comprobante->nro_comprobante;
-          $documentoDetalle->id_producto = $comprobanteDetalle->id_producto;
-          $documentoDetalle->cantidad = $comprobanteDetalle->cantidad;
-          $documentoDetalle->precio_unitario = $comprobanteDetalle->precio_unitario;
-
-          $documentoDetalle->precio_total = $comprobanteDetalle->precio_total;
-
-          $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
-          $documentoDetalle->id_documentos_detalle = $idDocumentoDetalle;
-
-          $documentosDetallesCreados[] = $documentoDetalle;
         }
 
         // crear o actualizar la persona
@@ -579,7 +598,7 @@ class ComprobantesVentasController extends BaseController
           $personasDb->crearPersona($personaCrear);
         }
 
-        $seHaCreadoComprobante = $idComprobante && count($comprobantesDetallesCreados) === count($comprobantesDetalles) && count($documentosDetallesCreados) === count($comprobantesDetallesCreados);
+        $seHaCreadoComprobante = $idComprobante;
 
         // incrementar el correlativo
         if ($comprobante->tipo_comprobante == '00') {
@@ -594,9 +613,9 @@ class ComprobantesVentasController extends BaseController
           $response = [
             "mensaje" => "Comprobante y sus detalles se han creado correctamente",
             "resultado" => [
-                "comprobante" => array_merge([$comprobantesVentasDb->idName => intval($idComprobante)], (array) $comprobante, ["detalles" => $comprobantesDetallesCreados]),
-                "documentos_detalles" => $documentosDetallesCreados
-              ]
+              "comprobante" => array_merge([$comprobantesVentasDb->idName => intval($idComprobante)], (array) $comprobante, ["detalles" => $comprobantesDetallesCreados]),
+              "documentos_detalles" => $documentosDetallesCreados
+            ]
           ];
           $code = 201;
         } else {
@@ -739,8 +758,7 @@ class ComprobantesVentasController extends BaseController
 
   public function deleteCustom($id, $action)
   {
-    if ($action == 'compra')
-    {
+    if ($action == 'compra') {
       $comprobantesVentasDb = new ComprobantesVentasDb();
       $comprobante = $comprobantesVentasDb->obtenerComprobanteVentas($id);
 
@@ -772,7 +790,7 @@ class ComprobantesVentasController extends BaseController
         $newException = new Exception("Error al anular el comprobante, el fe_comprobante o actualizar los detalles de documento", 0, $e);
         throw $newException;
       }
-      
+
       $response = $seEliminoComprobante ? [
         "mensaje" => "Comprobante de Ventas eliminado correctamente",
         "resultado" => $comprobante
@@ -780,8 +798,7 @@ class ComprobantesVentasController extends BaseController
       $code = $seEliminoComprobante ? 200 : 400;
 
       $this->sendResponse($response, $code);
-    }
-    else {
+    } else {
       $this->sendResponse(["mensaje" => "Acción no permitida"], 404);
     }
   }

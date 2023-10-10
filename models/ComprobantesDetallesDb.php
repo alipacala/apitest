@@ -32,10 +32,7 @@ class ComprobantesDetallesDb extends Database
 
   public function buscarDetallesCompraPorIdComprobante($idComprobante)
   {
-    $query = "SELECT cd.*, pr.nombre_producto
-     FROM comprobante_detalle cd
-    INNER JOIN productos pr ON cd.id_producto = pr.id_producto
-    WHERE cd.id_comprobante_ventas = :id_comprobante;";
+    $query = "SELECT * FROM comprobante_detalle WHERE id_comprobante_ventas = :id_comprobante;";
     $params = array(
       ["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT],
     );
