@@ -547,6 +547,10 @@ class ComprobantesVentasController extends BaseController
             $documentosDetallesCreados[] = $documentoDetalle;
           }
 
+          // debug on production
+          $this->sendResponse($comprobanteDetalle);
+          return;
+          
           $idComprobanteDetalle = $comprobantesDetallesDb->crearComprobanteDetalle($comprobanteDetalle);
           $comprobanteDetalle->id_comprobante_detalle = $idComprobanteDetalle;
 
