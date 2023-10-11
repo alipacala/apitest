@@ -791,8 +791,13 @@ class ComprobantesVentasController extends BaseController
         $comprobantesDetallesDb = new ComprobantesDetallesDb();
         $comprobanteDetallesEliminados = $comprobantesDetallesDb->eliminarComprobanteDetallePorIdComprobante($id);
 
+        // borrar los detalles de documento
         $documentosDetallesDb = new DocumentosDetallesDb();
         $documentosDetallesActualizados = $documentosDetallesDb->eliminarPorNroComprobante($comprobante->nro_comprobante);
+
+        // borrar los recibos de pago
+        $recibosPagoDb = new RecibosPagoDb();
+        $recibosEliminados = $recibosPagoDb->eliminarRecibosPagoPorComprobante($id);
 
         // eliminar el comprobante
         $comprobanteEliminado = $comprobantesVentasDb->eliminarComprobanteVentas($id);

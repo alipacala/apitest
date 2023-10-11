@@ -84,6 +84,10 @@ class RecibosPagoController extends BaseController
         throw new Exception("El monto a pagar es mayor al monto pendiente del comprobante de venta");
       }
 
+      if ($reciboPago->total <= 0) {
+        throw new Exception("El monto a pagar debe ser mayor a 0");
+      }
+
       $comprobantesVentasDb->pagar($reciboPago->id_comprobante_ventas, $reciboPago->total);
 
       // actualizar el id_recibo_de_pago de los documentos detalles
