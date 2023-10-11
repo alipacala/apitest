@@ -6,6 +6,7 @@ require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
+require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
 
 class RecibosPagoController extends BaseController
 {
@@ -31,6 +32,9 @@ class RecibosPagoController extends BaseController
   public function create()
   {
     $reciboPagoDelBody = $this->getBody();
+
+    $esCompra = isset($reciboPagoDelBody->esCompra);
+
     $reciboPago = new ReciboPago();
     $this->mapJsonToObj($reciboPagoDelBody, $reciboPago);
 
@@ -42,20 +46,26 @@ class RecibosPagoController extends BaseController
       return;
     }
 
-    $reciboPago->id_unidad_de_negocio = 3;
-    $reciboPago->tipo_movimiento = "SA";
+    $reciboPago->tipo_movimiento = $esCompra ? "IN" : "SA";
 
     $recibosPagoDb = new RecibosPagoDb();
+    $usuariosDb = new UsuariosDb();
 
     try {
       $recibosPagoDb->empezarTransaccion();
+
+      $usuario = $usuariosDb->obtenerUsuario($reciboPago->id_usuario);
+      if (!$usuario) {
+        throw new Exception("El usuario no existe");
+      }
+      $reciboPago->id_unidad_de_negocio = $usuario->id_unidad_de_negocio;
 
       $configDb = new ConfigDb();
       $serieReciboPago = $configDb->obtenerConfig(18)->numero_correlativo;
       $corrReciboPago = $configDb->obtenerConfig(19)->numero_correlativo;
       $reciboPago->nro_recibo = "RE" . str_pad($serieReciboPago, 2, "0", STR_PAD_LEFT) . "-" . str_pad($corrReciboPago, 6, "0", STR_PAD_LEFT);
 
-      $reciboPago->nro_de_caja = 1;
+      $reciboPago->nro_de_caja = $esCompra ? $reciboPago->nro_de_caja : 1;
       $reciboPago->moneda = "PEN";
       $reciboPago->fecha = $recibosPagoDb->obtenerFechaYHora()["fecha_y_hora"];
       $reciboPago->fecha_hora_registro = $recibosPagoDb->obtenerFechaYHora()["fecha_y_hora"];

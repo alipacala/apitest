@@ -10,11 +10,20 @@ class HabitacionesController extends BaseController
   {
     $params = $this->getParams();
     $deHotelArenasSpa = isset($params['de_hotel_arenas_spa']);
+    $nroHabitacion = $params['nro_habitacion'] ?? null;
 
     $habitacionesDb = new HabitacionesDb();
 
     if ($deHotelArenasSpa) {
       $result = $habitacionesDb->listarDeHotelArenasSpa();
+    }
+    if ($nroHabitacion) {
+      $result = $habitacionesDb->buscarPorNroHabitacion($nroHabitacion);
+
+      if (!$result || count($result) === 0) {
+        $this->sendResponse(["mensaje" => "No se encontraron reservas con el código proporcionado."], 404);
+        return;
+      }
     }
     if (count($params) === 0) {
       $result = $habitacionesDb->listarHabitaciones();

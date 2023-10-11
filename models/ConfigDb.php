@@ -71,6 +71,14 @@ class ConfigDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  function actualizarNumeroCorrelativoReserva($codigo)
+  {
+    $query = "UPDATE config SET numero_correlativo = numero_correlativo + 1 WHERE codigo = :codigo";
+    $params = array(["nombre" => "codigo", "valor" => $codigo, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function incrementarCorrelativo($id)
   {
     $query = "UPDATE config SET numero_correlativo = numero_correlativo + 1 WHERE id_config = :id_config";

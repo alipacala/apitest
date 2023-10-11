@@ -78,9 +78,12 @@ class ComprobantesVentasDb extends Database
   {
     $query = "SELECT co.*,
     pe.nombres, pe.apellidos,
-    CASE WHEN co.por_pagar = 0 THEN '-' ELSE 'X PAGAR' END AS estado
+    CASE WHEN co.por_pagar = 0 THEN '-' ELSE 'X PAGAR' END AS estado,
+    CASE WHEN co.tipo_comprobante = '00' THEN 'PD' WHEN co.tipo_comprobante = '01' THEN 'FA' WHEN co.tipo_comprobante = '03' THEN 'BO' END AS tipo_comprobante,
+    tg.nombre_gasto
     FROM $this->tableName co
     INNER JOIN personanaturaljuridica pe ON co.nro_documento_cliente = pe.nro_documento
+    INNER JOIN tipo_de_gasto tg ON co.id_tipo_de_gasto = tg.id_tipo_de_gasto
     WHERE co.tipo_movimiento = 'IN' AND co.fecha_documento BETWEEN :fecha_inicio AND :fecha_fin
     ORDER BY co.fecha_documento DESC, co.nro_comprobante ASC";
     $params = array(

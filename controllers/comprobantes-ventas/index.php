@@ -66,6 +66,7 @@ class ComprobantesVentasController extends BaseController
         return [
           "id_comprobante" => $comprobante["id_comprobante_ventas"],
           "fecha" => $comprobante["fecha_documento"],
+          "tipo_comprobante" => $comprobante["tipo_comprobante"],
           "nro_comprobante" => $comprobante["nro_comprobante"],
           "ruc" => $comprobante["nro_documento_cliente"],
           "proveedor" => $proveedor,
@@ -76,6 +77,7 @@ class ComprobantesVentasController extends BaseController
           "gran_total" => $comprobante["gran_total"],
           "estado" => $comprobante["estado"],
           "por_pagar" => $comprobante["por_pagar"],
+          "nombre_gasto" => $comprobante["nombre_gasto"],
         ];
       }, $result);
     }
@@ -480,7 +482,7 @@ class ComprobantesVentasController extends BaseController
       foreach ($detalles as $detalle) {
         $comprobante->subtotal += $detalle->precio_unitario * $detalle->cantidad;
         $comprobantesDetalles[] = $detalle;
-      }
+      }      
 
       // si es una factura
       if ($comprobante->tipo_comprobante == '01') {
@@ -540,6 +542,19 @@ class ComprobantesVentasController extends BaseController
 
             $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
             $documentoDetalle->id_documentos_detalle = $idDocumentoDetalle;
+
+            // actualizar el costo unitario del producto con el precio unitario del detalle con IGV
+            $producto = $productosDb->obtenerProducto($comprobanteDetalle->id_producto);
+
+            if ($producto) {
+              $productoActualizar = new Producto();
+              $productoActualizar->costo_unitario = $comprobanteDetalle->precio_unitario * (1 + $comprobante->porcentaje_igv);
+
+              $productosDb->actualizarProducto($producto->id_producto, $productoActualizar);
+            } else {
+              $this->sendResponse(["mensaje" => "No se encontró el producto con id " . $comprobanteDetalle->id_producto], 400);
+              return;
+            }
 
             // relaciona el comprobanteDetalle con el documentoDetalle
             $comprobanteDetalle->id_documentos_detalle = $documentoDetalle->id_documentos_detalle;

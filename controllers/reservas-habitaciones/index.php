@@ -22,16 +22,6 @@ class ReservasHabitacionesController extends BaseController
       }
     }
 
-    if ($nroHabitacion) {
-      $reservasHabitacionesDb = new ReservasHabitacionesDb();
-      $result = $reservasHabitacionesDb->buscarPorNroHabitacion($nroHabitacion);
-
-      if (!$result || count($result) === 0) {
-        $this->sendResponse(["mensaje" => "No se encontraron reservas con el código proporcionado."], 404);
-        return;
-      }
-    }
-
     $reservasHabitacionesDb = new ReservasHabitacionesDb();
     $result = $reservasHabitacionesDb->listarReservasHabitaciones();
 

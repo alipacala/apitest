@@ -15,6 +15,14 @@ class ReservasDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
+  public function buscarPorNroReserva($nroReserva)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_reserva = :nro_reserva";
+    $params = array(["nombre" => "nro_reserva", "valor" => $nroReserva, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
   public function listarReservas()
   {
     $query = $this->prepareQuery("select");

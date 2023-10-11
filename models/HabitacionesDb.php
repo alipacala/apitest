@@ -30,6 +30,15 @@ class HabitacionesDb extends Database
     return $this->executeQuery($query);
   }
 
+  public function buscarPorNroHabitacion($nroHabitacion)
+  {
+    $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.precio_venta_01, p.precio_venta_02, p.precio_venta_03 FROM $this->tableName h
+    INNER JOIN productos p ON h.id_producto = p.id_producto WHERE h.nro_habitacion = :nro_habitacion";
+    $params = array(["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select");
+  }
+
   public function crearHabitacion(Habitacion $habitacion)
   {
     $habitacionArray = $this->prepareData((array) $habitacion, "insert");
