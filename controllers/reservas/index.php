@@ -60,7 +60,7 @@ class ReservasController extends BaseController
 
       // actualizar config de reservas
       $codigo = "RE" . date("y");
-      $seActualizoConfig = $configDb->actualizarNumeroCorrelativoReserva($codigo);
+      $seActualizoConfig = $configDb->actualizarNumeroCorrelativo($codigo);
 
       if (!$seActualizoConfig) {
         $this->sendResponse(["mensaje" => "Error al actualizar el número correlativo de la Reserva"], 400);
@@ -150,7 +150,7 @@ class ReservasController extends BaseController
         return;
       }
 
-      $result = $reservasDb->actualizarReserva($id, $reserva);
+      $result = $reservasDb->actualizarReserva($prevReserva->id_reserva, $reserva);
 
       $response = $result ? [
         "mensaje" => "Reserva actualizada correctamente",
@@ -159,6 +159,7 @@ class ReservasController extends BaseController
       $code = $result ? 200 : 400;
 
       $this->sendResponse($response, $code);
+    
     } else {
       $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
     }

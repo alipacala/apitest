@@ -22,6 +22,15 @@ class RecibosPagoDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function buscarPorIdComprobante($idComprobante)
+  {
+    $query = "SELECT * FROM $this->tableName
+     WHERE id_comprobante_ventas = :id_comprobante";
+    $params = array(["nombre" => "id_comprobante", "valor" => $idComprobante, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "select");
+  }
+
   public function crearReciboPago(ReciboPago $reciboPago)
   {
     $reciboPagoArray = $this->prepareData((array) $reciboPago, "insert");

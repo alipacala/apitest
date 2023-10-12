@@ -235,6 +235,47 @@ class CheckingsController extends BaseController
       $code = $checkingYAcompanantesCreados ? 201 : 400;
 
       $this->sendResponse($response, $code);
+
+    } else if ($action == 'hotel') {
+      
+      $checkingDelBody = $this->getBody();
+      $checking = new Checking();
+      $this->mapJsonToObj($checkingDelBody, $checking);
+      
+      $codigo = "HT" . date("y");
+
+      $configDb = new ConfigDb();
+      $configDb->actualizarNumeroCorrelativo($codigo);
+      $nro_registro_maestro = $configDb->obtenerCodigo(11)['codigo'];
+
+      // actualizar la reserva
+      $reservasDb = new ReservasDb();
+      $reservasDb->asignarNroRegistroMaestroPorNroReserva($checkingDelBody->nro_reserva, $nro_registro_maestro);
+
+      // consultar datos de la reserva
+      $reserva = $reservasDb->buscarConPrecioPorNroReserva($checkingDelBody->nro_reserva)[0];
+
+      // mapear los datos de la reserva al checking
+      $checking->id_unidad_de_negocio = $reserva["id_unidad_de_negocio"];
+      $checking->nro_registro_maestro = $nro_registro_maestro;
+      $checking->tipo_de_servicio = "HOTEL";
+      $checking->nombre = $reserva["nombre"];
+      $checking->lugar_procedencia = $reserva["lugar_procedencia"];
+      $checking->id_modalidad = $reserva["id_modalidad"];
+      $checking->nro_personas = $reserva["nro_personas"];
+      $checking->fecha_in = $reserva["fecha_llegada"];
+      $checking->hora_in = $reserva["hora_llegada"];
+      $checking->fecha_out = $reserva["fecha_salida"];
+
+      $precioUnitario = $reserva["precio_unitario"];
+
+      // crear el checking
+      $checkingsDb = new CheckingsDb();
+      $idChecking = $checkingsDb->crearChecking($checking);
+
+      // consultar la reserva con sus habitaciones
+      $reserva = $reservasDb->busca($checkingDelBody->nro_reserva)[0];
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }

@@ -38,6 +38,30 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
+  public function generarKardex($idProducto, $fechaInicio, $fechaFin)
+  {
+    /* $query = "SELECT
+      fecha,
+      NroDoc,
+      Nombre,
+      Ingreso,
+      Salida,
+      SUM(Ingreso - Salida) OVER (ORDER BY Fecha) AS Existencia,
+      TUnd,
+      PCosto
+    FROM
+        (
+            SELECT Fecha, NroDoc, Nombre, Ingreso, 0 AS Salida, TUnd, PCosto
+            FROM Transacciones
+            WHERE Nombre = 'NOMBRE_DEL_PRODUCTO' AND Fecha BETWEEN '2023-10-01' AND '2023-12-31'
+            UNION ALL
+            SELECT Fecha, NroDoc, Nombre, 0 AS Ingreso, Salida, TUnd, PCosto
+            FROM Transacciones
+            WHERE Nombre = 'NOMBRE_DEL_PRODUCTO' AND Fecha BETWEEN '2023-10-01' AND '2023-12-31'
+        ) AS Subquery
+    ORDER BY Fecha;"; */
+  }
+
   public function crearDocumentoDetalle(DocumentoDetalle $documentoDetalle)
   {
     $documentoDetalleArray = $this->prepareData((array) $documentoDetalle, "insert");

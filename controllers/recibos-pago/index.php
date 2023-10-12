@@ -12,8 +12,16 @@ class RecibosPagoController extends BaseController
 {
   public function get()
   {
-    $recibosPagoDb = new RecibosPagoDb();
-    $result = $recibosPagoDb->listarRecibosPago();
+    $params = $this->getParams();
+    $idComprobante = $params['id_comprobante'] ?? null;
+
+    if ($idComprobante) {
+      $recibosPagoDb = new RecibosPagoDb();
+      $result = $recibosPagoDb->buscarPorIdComprobante($idComprobante);
+    } else {
+      $recibosPagoDb = new RecibosPagoDb();
+      $result = $recibosPagoDb->listarRecibosPago();
+    }
 
     $this->sendResponse($result, 200);
   }

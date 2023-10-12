@@ -56,6 +56,66 @@ class ProductosDb extends Database
     return $this->executeQuery($query, null);
   }
 
+  public function buscarConDocDetallesPorNombreProducto($nombresProducto)
+  {
+    $query = "SELECT tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
+      SUM(CASE 
+        WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
+        WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad
+        ELSE 0
+      END) AS stock,
+      SUM(CASE 
+        WHEN dd.tipo_movimiento = 'IN' THEN dd.precio_total
+        WHEN dd.tipo_movimiento = 'SA' THEN -dd.precio_total
+        ELSE 0
+      END) AS costo_total 
+    FROM $this->tableName pr
+    INNER JOIN documento_detalle dd ON dd.id_producto = pr.id_producto
+    INNER JOIN tipodeproductos tp ON tp.id_tipo_producto = pr.id_tipo_de_producto
+    WHERE ";
+
+    // buscar por nombre de producto
+    foreach ($nombresProducto as $key => $nombreProducto) {
+      $query .= "pr.nombre_producto LIKE :nombre_producto_$key";
+      if (next($nombresProducto)) {
+        $query .= " OR ";
+      }
+    }
+
+    $query .= " GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad";
+
+    $params = array_map(function ($key, $value) {
+      return array("nombre" => "nombre_producto_$key", "valor" => "%$value%", "tipo" => PDO::PARAM_STR);
+    }, array_keys($nombresProducto), $nombresProducto);
+
+    return $this->executeQuery($query, $params);
+  }
+
+  public function buscarConDocDetallesPorTipoProducto($tipoProducto)
+  {
+    $query = "SELECT tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
+      SUM(CASE 
+        WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
+        WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad
+        ELSE 0
+      END) AS stock,
+      SUM(CASE 
+        WHEN dd.tipo_movimiento = 'IN' THEN dd.precio_total
+        WHEN dd.tipo_movimiento = 'SA' THEN -dd.precio_total
+        ELSE 0
+      END) AS costo_total 
+    FROM $this->tableName pr
+    INNER JOIN documento_detalle dd ON dd.id_producto = pr.id_producto
+    INNER JOIN tipodeproductos tp ON tp.id_tipo_producto = pr.id_tipo_de_producto
+    WHERE pr.id_tipo_de_producto = :id_tipo_de_producto
+    GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad";
+    $params = array(
+      array("nombre" => "id_tipo_de_producto", "valor" => $tipoProducto, "tipo" => PDO::PARAM_INT)
+    );
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function crearProducto(Producto $producto)
   {
     $productoArray = $this->prepareData((array) $producto, "insert");

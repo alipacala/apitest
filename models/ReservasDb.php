@@ -55,6 +55,16 @@ class ReservasDb extends Database
     return $this->executeQuery($query);
   }
 
+  public function buscarConPrecioPorNroReserva($nroReserva)
+  {
+    $query = "SELECT  r.nombre, r.lugar_procedencia, r.id_modalidad, r.id_unidad_de_negocio, r.nro_registro_maestro, r.nro_reserva, rh.precio_unitario, r.nro_personas, r.fecha_llegada, r.hora_llegada, r.fecha_salida FROM reservas r
+    INNER JOIN reservahabitaciones rh ON rh.nro_reserva = r.nro_reserva
+    WHERE r.nro_reserva = :nro_reserva";
+    $params = array(["nombre" => "nro_reserva", "valor" => $nroReserva, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function crearReserva(Reserva $reserva)
   {
     $reservaArray = $this->prepareData((array) $reserva, "insert");
@@ -69,6 +79,17 @@ class ReservasDb extends Database
     $reservaArray = $this->prepareData((array) $reserva);
     $query = $this->prepareQuery("update", $reservaArray);
     $params = $this->prepareParams($reservaArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function asignarNroRegistroMaestroPorNroReserva($nroReserva, $nroRegistroMaestro)
+  {
+    $query = "UPDATE $this->tableName SET nro_registro_maestro = :nro_registro_maestro, estado_pago = 1 WHERE nro_reserva = :nro_reserva";
+    $params = array(
+      ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_reserva", "valor" => $nroReserva, "tipo" => PDO::PARAM_STR]
+    );
 
     return $this->executeQuery($query, $params, "update");
   }

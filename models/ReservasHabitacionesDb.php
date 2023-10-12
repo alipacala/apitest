@@ -30,6 +30,17 @@ class ReservasHabitacionesDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function buscarReservaConHabitacionesPorNroHabitacion($nroReserva)
+  {
+    $query = "SELECT rh.nro_personas, rh.nro_habitacion, h.id_producto, rh.precio_unitario, r.fecha_llegada, r.fecha_salida, r.hora_llegada FROM reservahabitaciones rh
+    INNER JOIN reservas r ON r.nro_reserva = rh.nro_reserva
+    INNER JOIN habitaciones h ON rh.nro_habitacion = h.nro_habitacion
+    WHERE r.nro_reserva = :nro_reserva";
+    $params = array(["nombre" => "nro_reserva", "valor" => $nroReserva, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function crearReservaHabitacion(ReservaHabitacion $reservaHabitacion)
   {
     $reservaHabitacionArray = $this->prepareData((array) $reservaHabitacion, "insert");

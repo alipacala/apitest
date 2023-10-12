@@ -6,6 +6,7 @@ require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosRecetaDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosPaqueteDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
+require_once PROJECT_ROOT_PATH . "/models/TiposDeProductosDb.php";
 
 class ProductosController extends BaseController
 {
@@ -17,6 +18,9 @@ class ProductosController extends BaseController
 
     $hospedajes = isset($params['hospedajes']);
 
+    $stock = isset($params['stock']);
+    $tipoProducto = $params['tipo_producto'] ?? null;
+
     $productosDb = new ProductosDb();
 
     if ($hospedajes) {
@@ -27,6 +31,26 @@ class ProductosController extends BaseController
     }
     if ($nombreProducto) {
       $result = $productosDb->buscarPorNombre($nombreProducto);
+    }
+    if ($stock) {
+      if ($nombreProducto) {
+        // partir el nombre en palabras
+        $nombresProducto = explode(" ", $nombreProducto);
+
+        $result = $productosDb->buscarConDocDetallesPorNombreProducto($nombresProducto);
+
+        // agrupar los resultados por tipo de producto
+        $result = array_reduce($result, function ($acc, $producto) {
+          $acc[$producto["tipo_producto"]][] = $producto;
+          return $acc;
+        }, []);
+      }
+      if ($tipoProducto) {
+        $tiposDeProductosDb = new TiposDeProductosDb();
+        $nombreTipo = $tiposDeProductosDb->obtenerTipoDeProductos($tipoProducto)->nombre_tipo_de_producto;
+
+        $result = array($nombreTipo => $productosDb->buscarConDocDetallesPorTipoProducto($tipoProducto));
+      }
     }
     if (count($params) === 0) {
       $result = $productosDb->listarProductos();
@@ -107,7 +131,7 @@ class ProductosController extends BaseController
       $producto->activo = 1;
 
       // comprobar que el producto tenga los datos necesarios
-      $camposRequeridos = ["nombre_producto", "codigo", "tipo_de_unidad", "id_tipo_de_producto", "fecha_de_vigencia", "stock_min_temporada_baja", "stock_max_temporada_baja", "stock_min_temporada_alta", "stock_max_temporada_alta", "cantidad_de_fracciones"];
+      $camposRequeridos = ["nombre_producto", "codigo", "tipo_de_unidad", "id_tipo_de_producto", "fecha_de_vigencia", "stock_min_temporada_baja", "stock_max_temporada_baja", "stock_min_temporada_alta", "stock_max_temporada_alta", "cantidad_de_fracciones", "tipo_de_unidad_de_fracciones"];
       $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $producto);
 
       if (count($camposFaltantes) > 0) {
