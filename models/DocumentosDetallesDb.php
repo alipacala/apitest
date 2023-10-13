@@ -40,26 +40,95 @@ class DocumentosDetallesDb extends Database
 
   public function generarKardex($idProducto, $fechaInicio, $fechaFin)
   {
-    /* $query = "SELECT
-      fecha,
-      NroDoc,
-      Nombre,
-      Ingreso,
-      Salida,
-      SUM(Ingreso - Salida) OVER (ORDER BY Fecha) AS Existencia,
-      TUnd,
-      PCosto
-    FROM
-        (
-            SELECT Fecha, NroDoc, Nombre, Ingreso, 0 AS Salida, TUnd, PCosto
-            FROM Transacciones
-            WHERE Nombre = 'NOMBRE_DEL_PRODUCTO' AND Fecha BETWEEN '2023-10-01' AND '2023-12-31'
-            UNION ALL
-            SELECT Fecha, NroDoc, Nombre, 0 AS Ingreso, Salida, TUnd, PCosto
-            FROM Transacciones
-            WHERE Nombre = 'NOMBRE_DEL_PRODUCTO' AND Fecha BETWEEN '2023-10-01' AND '2023-12-31'
-        ) AS Subquery
-    ORDER BY Fecha;"; */
+    $query = "WITH dd_antes_fecha AS (
+      SELECT
+          tipo_movimiento,
+          cantidad,
+          tipo_de_unidad,
+          precio_unitario,
+          fecha
+        FROM documento_detalle
+        WHERE id_producto = :id_producto1 AND fecha < :fecha_inicio1
+    ),
+    
+    dd_entre_fechas AS (
+      SELECT
+          dd.fecha,
+          CASE WHEN dd.tipo_movimiento = 'IN' THEN dd.nro_comprobante ELSE dm.nro_de_comanda END AS nro_doc,
+          CASE WHEN dd.tipo_movimiento = 'IN' THEN pe1.apellidos ELSE pe2.apellidos END AS apellidos,
+          CASE WHEN dd.tipo_movimiento = 'IN' THEN pe1.nombres ELSE pe2.nombres END AS nombres,
+          dd.tipo_de_unidad,
+          dd.precio_unitario,
+          CASE WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad ELSE 0 END AS ingreso,
+          CASE WHEN dd.tipo_movimiento = 'SA' THEN dd.cantidad ELSE 0 END AS salida,
+        
+          dd.tipo_movimiento
+        
+        FROM documento_detalle dd
+        LEFT JOIN comprobante_detalle cd ON dd.id_documentos_detalle = cd.id_documentos_detalle
+        LEFT JOIN comprobante_ventas cv ON cd.id_comprobante_ventas = cv.id_comprobante_ventas
+        LEFT JOIN personanaturaljuridica pe1 ON cv.nro_documento_cliente = pe1.nro_documento
+        LEFT JOIN documento_movimiento dm ON dd.id_documento_movimiento = dm.id_documento_movimiento
+        LEFT JOIN personanaturaljuridica pe2 ON dm.nro_documento = pe2.nro_documento
+        
+        WHERE dd.id_producto = :id_producto2 AND CAST(dd.fecha AS DATE) BETWEEN :fecha_inicio2 AND :fecha_fin
+    ),
+    
+    monto_antes_fecha AS (
+                    SELECT
+                      ultimo_dd.tipo_de_unidad,
+                      ultimo_dd.precio_unitario,
+                      SUM(CASE WHEN tipo_movimiento = 'IN' THEN cantidad ELSE -cantidad END) AS antes_fecha
+                    FROM dd_antes_fecha
+                    JOIN (
+                        SELECT tipo_de_unidad, precio_unitario
+                        FROM dd_antes_fecha
+                        ORDER BY fecha DESC
+                        LIMIT 1
+                    ) AS ultimo_dd
+                  ),
+    
+    monto_antes_y_dd_prev AS (
+        SELECT
+          NULL AS tipo_movimiento,
+            NULL AS fecha,
+            NULL AS nro_doc,
+            NULL AS apellidos,
+            NULL AS nombres,
+            maf.tipo_de_unidad,
+            maf.precio_unitario,
+            CASE WHEN antes_fecha >= 0 THEN antes_fecha ELSE 0 END AS ingreso,
+            CASE WHEN antes_fecha < 0 THEN -antes_fecha ELSE 0 END AS salida
+        FROM monto_antes_fecha maf
+    
+        UNION ALL
+    
+        SELECT
+          tipo_movimiento,
+            fecha,
+            nro_doc,
+            apellidos,
+            nombres,
+            tipo_de_unidad,
+            precio_unitario,
+            ingreso,
+            salida
+        FROM dd_entre_fechas
+    )
+    
+    SELECT
+      *, SUM(ingreso - salida) OVER (ORDER BY fecha, tipo_movimiento, EXTRACT(HOUR FROM fecha)) AS existencias
+    FROM monto_antes_y_dd_prev";
+
+    $params = array(
+      ["nombre" => "id_producto1", "valor" => $idProducto, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_producto2", "valor" => $idProducto, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "fecha_inicio1", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_inicio2", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_fin", "valor" => $fechaFin, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params);
   }
 
   public function crearDocumentoDetalle(DocumentoDetalle $documentoDetalle)

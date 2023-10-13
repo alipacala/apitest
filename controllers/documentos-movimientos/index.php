@@ -63,9 +63,12 @@ class DocumentosMovimientoController extends BaseController
       $detalles = $documentoMovimientoDelBody->detalles;
       unset($documentoMovimientoDelBody->detalles);
 
+      // obtener el checkin
+      $checkin = $checkingsDb->buscarPorNroRegistroMaestro($documentoMovimiento->nro_registro_maestro);
+
       $documentoMovimiento->tipo_movimiento = 'SA'; // salida
-      $documentoMovimiento->tipo_documento = 'CM'; // comanda
-      $documentoMovimiento->nro_documento = $configDb->obtenerConfig(5)->codigo; // 5 es el id de las comandas en la tabla config
+      $documentoMovimiento->tipo_documento = $checkin->tipo_documento; // tipo de documento del cliente
+      $documentoMovimiento->nro_documento = $checkin->nro_documento; // nro de documento del cliente
 
       $fechaYHora = $documentosMovimientosDb->obtenerFechaYHora();
 
@@ -74,7 +77,7 @@ class DocumentosMovimientoController extends BaseController
       $documentoMovimiento->hora_movimiento = $fechaYHora['hora'];
       $documentoMovimiento->fecha_hora_registro = $fechaYHora['fecha_y_hora'];
 
-      $documentoMovimiento->nro_de_comanda = $documentoMovimiento->nro_documento; // el mismo que el nro de documento
+      $documentoMovimiento->nro_de_comanda = $configDb->obtenerCodigo(5)["codigo"]; // 5 es el id de las comandas en la tabla config
 
       $documentoMovimiento->id_unidad_de_negocio = $checkingsDb->buscarPorNroRegistroMaestro($documentoMovimiento->nro_registro_maestro)->id_unidad_de_negocio;
 

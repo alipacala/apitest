@@ -58,7 +58,7 @@ class ProductosDb extends Database
 
   public function buscarConDocDetallesPorNombreProducto($nombresProducto)
   {
-    $query = "SELECT tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
+    $query = "SELECT pr.id_producto, tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
       SUM(CASE 
         WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
         WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad

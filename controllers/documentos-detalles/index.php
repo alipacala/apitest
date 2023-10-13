@@ -13,6 +13,11 @@ class DocumentosDetallesController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $nroComprobanteVenta = $params['nro_comprobante_venta'] ?? null;
 
+    $kardex = isset($params['kardex']);
+    $fechaInicio = $params['fecha_inicio'] ?? null;
+    $fechaFin = $params['fecha_fin'] ?? null;
+    $idProducto = $params['id_producto'] ?? null;
+
     $documentosDetallesDb = new DocumentosDetallesDb();
 
     if ($nroRegistroMaestro) {
@@ -28,6 +33,9 @@ class DocumentosDetallesController extends BaseController
     }
     if ($nroComprobanteVenta) {
       $result = $documentosDetallesDb->buscarPorNroComprobanteVenta($nroComprobanteVenta);
+    }
+    if($kardex) {
+      $result = $documentosDetallesDb->generarKardex($idProducto, $fechaInicio, $fechaFin);
     }
     if (count($params) === 0) {
       $result = $documentosDetallesDb->listarDocumentosDetalles();
