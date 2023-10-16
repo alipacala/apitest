@@ -22,10 +22,10 @@ class PersonasDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function buscarPorDni($dni)
+  public function buscarPorNroDocumento($nroDocumento)
   {
     $query = "SELECT * FROM $this->tableName WHERE nro_documento = :nro_documento";
-    $params = array(["nombre" => "nro_documento", "valor" => $dni, "tipo" => PDO::PARAM_STR]);
+    $params = array(["nombre" => "nro_documento", "valor" => $nroDocumento, "tipo" => PDO::PARAM_STR]);
 
     return $this->executeQuery($query, $params, "select-one");
   }

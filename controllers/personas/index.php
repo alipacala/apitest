@@ -14,7 +14,7 @@ class PersonasController extends BaseController
     $personasDb = new PersonasDb();
 
     if ($dni) {
-      $result = $personasDb->buscarPorDni($dni);
+      $result = $personasDb->buscarPorNroDocumento($dni);
     }
     if (count($params) === 0) {
       $result = $personasDb->listarPersonas();

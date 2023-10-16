@@ -108,6 +108,7 @@ class ProductosDb extends Database
     INNER JOIN documento_detalle dd ON dd.id_producto = pr.id_producto
     INNER JOIN tipodeproductos tp ON tp.id_tipo_producto = pr.id_tipo_de_producto
     WHERE pr.id_tipo_de_producto = :id_tipo_de_producto
+      AND pr.tipo != 'SVH' AND pr.tipo != 'SRV' AND pr.tipo != 'PAQ'
     GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad";
     $params = array(
       array("nombre" => "id_tipo_de_producto", "valor" => $tipoProducto, "tipo" => PDO::PARAM_INT)

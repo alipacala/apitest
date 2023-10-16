@@ -14,6 +14,7 @@ require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
 require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
 require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/UnidadesDeNegocioDb.php";
+require_once PROJECT_ROOT_PATH . "/models/DocumentosMovimientosDb.php";
 
 class ComprobantesVentasController extends BaseController
 {
@@ -314,7 +315,7 @@ class ComprobantesVentasController extends BaseController
 
       // actualizar datos de la personanaturaljuridica
       $personasDb = new PersonasDb();
-      $persona = $personasDb->buscarPorDni($comprobante->nro_documento_cliente);
+      $persona = $personasDb->buscarPorNroDocumento($comprobante->nro_documento_cliente);
 
       if ($persona) {
         $personaActualizar = new Persona();
@@ -506,10 +507,26 @@ class ComprobantesVentasController extends BaseController
 
       $comprobante->por_pagar = $comprobante->gran_total;
 
+      // crear un documento movimiento reflejo del comprobante
+      $documentoMovimiento = new DocumentoMovimiento();
+      $documentoMovimiento->id_unidad_de_negocio = $comprobante->id_unidad_de_negocio;
+      $documentoMovimiento->tipo_movimiento = $comprobante->tipo_movimiento;
+      $documentoMovimiento->tipo_documento = $comprobante->tipo_comprobante;
+      $documentoMovimiento->nro_documento = $comprobante->nro_comprobante;
+      $documentoMovimiento->fecha_movimiento = $comprobante->fecha_documento;
+      $documentoMovimiento->fecha_documento = $comprobante->fecha_documento;
+      $documentoMovimiento->hora_movimiento = $comprobante->hora_documento;
+      $documentoMovimiento->total = $comprobante->gran_total;
+      $documentoMovimiento->id_usuario = $comprobante->id_usuario;
+      $documentoMovimiento->fecha_hora_registro = $comprobante->fecha_hora_registro;
+
+      $documentosMovimientosDb = new DocumentosMovimientosDb();
+
       try {
         $comprobantesVentasDb->empezarTransaccion();
 
         $idComprobante = $comprobantesVentasDb->crearComprobanteVentas($comprobante);
+        $idDocumentoMovimiento = $documentosMovimientosDb->crearDocumentoMovimiento($documentoMovimiento);
 
         $comprobantesDetallesCreados = [];
         $documentosDetallesCreados = [];
@@ -539,6 +556,9 @@ class ComprobantesVentasController extends BaseController
             $documentoDetalle->tipo_de_unidad = $comprobanteDetalle->tipo_de_unidad;
 
             $documentoDetalle->precio_total = $comprobanteDetalle->precio_total;
+
+            // relaciona el documentoDetalle con el documentoMovimiento
+            $documentoDetalle->id_documento_movimiento = $idDocumentoMovimiento;
 
             $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
             $documentoDetalle->id_documentos_detalle = $idDocumentoDetalle;
@@ -570,7 +590,7 @@ class ComprobantesVentasController extends BaseController
 
         // crear o actualizar la persona
         $personasDb = new PersonasDb();
-        $personaPrev = $personasDb->buscarPorDni($comprobante->nro_documento_cliente);
+        $personaPrev = $personasDb->buscarPorNroDocumento($comprobante->nro_documento_cliente);
 
         if ($personaPrev) {
           $personaActualizar = new Persona();

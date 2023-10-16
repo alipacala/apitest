@@ -137,7 +137,7 @@ class CheckingsController extends BaseController
         }
 
         $dni = $titularDelBody->nro_documento;
-        $titular = $personasDb->buscarPorDni($dni);
+        $titular = $personasDb->buscarPorNroDocumento($dni);
 
         $edad = $titularDelBody->edad ?? null;
 

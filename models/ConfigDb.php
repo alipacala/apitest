@@ -46,6 +46,13 @@ class ConfigDb extends Database
         "codigo" => $result->codigo . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
       );
 
+    } else if ($id == 25) {
+
+      $result = array(
+        "codigo" => $result->codigo . "2301" .
+          str_pad($result->numero_correlativo, 4, "0", STR_PAD_LEFT)
+      );
+
     } else {
       $result = array(
         "codigo" => $result->codigo .

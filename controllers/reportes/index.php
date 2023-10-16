@@ -8,6 +8,7 @@ require_once PROJECT_ROOT_PATH . "/models/GruposDeLaCartaDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
@@ -18,6 +19,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDiarioCaja.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDiarioDetalles.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteListadoCatalogo.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteCompras.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteConsultaProductosInsumos.php";
 
 class ReportesController extends BaseController
 {
@@ -39,9 +41,12 @@ class ReportesController extends BaseController
     $nroComprobante = $params['nro_comprobante'] ?? null;
 
     $idGrupo = $params['id_grupo'] ?? null;
-    
+
     $fechaInicio = $params['fecha_inicio'] ?? null;
     $fechaFin = $params['fecha_fin'] ?? null;
+
+    $nombreProducto = $params['nombre_producto'] ?? null;
+    $tipoProducto = $params['tipo_producto'] ?? null;
 
     $reportesDb = new ReportesDb();
 
@@ -146,7 +151,7 @@ class ReportesController extends BaseController
           "igv" => $comprobante["igv"],
           "total" => $comprobante["total"],
           "percepcion" => $comprobante["valor_percepcion"],
-          "gran_total"=> $comprobante["gran_total"],
+          "gran_total" => $comprobante["gran_total"],
           "estado" => $comprobante["estado"],
           "por_pagar" => $comprobante["por_pagar"],
         ];
@@ -154,6 +159,28 @@ class ReportesController extends BaseController
 
       $reporteCompras = new ReporteCompras();
       $this->sendResponse($reporteCompras->generarReporte($result, $fechaInicio, $fechaFin), 200);
+
+    } else if ($tipo == "consulta-productos-insumos") {
+
+      $nombresProducto = explode(" ", $nombreProducto);
+
+      $productosDb = new ProductosDb();
+
+      $result = null;
+      if ($nombreProducto) {
+        $result = $productosDb->buscarConDocDetallesPorNombreProducto($nombresProducto);
+      } else if ($tipoProducto) {
+        $result = $productosDb->buscarConDocDetallesPorTipoProducto($tipoProducto);
+      }
+
+      // agrupar los resultados por tipo de producto
+      $result = array_reduce($result, function ($acc, $producto) {
+        $acc[$producto["tipo_producto"]][] = $producto;
+        return $acc;
+      }, []);
+
+      $reporteConsultaProductosInsumos = new ReporteConsultaProductosInsumos();
+      $this->sendResponse($reporteConsultaProductosInsumos->generarReporte($result, $nombreProducto, $tipoProducto), 200);
 
     } else {
       // no hay ese tipo de reporte
