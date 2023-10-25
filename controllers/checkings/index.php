@@ -8,6 +8,9 @@ require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/AcompanantesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ReservasDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ReservasHabitacionesDb.php";
+require_once PROJECT_ROOT_PATH . "/models/RoomingDb.php";
 
 class CheckingsController extends BaseController
 {
@@ -16,15 +19,18 @@ class CheckingsController extends BaseController
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $nroHabitacion = $params['nro_habitacion'] ?? null;
+    $idChecking = $params['id_checking'] ?? null;
 
     $cerrados = isset($params['cerrados']);
     $abiertos = isset($params['abiertos']);
     $conTipoPrecio = isset($params['con_tipo_precio']);
 
+    $nroReserva = $params['nro_reserva'] ?? null;
+
     $checkingsDb = new CheckingsDb();
 
     if ($conTipoPrecio) {
-      $result = $checkingsDb->buscarPorNroRegistroMaestroYNroHabitacion($nroRegistroMaestro, $nroHabitacion);
+      $result = $checkingsDb->buscarPorNroRegistroMaestroNroHabitacionIdChecking($nroRegistroMaestro, $idChecking, $nroHabitacion);
     }
     if ($nroRegistroMaestro) {
       $result = $checkingsDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
@@ -34,6 +40,9 @@ class CheckingsController extends BaseController
     }
     if ($abiertos) {
       $result = $checkingsDb->listarAbiertos();
+    }
+    if ($nroReserva) {
+      $result = $checkingsDb->buscarPorNroReserva($nroReserva);
     }
     if (count($params) === 0) {
       $result = $checkingsDb->listarCheckings();
@@ -237,27 +246,27 @@ class CheckingsController extends BaseController
       $this->sendResponse($response, $code);
 
     } else if ($action == 'hotel') {
-      
+
       $checkingDelBody = $this->getBody();
       $checking = new Checking();
       $this->mapJsonToObj($checkingDelBody, $checking);
-      
+
       $codigo = "HT" . date("y");
 
       $configDb = new ConfigDb();
       $configDb->actualizarNumeroCorrelativo($codigo);
-      $nro_registro_maestro = $configDb->obtenerCodigo(11)['codigo'];
+      $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
 
       // actualizar la reserva
       $reservasDb = new ReservasDb();
-      $reservasDb->asignarNroRegistroMaestroPorNroReserva($checkingDelBody->nro_reserva, $nro_registro_maestro);
+      $reservasDb->asignarNroRegistroMaestroPorNroReserva($checkingDelBody->nro_reserva, $nroRegistroMaestro);
 
       // consultar datos de la reserva
       $reserva = $reservasDb->buscarConPrecioPorNroReserva($checkingDelBody->nro_reserva)[0];
 
       // mapear los datos de la reserva al checking
       $checking->id_unidad_de_negocio = $reserva["id_unidad_de_negocio"];
-      $checking->nro_registro_maestro = $nro_registro_maestro;
+      $checking->nro_registro_maestro = $nroRegistroMaestro;
       $checking->tipo_de_servicio = "HOTEL";
       $checking->nombre = $reserva["nombre"];
       $checking->lugar_procedencia = $reserva["lugar_procedencia"];
@@ -274,13 +283,155 @@ class CheckingsController extends BaseController
       $idChecking = $checkingsDb->crearChecking($checking);
 
       // consultar la reserva con sus habitaciones
-      $reserva = $reservasDb->busca($checkingDelBody->nro_reserva)[0];
+      $reservasHabitacionesDb = new ReservasHabitacionesDb();
+      $reservasHabitaciones = $reservasHabitacionesDb->buscarReservaConHabitacionesPorNroHabitacion($checkingDelBody->nro_reserva);
 
+      // crear los roomings
+      $roomingDb = new RoomingDb();
+
+      foreach ($reservasHabitaciones as $reservaHabitacion) {
+        for ($fecha = clone new DateTime($reservaHabitacion["fecha_llegada"]); $fecha < new DateTime($reservaHabitacion["fecha_salida"]); $fecha->modify('+1 day')) {
+          $rooming = new Rooming();
+
+          $rooming->id_checkin = $idChecking;
+          $rooming->nro_registro_maestro = $nroRegistroMaestro;
+          $rooming->fecha = $fecha->format('Y-m-d');
+
+          $rooming->tarifa = $precioUnitario;
+          $rooming->estado = "NA";
+
+          $rooming->nro_habitacion = $reservaHabitacion["nro_habitacion"];
+          $rooming->id_producto = $reservaHabitacion["id_producto"];
+          $rooming->hora = $reservaHabitacion["hora_llegada"];
+          $rooming->nro_personas = $reservaHabitacion["nro_personas"];
+
+          $roomingDb->crearRooming($rooming);
+
+          $documentoDetalle = new DocumentoDetalle();
+          $documentoDetalle->tipo_movimiento = "SA";
+          $documentoDetalle->nro_registro_maestro = $nroRegistroMaestro;
+          $documentoDetalle->fecha = $fecha->format('Y-m-d');
+          $documentoDetalle->id_producto = $reservaHabitacion["id_producto"];
+          $documentoDetalle->nivel_descargo = 1;
+          $documentoDetalle->cantidad = 1;
+          $documentoDetalle->tipo_de_unidad = "UND";
+          $documentoDetalle->precio_unitario = $precioUnitario;
+          $documentoDetalle->precio_total = $precioUnitario;
+          // TODO: falta asignar el id_usuario
+          $documentoDetalle->id_usuario = 12;
+          $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
+        }
+      }
+
+    } else if ($action == 'normal') {
+
+      $body = $this->getBody();
+
+      $checking = new Checking();
+      $this->mapJsonToObj($body["checking"], $checking);
+
+      $persona = new Persona();
+      $this->mapJsonToObj($body["persona"], $checking);
+
+      $acompanantes = $body["acompanantes"];
+      $precioUnitario = $body["precio_unitario"];
+      
+      // buscar la persona por nro_documento
+      $personasDb = new PersonasDb();
+      $personaBuscada = $personasDb->buscarPorNroDocumento($persona->nro_documento);
+
+      if ($personaBuscada) {
+        // actualizar la persona
+        $personasDb->actualizarPersona($personaBuscada->id_persona, $persona);
+        $persona->id_persona = $personaBuscada->id_persona;
+      } else {
+        // crear la persona
+        $persona->tipo_persona = 0;
+        $persona->sexo = 'N';
+        $persona->nacionalidad = 'NA';
+        $persona->pais = 'NA';
+        $persona->id_usuario_creacion = 12;
+
+        $persona->fecha_creacion = $personasDb->obtenerFechaYHora()['fecha_y_hora'];
+
+        $persona->id_persona = $personasDb->crearPersona($persona);
+      }
+
+      $configDb = new ConfigDb();
+      $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
+
+      // crear el checking
+      $checkingsDb = new CheckingsDb();
+      $checking->nro_registro_maestro = $nroRegistroMaestro;
+      $idChecking = $checkingsDb->crearChecking($checking);
+
+      // actualizar los roomings
+      $roomingDb = new RoomingDb();
+      $roomingDb->actualizarIdCheckingEnRoomings($checking->nro_registro_maestro, $checking->nro_habitacion, $idChecking);
+
+      // crear los acompañantes
+      $acompanantesDb = new AcompanantesDb();
+
+      foreach ($acompanantes as $index => $acompananteTemp) {
+        $acompanante = new Acompanante();
+        $this->mapJsonToObj($acompananteTemp, $acompanante);
+
+        $acompanante->nro_registro_maestro = $checking->nro_registro_maestro;
+        $acompanante->tipo_de_servicio = $checking->tipo_de_servicio;
+        $acompanante->nro_de_orden_unico = $index;
+        $acompanante->nro_habitacion = $checking->nro_habitacion;
+
+        if ($index == 0) {
+          $acompanante->nro_documento = $persona->nro_documento;
+          $acompanante->apellidos_y_nombres = $persona->apellidos . ", " . $persona->nombres;
+        }
+
+        $acompanantesDb->crearAcompanante($acompanante);
+      }
+
+      // crear los roomings
+      for ($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
+        $rooming = new Rooming();
+
+        $rooming->id_checkin = $idChecking;
+        $rooming->nro_registro_maestro = $nroRegistroMaestro;
+        $rooming->fecha = $fecha->format('Y-m-d');
+
+        $rooming->tarifa = $precioUnitario;
+        $rooming->estado = "NA";
+
+        $rooming->nro_habitacion = $checking->nro_habitacion;
+        // TODO: falta asignar el id_producto
+        $rooming->hora = $checking->hora_in;
+        $rooming->nro_personas = $checking->nro_personas;
+
+        $roomingDb->crearRooming($rooming);
+
+        // crear el detalle del documento
+        $documentoDetalle = new DocumentoDetalle();
+
+        $documentoDetalle->tipo_movimiento = "SA";
+        $documentoDetalle->nro_registro_maestro = $nroRegistroMaestro;
+        $documentoDetalle->fecha = $fecha->format('Y-m-d');
+        // TODO: falta asignar el id_producto
+        $documentoDetalle->nivel_descargo = 1;
+        $documentoDetalle->cantidad = 1;
+        $documentoDetalle->tipo_de_unidad = "UND";
+        $documentoDetalle->precio_unitario = $precioUnitario;
+        $documentoDetalle->precio_total = $precioUnitario;
+        $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
+
+        $documentosDetallesDb = new DocumentosDetallesDb();
+        $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
+      }
+
+      // incrementar el correlativo
+      $configDb->incrementarCorrelativo(11);
+    
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }
   }
-
 
   public function update($id)
   {

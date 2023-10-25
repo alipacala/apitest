@@ -94,6 +94,16 @@ class ReservasDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function actualizarEstado($idReserva, $fechaPago) {
+    $query = "UPDATE $this->tableName SET estado_pago = 1, fecha_pago = :fecha_pago WHERE id_reserva = :id_reserva";
+    $params = array(
+      ["nombre" => "fecha_pago", "valor" => $fechaPago, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id_reserva", "valor" => $idReserva, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function eliminarReserva($id)
   {
     $query = $this->prepareQuery("delete");

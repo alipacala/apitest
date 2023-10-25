@@ -13,6 +13,7 @@ class AcompanantesController extends BaseController
 
     $acompanantesDb = new AcompanantesDb();
 
+    $result = null;
     if ($nroRegistroMaestro) {
       $result = $acompanantesDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
     }

@@ -15,8 +15,19 @@ class DocumentosMovimientoController extends BaseController
 {
   public function get()
   {
+    $params = $this->getParams();
+    $fechaInicio = $params['fecha_inicio'] ?? null;
+    $fechaFin = $params['fecha_fin'] ?? null;
+    $unidadNegocio = $params['unidad_negocio'] ?? null;
+
     $documentosMovimientosDb = new DocumentosMovimientosDb();
-    $result = $documentosMovimientosDb->listarDocumentosMovimientos();
+
+    if ($fechaInicio && $fechaFin && $unidadNegocio) {
+      $result = $documentosMovimientosDb->listarDocumentosMovimientosEnRangoFechas($fechaInicio, $fechaFin, $unidadNegocio);
+    }
+    if (count($params) === 0) {
+      $result = $documentosMovimientosDb->listarDocumentosMovimientos();
+    }
     $this->sendResponse($result, 200);
   }
 
@@ -310,8 +321,8 @@ class DocumentosMovimientoController extends BaseController
       $documentoMovimientoDelBody = $this->getBody();
 
       $detalles = $documentoMovimientoDelBody->detalles;
-      $ruc = $documentoMovimientoDelBody->nro_documento_proveedor;
-      $razonSocial = $documentoMovimientoDelBody->razon_social_proveedor;
+      $ruc = $documentoMovimientoDelBody->nro_documento_proveedor ?? null;
+      $razonSocial = $documentoMovimientoDelBody->nombre_proveedor ?? null;
 
       unset($documentoMovimientoDelBody->detalles);
       unset($documentoMovimientoDelBody->nro_documento_proveedor);
@@ -320,8 +331,30 @@ class DocumentosMovimientoController extends BaseController
       $documentoMovimiento = new DocumentoMovimiento();
       $this->mapJsonToObj($documentoMovimientoDelBody, $documentoMovimiento);
 
+      $esGuiaRemisionDeIngreso = $documentoMovimiento->tipo_documento == 'GR' && $documentoMovimiento->tipo_movimiento == 'IN';
+      $tieneOrigen = $documentoMovimiento->id_unidad_de_negocio_secundaria != null;
+
       // comprobar que el documento movimiento tenga los datos necesarios
-      $camposRequeridos = ["id_unidad_de_negocio", "tipo_movimiento", "tipo_documento", "fecha_recepcion", "motivo", "observaciones", "id_usuario"];
+      $camposRequeridos = ["tipo_movimiento", "tipo_documento", "fecha_recepcion", "motivo", "observaciones", "id_usuario", "id_unidad_de_negocio"];
+
+      if ($documentoMovimiento->tipo_documento == 'GI') {
+        $camposRequeridos = array_merge($camposRequeridos, ["id_unidad_de_negocio_secundaria"]);
+
+      } else if ($documentoMovimiento->tipo_documento == 'GR') {
+        $camposRequeridos = array_merge($camposRequeridos, ["nro_documento"]);
+
+        if ($documentoMovimiento->tipo_movimiento == 'IN') {
+          if ($ruc == null) {
+            $this->sendResponse(["mensaje" => "Falta el RUC del proveedor"], 400);
+            return;
+          }
+          if ($razonSocial == null) {
+            $this->sendResponse(["mensaje" => "Falta la razón social del proveedor"], 400);
+            return;
+          }
+        }
+      }
+
       $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $documentoMovimientoDelBody);
 
       if (count($camposFaltantes) > 0) {
@@ -346,28 +379,12 @@ class DocumentosMovimientoController extends BaseController
       $documentoMovimiento->hora_movimiento = $configDb->obtenerFechaYHora()["hora"];
       $documentoMovimiento->fecha_hora_registro = $documentoMovimiento->fecha_movimiento;
 
+      $documentoMovimiento->fecha_documento = $documentoMovimiento->fecha_movimiento;
+      $documentoMovimiento->fecha_recepcion = $documentoMovimiento->fecha_movimiento;
+
       // si es una guia interna, se le asigna el codigo de guia interna
       if ($documentoMovimiento->tipo_documento == 'GI') {
-        if ($documentoMovimiento->id_unidad_de_destino == null) {
-          $this->sendResponse(["mensaje" => "Falta la unidad de negocio de destino"], 400);
-          return;
-        }
         $documentoMovimiento->nro_documento = $configDb->obtenerCodigo(25)["codigo"]; // 25 es el id de las guias internas en la tabla config
-        $documentoMovimiento->fecha_documento = $documentoMovimiento->fecha_movimiento;
-
-      } else if ($documentoMovimiento->tipo_documento == 'GR') {
-        if ($documentoMovimiento->nro_documento == null) {
-          $this->sendResponse(["mensaje" => "Falta el nro de documento de la Guía de Remisión"], 400);
-          return;
-        }
-        if ($documentoMovimiento->fecha_documento == null) {
-          $this->sendResponse(["mensaje" => "Falta la fecha de la Guía de Remisión"], 400);
-          return;
-        }
-        if ($ruc == null) {
-          $this->sendResponse(["mensaje" => "Falta el RUC del proveedor"], 400);
-          return;
-        }
       }
 
       // calcular los totales
@@ -381,6 +398,11 @@ class DocumentosMovimientoController extends BaseController
       $documentosMovimientosDb = new DocumentosMovimientosDb();
       $documentosDetallesDb = new DocumentosDetallesDb();
 
+      $personasDb = new PersonasDb();
+      $personaPrev = $personasDb->buscarPorNroDocumento($ruc);
+
+      $documentoMovimiento->id_personajuridica = $personaPrev ? $personaPrev->id_persona : null;
+
       try {
         $documentosMovimientosDb->empezarTransaccion();
 
@@ -388,14 +410,15 @@ class DocumentosMovimientoController extends BaseController
         $idDocumentoPrincipal = $documentosMovimientosDb->crearDocumentoMovimiento($documentoMovimiento);
 
         $idDocumentoComplementario = null;
+        $documentoMovimientoComplementario = null;
         // si es una guia interna, se crea el documento movimiento complementario
-        if ($documentoMovimiento->tipo_documento == 'GI') {
+        if (($documentoMovimiento->tipo_documento == 'GI' || $esGuiaRemisionDeIngreso) && $tieneOrigen) {
           $documentoMovimientoComplementario = $documentoMovimiento;
           $documentoMovimientoComplementario->tipo_movimiento = $documentoMovimiento->tipo_movimiento == 'SA' ? 'IN' : 'SA';
 
           // se intercambian las unidades de negocio
-          $idUnidadNegocioTemp = $documentoMovimientoComplementario->id_unidad_de_destino;
-          $documentoMovimientoComplementario->id_unidad_de_destino = $documentoMovimientoComplementario->id_unidad_de_negocio;
+          $idUnidadNegocioTemp = $documentoMovimientoComplementario->id_unidad_de_negocio_secundaria;
+          $documentoMovimientoComplementario->id_unidad_de_negocio_secundaria = $documentoMovimientoComplementario->id_unidad_de_negocio;
           $documentoMovimientoComplementario->id_unidad_de_negocio = $idUnidadNegocioTemp;
 
           $idDocumentoComplementario = $documentosMovimientosDb->crearDocumentoMovimiento($documentoMovimientoComplementario);
@@ -411,6 +434,10 @@ class DocumentosMovimientoController extends BaseController
           $this->mapJsonToObj($detalleTemp, $detalle);
 
           $detalle->id_documento_movimiento = $idDocumentoPrincipal;
+          $detalle->tipo_movimiento = $documentoMovimiento->tipo_movimiento;
+          $detalle->observaciones = $documentoMovimiento->observaciones;
+          $detalle->id_usuario = $documentoMovimiento->id_usuario;
+          $detalle->fecha_hora_registro = $documentoMovimiento->fecha_hora_registro;
 
           $idDocumentoDetalle = $documentosDetallesDb->crearDocumentoDetalle($detalle);
           $detalle->id_documentos_detalle = $idDocumentoDetalle;
@@ -418,9 +445,9 @@ class DocumentosMovimientoController extends BaseController
           $detallesCreados[] = $detalle;
 
           // si es una guia interna, se crea el detalle del documento movimiento complementario
-          if ($documentoMovimiento->tipo_documento == 'GI') {
+          if (($documentoMovimiento->tipo_documento == 'GI' || $esGuiaRemisionDeIngreso) && $tieneOrigen) {
             $detalle->id_documento_movimiento = $idDocumentoComplementario;
-            $detalle->tipo_movimiento = $documentoMovimientoComplementario->tipo_movimiento;
+            $detalle->tipo_movimiento = $detalle->tipo_movimiento == 'SA' ? 'IN' : 'SA';
 
             $idDocumentoDetalleComplementario = $documentosDetallesDb->crearDocumentoDetalle($detalle);
             $detalle->id_documentos_detalle = $idDocumentoDetalleComplementario;
@@ -430,23 +457,26 @@ class DocumentosMovimientoController extends BaseController
         }
 
         // crear o actualizar la persona
-        $personasDb = new PersonasDb();
-        $personaPrev = $personasDb->buscarPorNroDocumento($ruc);
-
         if ($personaPrev) {
           $personaActualizar = new Persona();
           $personaActualizar->apellidos = $razonSocial;
 
           $personasDb->actualizarPersona($personaPrev->id_persona, $personaActualizar);
-        } else {
+
+        } else if ($documentoMovimiento->tipo_documento == 'GR') {
           $personaCrear = new Persona();
           $personaCrear->nro_documento = $ruc;
           $personaCrear->tipo_documento = 6;
           $personaCrear->apellidos = $razonSocial;
 
           // TODO: puede que se requiera consultar la dirección y la ciudad del RUC en la api de la sunat
-          
-          $personasDb->crearPersona($personaCrear);
+
+          $idPersona = $personasDb->crearPersona($personaCrear);
+
+          // actualizar el id de la persona en el documento movimiento
+          $documentoMovimientoAActualizar = new DocumentoMovimiento();
+          $documentoMovimientoAActualizar->id_personajuridica = $idPersona;
+          $documentosMovimientosDb->actualizarDocumentoMovimiento($idDocumentoPrincipal, $documentoMovimientoAActualizar);
         }
 
         // si es una guia interna, se incrementa el correlativo
@@ -537,6 +567,53 @@ class DocumentosMovimientoController extends BaseController
     $code = $result ? 200 : 400;
 
     $this->sendResponse($response, $code);
+  }
+
+  public function deleteCustom($id, $action)
+  {
+    if ($action == 'detalles') {
+      $documentosMovimientosDb = new DocumentosMovimientosDb();
+      $documentoMovimiento = $documentosMovimientosDb->obtenerDocumentoMovimiento($id);
+
+      if (!$documentoMovimiento) {
+        $this->sendResponse(["mensaje" => "Documento Movimiento no encontrado"], 404);
+        return;
+      }
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+
+      try {
+        $documentosMovimientosDb->empezarTransaccion();
+
+        $documentoMovimientoDuplicado = $documentosMovimientosDb->buscarPorNroDocumento($documentoMovimiento->nro_documento, $documentoMovimiento->id_documento_movimiento);
+
+        if ($documentoMovimientoDuplicado) {
+          // borrar los detalles del documento movimiento duplicado
+          $documentosDetallesDb->eliminarPorDocumentoMovimiento($documentoMovimientoDuplicado->id_documento_movimiento);
+
+          // eliminar el documento movimiento duplicado
+          $documentosMovimientosDb->eliminarDocumentoMovimiento($documentoMovimientoDuplicado->id_documento_movimiento);
+        }
+
+        // borrar los detalles de documento movimiento
+        $documentosDetallesDb->eliminarPorDocumentoMovimiento($documentoMovimiento->id_documento_movimiento);
+
+        // eliminar el documento movimiento
+        $documentosMovimientosDb->eliminarDocumentoMovimiento($id);
+
+        $documentosMovimientosDb->terminarTransaccion();
+
+        $this->sendResponse("Documento Movimiento, su duplicado y sus detalles eliminados correctamente", 200);
+
+      } catch (Exception $e) {
+        $documentosMovimientosDb->cancelarTransaccion();
+        $newException = new Exception("Error al anular el comprobante, el fe_comprobante o actualizar los detalles de documento", 0, $e);
+        throw $newException;
+      }
+
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no permitida"], 404);
+    }
   }
 }
 

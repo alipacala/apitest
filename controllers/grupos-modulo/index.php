@@ -8,8 +8,18 @@ class GruposModuloController extends BaseController
 {
   public function get()
   {
+    $params = $this->getParams();
+
+    $conModulos = isset($params['con-modulos']);
+
     $gruposModuloDb = new GruposModuloDb();
-    $result = $gruposModuloDb->listarGruposModulo();
+
+    if($conModulos) {
+      $result = $gruposModuloDb->listarConModulos();
+    }
+    if (count($params) === 0) {
+      $result = $gruposModuloDb->listarGruposModulo();
+    }
 
     $this->sendResponse($result, 200);
   }

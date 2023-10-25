@@ -52,6 +52,10 @@ class UsuariosDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function buscarPorNroDoc($nroDoc) {
+    
+  }
+
   public function loginAdministrador($usuario, $clave)
   {
     $query = "SELECT COUNT(*) AS logueado

@@ -82,7 +82,8 @@ class ProductosDb extends Database
       }
     }
 
-    $query .= " GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad";
+    $query .= " GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad
+                ORDER BY pr.nombre_producto ASC";
 
     $params = array_map(function ($key, $value) {
       return array("nombre" => "nombre_producto_$key", "valor" => "%$value%", "tipo" => PDO::PARAM_STR);
@@ -93,7 +94,7 @@ class ProductosDb extends Database
 
   public function buscarConDocDetallesPorTipoProducto($tipoProducto)
   {
-    $query = "SELECT tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
+    $query = "SELECT pr.id_producto, tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
       SUM(CASE 
         WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
         WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad
@@ -109,9 +110,119 @@ class ProductosDb extends Database
     INNER JOIN tipodeproductos tp ON tp.id_tipo_producto = pr.id_tipo_de_producto
     WHERE pr.id_tipo_de_producto = :id_tipo_de_producto
       AND pr.tipo != 'SVH' AND pr.tipo != 'SRV' AND pr.tipo != 'PAQ'
-    GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad";
+    GROUP BY pr.id_producto, tp.nombre_tipo_de_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad
+    ORDER BY pr.nombre_producto ASC";
     $params = array(
       array("nombre" => "id_tipo_de_producto", "valor" => $tipoProducto, "tipo" => PDO::PARAM_INT)
+    );
+
+    return $this->executeQuery($query, $params);
+  }
+
+  public function listarInventario($unidadNegocio, $tipo, $grupo, $fechaInicio, $fechaFin) {
+    $query = "SELECT
+                sm.id_producto,
+                sm.nombre_producto,
+                sm.tipo_de_unidad,
+                sm.id_tipo_de_producto,
+                sm.id_grupo,
+                sm.id_unidad_de_negocio,
+                sm.costo_unitario,
+                tp.nombre_tipo_de_producto AS tipo_producto,
+                gr.nombre_grupo,
+                COALESCE(ANT, 0) AS ANT,
+                COALESCE(INGRESO, 0) AS INGRESO,
+                COALESCE(SALIDAS_OTROS, 0) AS SALIDAS_OTROS,
+                COALESCE(SALIDAS_VENTAS, 0) AS SALIDAS_VENTAS,
+                COALESCE(ANT, 0) + COALESCE(INGRESO, 0) - COALESCE(SALIDAS_OTROS, 0) - COALESCE(SALIDAS_VENTAS, 0) AS EXISTENCIA,
+                sm.costo_unitario * (COALESCE(ANT, 0) + COALESCE(INGRESO, 0) - COALESCE(SALIDAS_OTROS, 0) - COALESCE(SALIDAS_VENTAS, 0)) AS VALOR_TOTAL
+            FROM (
+                    SELECT
+                        pr.id_producto,
+                        pr.id_tipo_de_producto,
+                        pr.id_grupo,
+                        dm.id_unidad_de_negocio,
+                        pr.nombre_producto,
+                        pr.tipo_de_unidad,
+                        pr.costo_unitario,
+                        SUM(
+                            CASE
+                                WHEN dd.fecha < :fecha_inicio1 THEN CASE
+                                    WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
+                                    WHEN dd.tipo_movimiento = 'SA' THEN - dd.cantidad
+                                    ELSE 0
+                                END
+                                ELSE 0
+                            END
+                        ) AS ANT,
+                        SUM(
+                            CASE
+                                WHEN (
+                                    CAST(dd.fecha AS DATE) >= :fecha_inicio2 AND CAST(dd.fecha AS DATE) <= :fecha_fin1
+                                )
+                                AND dd.tipo_movimiento = 'IN' THEN dd.cantidad
+                                ELSE 0
+                            END
+                        ) AS INGRESO,
+                        SUM(
+                            CASE
+                                WHEN (
+                                  CAST(dd.fecha AS DATE) >= :fecha_inicio3 AND CAST(dd.fecha AS DATE) <= :fecha_fin2
+                                )
+                                AND dd.tipo_movimiento = 'SA'
+                                AND dm.nro_de_comanda IS NULL THEN dd.cantidad
+                                ELSE 0
+                            END
+                        ) AS SALIDAS_OTROS,
+                        SUM(
+                            CASE
+                                WHEN (
+                                  CAST(dd.fecha AS DATE) >= :fecha_inicio4 AND CAST(dd.fecha AS DATE) <= :fecha_fin3
+                                )
+                                AND dd.tipo_movimiento = 'SA'
+                                AND dm.nro_de_comanda IS NOT NULL THEN dd.cantidad
+                                ELSE 0
+                            END
+                        ) AS SALIDAS_VENTAS
+                    FROM productos pr
+                        INNER JOIN documento_detalle dd ON pr.id_producto = dd.id_producto
+                        LEFT JOIN documento_movimiento dm ON dd.id_documento_movimiento = dm.id_documento_movimiento
+                    GROUP BY
+                        pr.id_producto,
+                        pr.id_tipo_de_producto,
+                        pr.id_grupo,
+                        dm.id_unidad_de_negocio,
+                        pr.nombre_producto,
+                        pr.tipo_de_unidad,
+                        pr.costo_unitario
+                ) sm
+                INNER JOIN tipodeproductos tp ON sm.id_tipo_de_producto = tp.id_tipo_producto
+                INNER JOIN gruposdelacarta gr ON sm.id_grupo = gr.id_grupo
+            WHERE sm.id_unidad_de_negocio = :id_unidad_negocio1
+                AND (
+                    :id_tipo_producto1 IS NULL
+                    OR sm.id_tipo_de_producto IS NULL
+                    OR sm.id_tipo_de_producto = :id_tipo_producto2
+                )
+                AND (
+                    :codigo_grupo1 IS NULL
+                    OR gr.codigo_subgrupo IS NULL
+                    OR gr.codigo_subgrupo = :codigo_grupo2
+                )";
+
+    $params = array(
+      ["nombre" => "fecha_inicio1", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_inicio2", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_inicio3", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_inicio4", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_fin1", "valor" => $fechaFin, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_fin2", "valor" => $fechaFin, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_fin3", "valor" => $fechaFin, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id_unidad_negocio1", "valor" => $unidadNegocio, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_tipo_producto1", "valor" => $tipo, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_tipo_producto2", "valor" => $tipo, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "codigo_grupo1", "valor" => $grupo, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "codigo_grupo2", "valor" => $grupo, "tipo" => PDO::PARAM_STR]
     );
 
     return $this->executeQuery($query, $params);

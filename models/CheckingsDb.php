@@ -44,10 +44,21 @@ class CheckingsDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function buscarPorNroRegistroMaestroYNroHabitacion($nroRegistroMaestro, $nroHabitacion)
+  public function buscarPorNroReserva($nroReserva)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_reserva = :nro_reserva";
+    $params = array(["nombre" => "nro_reserva", "valor" => $nroReserva, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function buscarPorNroRegistroMaestroNroHabitacionIdChecking($nroRegistroMaestro = null, $idChecking = null, $nroHabitacion = null)
   {
     $query = "SELECT ch.tipo_documento,
             ch.nro_documento,
+            ch.nro_registro_maestro,
+            ch.nro_reserva,
+            p.id_persona,
             p.apellidos,
             p.nombres,
             p.lugar_de_nacimiento,
@@ -85,19 +96,25 @@ class CheckingsDb extends Database
                 ELSE 'Precio Booking'
             END AS tipo_precio
             FROM cheking ch
-            INNER JOIN personanaturaljuridica p ON ch.id_persona = p.id_persona
+            LEFT JOIN personanaturaljuridica p ON ch.id_persona = p.id_persona
             LEFT JOIN rooming ro ON ro.nro_registro_maestro = ch.nro_registro_maestro
             LEFT JOIN productos pr ON ro.id_producto = pr.id_producto
-            WHERE ch.nro_registro_maestro = :nro_registro_maestro AND ro.nro_habitacion = :nro_habitacion
+            WHERE 
+              (:nro_registro_maestro1 IS NULL OR ch.nro_registro_maestro = :nro_registro_maestro2)
+              AND (:nro_habitacion1 IS NULL OR ro.nro_habitacion = :nro_habitacion2)
+              AND (:id_checkin1 IS NULL OR ch.id_checkin = :id_checkin2)
             GROUP BY ch.nro_registro_maestro";
 
     $params = array(
-      ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
-      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR]
+      ["nombre" => "nro_registro_maestro1", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_registro_maestro2", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_habitacion1", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_habitacion2", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id_checkin1", "valor" => $idChecking, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id_checkin2", "valor" => $idChecking, "tipo" => PDO::PARAM_INT],
     );
 
     return $this->executeQuery($query, $params);
-
   }
 
   public function deshacerCerradoChecking($nroRegistroMaestro)

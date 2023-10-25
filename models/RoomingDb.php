@@ -38,33 +38,11 @@ class RoomingDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarRoomingConDatos1()
-  {
-    $query = "SELECT 
-    p.nombre_producto, 
-    h.nro_habitacion, 
-    ch.nro_registro_maestro, 
-    ch.nro_reserva, 
-    ch.nombre, 
-    ch.nro_personas, 
-    ch.fecha_in, 
-    ch.fecha_out
-    FROM habitaciones h
-    LEFT JOIN rooming r ON r.nro_habitacion = h.nro_habitacion
-    LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin AND CURDATE() BETWEEN ch.fecha_in AND ch.fecha_out
-    LEFT JOIN reservas re ON ch.nro_registro_maestro = re.nro_registro_maestro 
-    LEFT JOIN productos p ON p.id_producto = h.id_producto
-    WHERE h.id_unidad_de_negocio = 3 
-    GROUP BY h.nro_habitacion
-    ORDER BY h.nro_habitacion ASC";
-
-    return $this->executeQuery($query, null, "select");
-  }
-
-  public function listarRoomingConDatos2($fecha)
+  public function listarRoomingConDatos($fecha)
   {
     $query = "SELECT
     COALESCE(p.nombre_producto, '') AS nombre_producto,
+    COALESCE(ch.id_checkin, '') AS id_checkin,
     COALESCE(h.nro_habitacion, '') AS nro_habitacion,
     COALESCE(ch.nro_registro_maestro, '') AS nro_registro_maestro,
     COALESCE(ch.nro_reserva, '') AS nro_reserva,
@@ -82,7 +60,7 @@ class RoomingDb extends Database
     ORDER BY h.nro_habitacion ASC";
     $params = array(["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]);
 
-    return $this->executeQuery($query, $params, "select");
+    return $this->executeQuery($query, $params);
   }
 
   public function crearRooming(Rooming $rooming)
@@ -99,6 +77,18 @@ class RoomingDb extends Database
     $roomingArray = $this->prepareData((array) $rooming);
     $query = $this->prepareQuery("update", $roomingArray);
     $params = $this->prepareParams($roomingArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function actualizarIdCheckingEnRoomings($nroRegistroMaestro, $nroHabitacion, $idChecking)
+  {
+    $query = "UPDATE $this->tableName SET id_checkin = :id_checkin WHERE nro_registro_maestro = :nro_registro_maestro AND nro_habitacion = :nro_habitacion";
+    $params = array(
+      ["nombre" => "id_checkin", "valor" => $idChecking, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+    );
 
     return $this->executeQuery($query, $params, "update");
   }

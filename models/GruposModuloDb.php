@@ -22,6 +22,16 @@ class GruposModuloDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function listarConModulos()
+  {
+    $query = "SELECT m.id_modulo, g.nombre_grupo_modulo, m.nombre_modulo, m.descripcion, m.archivo_acceso
+    FROM modulos m
+    INNER JOIN grupo_modulo g ON g.id_grupo_modulo = m.id_grupo_modulo
+    GROUP BY m.id_modulo, m.nombre_modulo, m.descripcion, m.archivo_acceso";
+    
+    return $this->executeQuery($query);
+  }
+
   public function crearGrupoModulo(GrupoModulo $grupoModulo)
   {
     $grupoModuloArray = $this->prepareData((array) $grupoModulo, "insert");

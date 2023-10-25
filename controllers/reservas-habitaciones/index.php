@@ -21,9 +21,10 @@ class ReservasHabitacionesController extends BaseController
         return;
       }
     }
-
-    $reservasHabitacionesDb = new ReservasHabitacionesDb();
-    $result = $reservasHabitacionesDb->listarReservasHabitaciones();
+    if (count($params) === 0) {
+      $reservasHabitacionesDb = new ReservasHabitacionesDb();
+      $result = $reservasHabitacionesDb->listarReservasHabitaciones();
+    }
 
     $this->sendResponse($result, 200);
   }
@@ -111,6 +112,38 @@ class ReservasHabitacionesController extends BaseController
     $code = $result ? 200 : 400;
 
     $this->sendResponse($response, $code);
+  }
+
+  public function deleteCustom($id, $action)
+  {
+    if ($action == 'reserva') {
+      $body = $this->getBody();
+      $idsReservaHabitaciones = $body["id"];
+
+      $reservasHabitacionesDb = new ReservasHabitacionesDb();
+
+      $reservaHabitacionesEliminadas = [];
+      foreach ($idsReservaHabitaciones as $id) {
+        $prevReservaHabitacion = $reservasHabitacionesDb->obtenerReservaHabitacion($id);
+
+        // comprobar que la reservaHabitacion exista
+        if (!$prevReservaHabitacion) {
+          $this->sendResponse(["mensaje" => "Reserva Habitacion no encontrada"], 404);
+          return;
+        }
+
+        $reservasHabitacionesDb->eliminarReservaHabitacion($id);
+        $reservaHabitacionesEliminadas[] = $prevReservaHabitacion;
+      }
+
+      $this->sendResponse([
+        "mensaje" => "Reserva Habitaciones eliminadas correctamente",
+        "resultado" => $reservaHabitacionesEliminadas
+      ], 200);
+
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
+    }
   }
 }
 

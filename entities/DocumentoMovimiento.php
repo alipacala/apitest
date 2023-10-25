@@ -3,7 +3,7 @@ class DocumentoMovimiento
 {
   public ?int $id_documento_movimiento;
   public ?int $id_unidad_de_negocio;
-  public ?int $id_unidad_de_destino;
+  public ?int $id_unidad_de_negocio_secundaria;
   public ?int $id_personajuridica;
   public ?string $tipo_movimiento;
   public ?string $tipo_documento;

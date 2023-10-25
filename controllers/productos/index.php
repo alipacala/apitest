@@ -21,6 +21,12 @@ class ProductosController extends BaseController
     $stock = isset($params['stock']);
     $tipoProducto = $params['tipo_producto'] ?? null;
 
+    $inventario = isset($params['inventario']);
+    $unidadNegocio = $params['unidad_negocio'] ?? null;
+    $grupo = $params['grupo'] ?? null;
+    $fechaInicio = $params['fecha_inicio'] ?? null;
+    $fechaFin = $params['fecha_fin'] ?? null;
+
     $productosDb = new ProductosDb();
 
     if ($hospedajes) {
@@ -50,6 +56,23 @@ class ProductosController extends BaseController
         $nombreTipo = $tiposDeProductosDb->obtenerTipoDeProductos($tipoProducto)->nombre_tipo_de_producto;
 
         $result = array($nombreTipo => $productosDb->buscarConDocDetallesPorTipoProducto($tipoProducto));
+      }
+    }
+    if ($inventario) {
+      $result = $productosDb->listarInventario($unidadNegocio, $tipoProducto, $grupo, $fechaInicio, $fechaFin);
+
+      // agrupar por tipo de producto
+      $result = array_reduce($result, function ($acc, $producto) {
+        $acc[$producto["tipo_producto"]][] = $producto;
+        return $acc;
+      }, []);
+      
+      // agrupar por grupo de producto
+      foreach ($result as $grupo => $productos) {
+        $result[$grupo] = array_reduce($productos, function ($acc, $producto) {
+          $acc[$producto["nombre_grupo"]][] = $producto;
+          return $acc;
+        }, []);
       }
     }
     if (count($params) === 0) {

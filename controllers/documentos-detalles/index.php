@@ -18,6 +18,8 @@ class DocumentosDetallesController extends BaseController
     $fechaFin = $params['fecha_fin'] ?? null;
     $idProducto = $params['id_producto'] ?? null;
 
+    $documentoMovimiento = $params['documento_movimiento'] ?? null;
+
     $documentosDetallesDb = new DocumentosDetallesDb();
 
     if ($nroRegistroMaestro) {
@@ -36,6 +38,9 @@ class DocumentosDetallesController extends BaseController
     }
     if($kardex) {
       $result = $documentosDetallesDb->generarKardex($idProducto, $fechaInicio, $fechaFin);
+    }
+    if ($documentoMovimiento) {
+      $result = $documentosDetallesDb->buscarPorDocumentoMovimiento($documentoMovimiento);
     }
     if (count($params) === 0) {
       $result = $documentosDetallesDb->listarDocumentosDetalles();

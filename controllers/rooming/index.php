@@ -12,18 +12,15 @@ class RoomingController extends BaseController
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $idCheckin = $params['id_checkin'] ?? null;
 
-    $conDatos1 = isset($params['con-datos1']);
-
-    $conDatos2 = isset($params['con-datos2']);
+    $conDatos = isset($params['con-datos']);
     $fecha = $params['fecha'] ?? null;
 
     $roomingDb = new RoomingDb();
 
-    if ($conDatos1) {
-      $result = $roomingDb->listarRoomingConDatos1();
-    }
-    if ($conDatos2) {
-      $result = $roomingDb->listarRoomingConDatos2($fecha);
+    $result = null;
+    
+    if ($conDatos) {
+      $result = $roomingDb->listarRoomingConDatos($fecha);
     }
     if ($nroRegistroMaestro) {
       $result = $roomingDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);

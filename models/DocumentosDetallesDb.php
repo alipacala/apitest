@@ -38,6 +38,17 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
+  public function buscarPorDocumentoMovimiento($documentoMovimiento)
+  {
+    $query = "SELECT dd.* , pr.nombre_producto
+     FROM $this->tableName dd
+     INNER JOIN productos pr ON pr.id_producto = dd.id_producto
+     WHERE id_documento_movimiento = :id_documento_movimiento";
+    $params = array(["nombre" => "id_documento_movimiento", "valor" => $documentoMovimiento, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "select");
+  }
+
   public function generarKardex($idProducto, $fechaInicio, $fechaFin)
   {
     $query = "WITH dd_antes_fecha AS (
@@ -205,6 +216,14 @@ class DocumentosDetallesDb extends Database
   {
     $query = "DELETE FROM $this->tableName WHERE nro_comprobante = :nro_comprobante";
     $params = array(["nombre" => "nro_comprobante", "valor" => $nroComprobante, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+
+  public function eliminarPorDocumentoMovimiento($idDocumento)
+  {
+    $query = "DELETE FROM $this->tableName WHERE id_documento_movimiento = :id_documento_movimiento";
+    $params = array(["nombre" => "id_documento_movimiento", "valor" => $idDocumento, "tipo" => PDO::PARAM_INT]);
 
     return $this->executeQuery($query, $params, "delete");
   }

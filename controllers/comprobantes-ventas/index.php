@@ -506,6 +506,10 @@ class ComprobantesVentasController extends BaseController
       }
 
       $comprobante->por_pagar = $comprobante->gran_total;
+      
+      // buscar la persona juridica
+      $personasDb = new PersonasDb();
+      $personaPrev = $personasDb->buscarPorNroDocumento($comprobante->nro_documento_cliente);
 
       // crear un documento movimiento reflejo del comprobante
       $documentoMovimiento = new DocumentoMovimiento();
@@ -519,6 +523,8 @@ class ComprobantesVentasController extends BaseController
       $documentoMovimiento->total = $comprobante->gran_total;
       $documentoMovimiento->id_usuario = $comprobante->id_usuario;
       $documentoMovimiento->fecha_hora_registro = $comprobante->fecha_hora_registro;
+
+      $documentoMovimiento->id_personajuridica = $personaPrev ? $personaPrev->id_persona : null;
 
       $documentosMovimientosDb = new DocumentosMovimientosDb();
 
@@ -587,11 +593,8 @@ class ComprobantesVentasController extends BaseController
 
           $comprobantesDetallesCreados[] = $idComprobanteDetalle;
         }
-
+        
         // crear o actualizar la persona
-        $personasDb = new PersonasDb();
-        $personaPrev = $personasDb->buscarPorNroDocumento($comprobante->nro_documento_cliente);
-
         if ($personaPrev) {
           $personaActualizar = new Persona();
           $personaActualizar->direccion = $direccionCliente;
@@ -630,7 +633,15 @@ class ComprobantesVentasController extends BaseController
           $personaCrear->direccion = $direccionCliente;
           $personaCrear->ciudad = $lugarCliente;
 
-          $personasDb->crearPersona($personaCrear);
+          $idPersonaCreada = $personasDb->crearPersona($personaCrear);
+
+          if ($idPersonaCreada) {
+            $documentoMovimiento->id_personajuridica = $idPersonaCreada;
+            $documentosMovimientosDb->actualizarDocumentoMovimiento($idDocumentoMovimiento, $documentoMovimiento);
+          } else {
+            $this->sendResponse(["mensaje" => "Error al actualizar el id de la persona en el documento movimiento"], 400);
+            return;
+          }
         }
 
         $seHaCreadoComprobante = $idComprobante;

@@ -23,13 +23,6 @@ class ConfigDb extends Database
     $result = $this->executeQuery($query, $params, "select-one");
 
     if ($id == 5) {
-      /* $fechaYHora = $this->obtenerFechaYHora();
-      $date = DateTime::createFromFormat("Y-m-d", $fechaYHora['fecha']);
-      $año = $date->format("y");
-
-      $result = array(
-        "codigo" => substr($año, -2) . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
-      ); */
       $result = array(
         "codigo" => $result->codigo . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
       );

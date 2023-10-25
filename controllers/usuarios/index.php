@@ -13,6 +13,8 @@ class UsuariosController extends BaseController
     $conPersonas = isset($params['con-personas']);
     $activos = isset($params['activos']);
 
+    $nroDoc = $params['nro_doc'] ?? null;
+
     $usuariosDb = new UsuariosDb();
 
     if ($conPersonas) {
@@ -20,6 +22,9 @@ class UsuariosController extends BaseController
     }
     if ($activos) {
       $result = $usuariosDb->listarActivosConPersonas();
+    }
+    if ($nroDoc) {
+      $result = $usuariosDb->buscarPorNroDoc($nroDoc);
     }
     if (count($params) === 0) {
       $result = $usuariosDb->listarUsuarios();

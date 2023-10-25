@@ -159,7 +159,28 @@ class ReservasController extends BaseController
       $code = $result ? 200 : 400;
 
       $this->sendResponse($response, $code);
-    
+
+    } else if ($action == "estado") {
+      $body = $this->getBody();
+      $idReserva = $body->id_reserva;
+
+      $reservasDb = new ReservasDb();
+
+      $prevReserva = $reservasDb->obtenerReserva($idReserva);
+
+      // comprobar que la reserva exista
+      if (!$prevReserva) {
+        $this->sendResponse(["mensaje" => "Reserva no encontrada"], 404);
+        return;
+      }
+
+      $result = $reservasDb->actualizarEstado($idReserva, $body->estado);
+
+      $this->sendResponse([
+        "mensaje" => "Reserva actualizada correctamente",
+        "resultado" => $reservasDb->obtenerReserva($idReserva)
+      ], 200);
+      
     } else {
       $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
     }
