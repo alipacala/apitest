@@ -194,6 +194,20 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function cambiarNroHabitacion($nroRegistroMaestro, $prevNroHabitacion, $nroHabitacion, $fecha)
+  {
+    $query = "UPDATE $this->tableName SET nro_habitacion = :nro_habitacion WHERE nro_registro_maestro = :nro_registro_maestro AND nro_habitacion = :prev_nro_habitacion
+    AND fecha >= :fecha";
+    $params = array(
+      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "prev_nro_habitacion", "valor" => $prevNroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function deshacerPagoDocumentosDetalles($id)
   {
     $query = "UPDATE $this->tableName
@@ -224,6 +238,18 @@ class DocumentosDetallesDb extends Database
   {
     $query = "DELETE FROM $this->tableName WHERE id_documento_movimiento = :id_documento_movimiento";
     $params = array(["nombre" => "id_documento_movimiento", "valor" => $idDocumento, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "delete");
+  }
+
+  public function eliminarPorNroRegistroMaestroNroHabYFecha($nroRegistroMaestro, $nroHabitacion, $fecha)
+  {
+    $query = "DELETE FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nro_habitacion = :nro_habitacion AND fecha = :fecha";
+    $params = array(
+      ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]
+    );
 
     return $this->executeQuery($query, $params, "delete");
   }

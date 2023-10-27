@@ -335,7 +335,7 @@ class CheckingsController extends BaseController
 
       $acompanantes = $body["acompanantes"];
       $precioUnitario = $body["precio_unitario"];
-      
+
       // buscar la persona por nro_documento
       $personasDb = new PersonasDb();
       $personaBuscada = $personasDb->buscarPorNroDocumento($persona->nro_documento);
@@ -427,7 +427,7 @@ class CheckingsController extends BaseController
 
       // incrementar el correlativo
       $configDb->incrementarCorrelativo(11);
-    
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }
@@ -521,6 +521,204 @@ class CheckingsController extends BaseController
 
       $this->sendResponse($response, $code);
 
+    } else if ($action == 'normal') {
+
+      $body = $this->getBody();
+
+      $checking = new Checking();
+      $this->mapJsonToObj($body->checking, $checking);
+
+      $persona = new Persona();
+      $this->mapJsonToObj($body->persona, $persona);
+
+      $acompanantes = $body->acompanantes;
+      $precioUnitario = $body->precio_unitario;
+
+      // buscar roomings por id_checking
+      $roomingDb = new RoomingDb();
+
+      $roomings = $roomingDb->buscarVariosPorIdChecking($checking->id_checkin, $checking->nro_habitacion);
+
+      // borrar los roomings de la db de los cuales la fecha no esté en el rango de fechas del checking
+      foreach ($roomings as $rooming) {
+        $fechaRooming = new DateTime($rooming->fecha);
+        if ($fechaRooming < new DateTime($checking->fecha_in) || $fechaRooming >= new DateTime($checking->fecha_out)) {
+          $roomingDb->eliminarRooming($rooming->id_rooming);
+
+          // elimninar el documento detalle
+          $documentosDetallesDb = new DocumentosDetallesDb();
+          $documentosDetallesDb->eliminarPorNroRegistroMaestroNroHabYFecha($rooming->nro_registro_maestro, $rooming->nro_habitacion, $rooming->fecha);
+        }
+      }
+
+      // buscar la persona por nro_documento
+      $personasDb = new PersonasDb();
+      $personaBuscada = $personasDb->buscarPorNroDocumento($persona->nro_documento);
+
+      if ($personaBuscada) {
+        // actualizar la persona
+        unset($persona->id_persona);
+        $personasDb->actualizarPersona($personaBuscada->id_persona, $persona);
+        $persona->id_persona = $personaBuscada->id_persona;
+      } else {
+        // crear la persona
+        $persona->tipo_persona = 0;
+        $persona->sexo = 'N';
+        $persona->nacionalidad = 'NA';
+        $persona->pais = 'NA';
+        $persona->id_usuario_creacion = 12;
+
+        $persona->fecha_creacion = $personasDb->obtenerFechaYHora()['fecha_y_hora'];
+
+        $persona->id_persona = $personasDb->crearPersona($persona);
+      }
+
+      // actualizar el checking
+      $checkingsDb = new CheckingsDb();
+
+      // obtener el checkin anterior
+      $prevChecking = $checkingsDb->obtenerChecking($id);
+
+      // si las fechas in out del checkin anterior están fuera de las fechas in out del checking, se reemplazan en el objeto
+      $checking->fecha_in = $prevChecking->fecha_in < $checking->fecha_in ? $prevChecking->fecha_in : $checking->fecha_in;
+      $checking->fecha_out = $prevChecking->fecha_out > $checking->fecha_out ? $prevChecking->fecha_out : $checking->fecha_out;
+
+      $checking->lugar_procedencia = $persona->ciudad;
+      // TODO: falta el tipo_transporte
+
+      $checking->tipo_de_servicio = "HOTEL";
+      $checking->id_persona = $persona->id_persona;
+      $checking->nombre = $persona->apellidos . ", " . $persona->nombres;
+
+      $checking->nro_adultos = $checking->nro_adultos ?? 0;
+      $checking->nro_ninos = $checking->nro_ninos ?? 0;
+      $checking->nro_infantes = $checking->nro_infantes ?? 0;
+      $checking->nro_personas = $checking->nro_adultos + $checking->nro_ninos + $checking->nro_infantes;
+      unset($checking->id_checkin);
+
+      $checkingsDb->actualizarChecking($id, $checking);
+
+      // actualizar los roomings
+      $roomingDb = new RoomingDb();
+      $roomingDb->actualizarIdCheckingEnRoomings($checking->nro_registro_maestro, $checking->nro_habitacion, $id);
+      
+      // actualizar el acompañante titular
+      $acompanantesDb = new AcompanantesDb();
+      $prevAcompananteTitular = $acompanantesDb->buscarTitularPorNroRegistroMaestro($checking->nro_registro_maestro);
+
+      $acompananteTitular = new Acompanante();
+      
+      $acompananteTitular->nro_registro_maestro = $checking->nro_registro_maestro;
+      $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
+      $acompananteTitular->nro_de_orden_unico = 0;
+      $acompananteTitular->nro_documento = $persona->nro_documento;
+      $acompananteTitular->apellidos_y_nombres = $persona->apellidos . ", " . $persona->nombres;
+      $acompananteTitular->sexo = $persona->sexo;
+      $acompananteTitular->edad = $persona->edad;
+
+      $acompanantesDb->actualizarAcompanante($prevAcompananteTitular->id_acompanante, $acompananteTitular);
+
+      // obtener el último nro_de_orden_unico de los acompañantes
+      $ultimoNro = array_reduce($acompanantes, function ($max, $acompanante) {
+        return $acompanante->nro_de_orden_unico > $max ? $acompanante->nro_de_orden_unico : $max;
+      }, 0);
+
+      // crear los acompañantes
+      foreach ($acompanantes as $index => $acompananteTemp) {
+        if ($acompananteTemp->id_acompanante) {
+          continue;
+        }
+
+        $acompanante = new Acompanante();
+        $this->mapJsonToObj($acompananteTemp, $acompanante);
+
+        $acompanante->nro_registro_maestro = $checking->nro_registro_maestro;
+        $acompanante->tipo_de_servicio = "HOTEL";
+        $acompanante->nro_de_orden_unico = $ultimoNro + $index + 1;
+        $acompanante->nro_habitacion = $checking->nro_habitacion;
+
+        $acompanantesDb->crearAcompanante($acompanante);
+      }
+
+      // crear los roomings que estén en el rango de fechas del checking y que las fechas
+      for ($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
+
+        // si la fecha está en los roomings, no se hace nada
+        if (
+          array_filter($roomings, function ($rooming) use ($fecha) {
+            return $rooming->fecha == $fecha->format('Y-m-d');
+          })
+        ) {
+          continue;
+        }
+
+        // obtener el id_producto del primer rooming en roomings
+        $roomingAnterior = $roomings[0];
+        $idProducto = $roomingAnterior->id_producto;
+
+        $rooming = new Rooming();
+
+        $rooming->id_checkin = $id;
+        $rooming->nro_registro_maestro = $checking->nro_registro_maestro;
+        $rooming->fecha = $fecha->format('Y-m-d');
+
+        $rooming->tarifa = $precioUnitario;
+        $rooming->estado = "NA";
+
+        $rooming->nro_habitacion = $checking->nro_habitacion;
+        $rooming->id_producto = $idProducto;
+        $rooming->hora = $checking->hora_in;
+        $rooming->nro_personas = $checking->nro_personas;
+
+        $roomingDb->crearRooming($rooming);
+
+        // crear el detalle del documento
+        $documentoDetalle = new DocumentoDetalle();
+
+        $documentoDetalle->tipo_movimiento = "SA";
+        $documentoDetalle->nro_registro_maestro = $checking->nro_registro_maestro;
+        $documentoDetalle->fecha = $fecha->format('Y-m-d');
+        $documentoDetalle->id_producto = $idProducto;
+        $documentoDetalle->nivel_descargo = 1;
+        $documentoDetalle->cantidad = 1;
+        $documentoDetalle->tipo_de_unidad = "UND";
+        $documentoDetalle->precio_unitario = $precioUnitario;
+        $documentoDetalle->precio_total = $precioUnitario;
+
+        $documentoDetalle->nro_habitacion = $checking->nro_habitacion;
+        $documentoDetalle->fecha_servicio = $fecha->format('Y-m-d');
+        $documentoDetalle->id_usuario = 12;
+
+        $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
+
+        $documentosDetallesDb = new DocumentosDetallesDb();
+        $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
+      }
+
+      $this->sendResponse(["mensaje" => "Checking actualizado correctamente"], 200);
+
+    } else if ($action == 'habitacion') {
+
+      $body = $this->getBody();
+      $nroHabitacion = $body->nro_habitacion;
+      $prevNroHabitacion = $body->prev_nro_habitacion;
+      $fecha = $body->fecha;
+
+      $checkingsDb = new CheckingsDb();
+      $checking = $checkingsDb->obtenerChecking($id);
+      if ($checking) {
+        $roomingDb = new RoomingDb();
+        $roomingDb->cambiarNroHabitacion($checking->nro_registro_maestro, $prevNroHabitacion, $nroHabitacion, $fecha);
+
+        // actualizar los documentos detalles
+        $documentosDetallesDb = new DocumentosDetallesDb();
+        $documentosDetallesDb->cambiarNroHabitacion($checking->nro_registro_maestro, $prevNroHabitacion, $nroHabitacion, $fecha);
+
+        $this->sendResponse(["mensaje" => "Checking actualizado correctamente"], 200);
+      } else {
+        $this->sendResponse(["mensaje" => "Checking no encontrado"], 404);
+      }
+  
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }

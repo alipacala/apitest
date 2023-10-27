@@ -22,6 +22,14 @@ class AcompanantesDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function buscarTitularPorNroRegistroMaestro($nroRegistroMaestro)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nro_de_orden_unico = 0";
+    $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
   public function buscarPorNroRegistroMaestro($nroRegistroMaestro)
   {
     $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro";

@@ -12,8 +12,12 @@ class HabitacionesController extends BaseController
     $deHotelArenasSpa = isset($params['de_hotel_arenas_spa']);
     $nroHabitacion = $params['nro_habitacion'] ?? null;
 
+    $conDisponibilidad = isset($params['con-disponibilidad']);
+    $fecha = $params['fecha'] ?? null;
+
     $habitacionesDb = new HabitacionesDb();
 
+    $result = null;
     if ($deHotelArenasSpa) {
       $result = $habitacionesDb->listarDeHotelArenasSpa();
     }
@@ -24,6 +28,9 @@ class HabitacionesController extends BaseController
         $this->sendResponse(["mensaje" => "No se encontraron reservas con el código proporcionado."], 404);
         return;
       }
+    }
+    if ($conDisponibilidad) {
+      $result = $habitacionesDb->listarConDisponibilidad($fecha);
     }
     if (count($params) === 0) {
       $result = $habitacionesDb->listarHabitaciones();

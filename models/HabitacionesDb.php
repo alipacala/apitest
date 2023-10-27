@@ -30,6 +30,23 @@ class HabitacionesDb extends Database
     return $this->executeQuery($query);
   }
 
+  public function listarConDisponibilidad($fecha)
+  {
+    $query = "SELECT h.id_habitacion, h.nro_habitacion
+    FROM $this->tableName h
+    WHERE h.id_habitacion NOT IN (
+      SELECT h.id_habitacion
+      FROM $this->tableName h
+      INNER JOIN rooming r ON h.nro_habitacion = r.nro_habitacion
+      INNER JOIN cheking ch ON r.id_checkin = ch.id_checkin
+      WHERE ch.fecha_in = :fecha
+    ) AND h.id_unidad_de_negocio = 3";
+
+    $params = array(["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function buscarPorNroHabitacion($nroHabitacion)
   {
     $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.precio_venta_01, p.precio_venta_02, p.precio_venta_03 FROM $this->tableName h
