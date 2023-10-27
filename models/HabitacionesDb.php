@@ -74,6 +74,15 @@ class HabitacionesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function cerrarHabitacion($prevNroHabitacion) {
+    $query = "UPDATE $this->tableName SET cerrada = 1 WHERE nro_habitacion = :nro_habitacion";
+    $params = array(
+      ["nombre" => "nro_habitacion", "valor" => $prevNroHabitacion, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function eliminarHabitacion($id)
   {
     $query = $this->prepareQuery("delete");

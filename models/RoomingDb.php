@@ -61,11 +61,17 @@ class RoomingDb extends Database
     COALESCE(ch.nombre, '') AS nombre,
     COALESCE(ch.nro_personas, '') AS nro_personas,
     COALESCE(fechas_minmax.fecha_in, '') AS fecha_in,
-    COALESCE(DATE_ADD(fechas_minmax.fecha_out, INTERVAL 1 DAY), '') AS fecha_out
+    COALESCE(CASE
+      WHEN r.cambiado IS NULL THEN DATE_ADD(fechas_minmax.fecha_out, INTERVAL 1 DAY)
+        ELSE fechas_minmax.fecha_out
+      END, '') AS fecha_out
 
     FROM habitaciones h
-    LEFT JOIN rooming r ON r.nro_habitacion = h.nro_habitacion AND (:fecha1 = r.fecha OR :fecha2 = DATE_ADD(r.fecha, INTERVAL 1 DAY))
-    LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin /* AND :fecha BETWEEN ch.fecha_in AND ch.fecha_out */
+    LEFT JOIN rooming r ON r.nro_habitacion = h.nro_habitacion AND (:fecha1 = r.fecha OR (
+      r.cambiado IS NULL AND :fecha2 = DATE_ADD(r.fecha, INTERVAL 1 DAY)
+      )
+    )
+    LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin
     LEFT JOIN reservas re ON ch.nro_registro_maestro = re.nro_registro_maestro 
     LEFT JOIN productos p ON p.id_producto = h.id_producto
 
@@ -100,6 +106,19 @@ class RoomingDb extends Database
     $roomingArray = $this->prepareData((array) $rooming);
     $query = $this->prepareQuery("update", $roomingArray);
     $params = $this->prepareParams($roomingArray, "update", $id);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function cambiarRoomings($nroRegistroMaestro, $prevNroHabitacion, $fecha)
+  {
+    $query = "UPDATE $this->tableName SET cambiado = 1 WHERE nro_registro_maestro = :nro_registro_maestro AND nro_habitacion = :prev_nro_habitacion
+    AND fecha < :fecha";
+    $params = array(
+      ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "prev_nro_habitacion", "valor" => $prevNroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]
+    );
 
     return $this->executeQuery($query, $params, "update");
   }

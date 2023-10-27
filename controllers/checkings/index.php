@@ -710,11 +710,15 @@ class CheckingsController extends BaseController
         $roomingDb = new RoomingDb();
         $roomingDb->cambiarNroHabitacion($checking->nro_registro_maestro, $prevNroHabitacion, $nroHabitacion, $fecha);
 
+        // actualizar cerrada de habitación
+        $roomingDb = new RoomingDb();
+        $roomingDb->cambiarRoomings($checking->nro_registro_maestro, $prevNroHabitacion, $fecha);
+
         // actualizar los documentos detalles
         $documentosDetallesDb = new DocumentosDetallesDb();
         $documentosDetallesDb->cambiarNroHabitacion($checking->nro_registro_maestro, $prevNroHabitacion, $nroHabitacion, $fecha);
 
-        $this->sendResponse(["mensaje" => "Checking actualizado correctamente"], 200);
+        $this->sendResponse(["mensaje" => "Nro de habitación actualizada correctamente"], 200);
       } else {
         $this->sendResponse(["mensaje" => "Checking no encontrado"], 404);
       }

@@ -10,6 +10,7 @@ class Rooming
   public ?string $hora;
   public ?int $nro_personas;
   public ?float $tarifa;
+  public ?int $cambiado;
   public ?string $estado;
 }
 ?>

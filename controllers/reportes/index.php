@@ -9,6 +9,7 @@ require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
 require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
+require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
@@ -20,6 +21,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDiarioDetalles.ph
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteListadoCatalogo.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteCompras.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteConsultaProductosInsumos.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteKardex.php";
 
 class ReportesController extends BaseController
 {
@@ -47,6 +49,8 @@ class ReportesController extends BaseController
 
     $nombreProducto = $params['nombre_producto'] ?? null;
     $tipoProducto = $params['tipo_producto'] ?? null;
+
+    $idProducto = $params['id_producto'] ?? null;
 
     $reportesDb = new ReportesDb();
 
@@ -181,6 +185,18 @@ class ReportesController extends BaseController
 
       $reporteConsultaProductosInsumos = new ReporteConsultaProductosInsumos();
       $this->sendResponse($reporteConsultaProductosInsumos->generarReporte($result, $nombreProducto, $tipoProducto), 200);
+
+    } else if ($tipo == 'kardex') {
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+      $result =  $documentosDetallesDb->generarKardex($idProducto, $fechaInicio, $fechaFin);
+
+      // obtener nombre del producto
+      $productosDb = new ProductosDb();
+      $nombreProducto = $productosDb->obtenerProducto($idProducto)->nombre_producto;
+
+      $reporteKardex = new ReporteKardex();
+      $this->sendResponse($reporteKardex->generarReporte($result, $nombreProducto, $fechaInicio, $fechaFin), 200);
 
     } else {
       // no hay ese tipo de reporte
