@@ -23,6 +23,14 @@ class ReservasHabitacionesDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
+  public function buscarPorNroHabitacion($nroHabitacion)
+  {
+    $query = "SELECT * FROM $this->tableName WHERE nro_habitacion = :nro_habitacion AND id_producto IS NOT NULL ORDER BY fecha_ingreso DESC LIMIT 1";
+    $params = array(["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
   public function listarReservasHabitaciones()
   {
     $query = $this->prepareQuery("select");

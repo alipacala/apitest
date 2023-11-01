@@ -30,19 +30,26 @@ class HabitacionesDb extends Database
     return $this->executeQuery($query);
   }
 
-  public function listarConDisponibilidad($fecha)
+  public function listarConDisponibilidad($fechaIngreso, $fechaSalida)
   {
-    $query = "SELECT h.id_habitacion, h.nro_habitacion
+    $query = "SELECT h.id_habitacion, h.nro_habitacion, h.id_producto
     FROM $this->tableName h
     WHERE h.id_habitacion NOT IN (
       SELECT h.id_habitacion
       FROM $this->tableName h
       INNER JOIN rooming r ON h.nro_habitacion = r.nro_habitacion
-      INNER JOIN cheking ch ON r.id_checkin = ch.id_checkin
-      WHERE ch.fecha_in = :fecha
+      INNER JOIN reservahabitaciones rh ON h.nro_habitacion = rh.nro_habitacion
+      WHERE r.fecha BETWEEN :fecha_ingreso1 AND DATE_ADD(:fecha_salida1, INTERVAL -1 DAY)
+      OR (rh.fecha_ingreso > DATE_ADD(:fecha_salida2, INTERVAL -1 DAY)
+      AND rh.fecha_salida < :fecha_ingreso2)
     ) AND h.id_unidad_de_negocio = 3";
 
-    $params = array(["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]);
+    $params = array(
+      ["nombre" => "fecha_ingreso1", "valor" => $fechaIngreso, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_salida1", "valor" => $fechaSalida, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_ingreso2", "valor" => $fechaIngreso, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_salida2", "valor" => $fechaSalida, "tipo" => PDO::PARAM_STR]
+    );
 
     return $this->executeQuery($query, $params);
   }
@@ -74,7 +81,8 @@ class HabitacionesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
-  public function cerrarHabitacion($prevNroHabitacion) {
+  public function cerrarHabitacion($prevNroHabitacion)
+  {
     $query = "UPDATE $this->tableName SET cerrada = 1 WHERE nro_habitacion = :nro_habitacion";
     $params = array(
       ["nombre" => "nro_habitacion", "valor" => $prevNroHabitacion, "tipo" => PDO::PARAM_STR]

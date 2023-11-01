@@ -3,6 +3,8 @@ require_once __DIR__ . "/../../inc/bootstrap.php";
 require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 
 require_once PROJECT_ROOT_PATH . "/models/ReservasDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ReservasHabitacionesDb.php";
 
 class ReservasController extends BaseController
 {
@@ -36,43 +38,65 @@ class ReservasController extends BaseController
 
   public function create()
   {
-    $reservaDelBody = $this->getBody();
+    $body = $this->getBody();
+
     $reserva = new Reserva();
-    $this->mapJsonToObj($reservaDelBody, $reserva);
+    $this->mapJsonToObj($body->reserva, $reserva);
+
+    $habitaciones = $body->habitaciones;
 
     $reserva->id_unidad_de_negocio = 3;
-    $reserva->nro_registro_maestro = null;
     $reserva->fecha_pago = date("Y-m-d");
     $reserva->estado_pago = 0;
 
-    $reservasDb = new ReservasDb();
+    // calcular el monto total
+    $reserva->monto_total = 0;
+    foreach ($habitaciones as $habitacion) {
+      $habitacion->precio_total = $habitacion->precio_unitario * $habitacion->nro_noches;
+      $reserva->monto_total += $habitacion->precio_total;
+    }
+
+    $reserva->adelanto = $reserva->monto_total * $reserva->porcentaje_pago / 100;
+    $reserva->nro_personas = $reserva->nro_adultos + $reserva->nro_ninos + $reserva->nro_infantes;
+
     $configDb = new ConfigDb();
+    $codigoReserva = $configDb->obtenerCodigo(2);
+    $reserva->nro_reserva = $codigoReserva["codigo"];
+
+    $reservasDb = new ReservasDb();
 
     try {
       $reservasDb->empezarTransaccion();
 
-      $id = $reservasDb->crearReserva($reserva);
+      $idReserva = $reservasDb->crearReserva($reserva);
 
-      if (!$id) {
+      if (!$idReserva) {
         $this->sendResponse(["mensaje" => "Error al crear la Reserva"], 400);
         return;
       }
 
-      // actualizar config de reservas
-      $codigo = "RE" . date("y");
-      $seActualizoConfig = $configDb->actualizarNumeroCorrelativo($codigo);
+      // crear habitaciones
+      $reservasHabitacionesDb = new ReservasHabitacionesDb();
 
-      if (!$seActualizoConfig) {
-        $this->sendResponse(["mensaje" => "Error al actualizar el número correlativo de la Reserva"], 400);
-        return;
+      foreach ($habitaciones as $habitacion) {
+        $reservaHabitacion = new ReservaHabitacion();
+        $this->mapJsonToObj($habitacion, $reservaHabitacion);
+
+        $reservaHabitacion->id_unidad_de_negocio = $reserva->id_unidad_de_negocio;
+        $reservaHabitacion->nro_reserva = $reserva->nro_reserva;
+        $reservaHabitacion->fecha_ingreso = $reserva->fecha_llegada;
+        $reservaHabitacion->fecha_salida = $reserva->fecha_salida;
+        
+        $reservasHabitacionesDb->crearReservaHabitacion($reservaHabitacion);
       }
 
-      if ($id && $seActualizoConfig) {
+      $seActualizoConfig = $configDb->incrementarCorrelativo(2);
+
+      if ($idReserva && $seActualizoConfig) {
         $this->sendResponse([
           "mensaje" => "Reserva creada correctamente",
-          "resultado" => $reservasDb->obtenerReserva($id)
+          "resultado" => $reservasDb->obtenerReserva($idReserva)
         ], 201);
-        return;
       }
 
       $reservasDb->terminarTransaccion();
@@ -180,7 +204,7 @@ class ReservasController extends BaseController
         "mensaje" => "Reserva actualizada correctamente",
         "resultado" => $reservasDb->obtenerReserva($idReserva)
       ], 200);
-      
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
     }

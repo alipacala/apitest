@@ -17,7 +17,7 @@ class Reserva
   public ?string $observaciones_pago;
   public ?int $nro_personas;
   public ?int $nro_adultos;
-  public ?int $nro_niños;
+  public ?int $nro_ninos;
   public ?int $nro_infantes;
   public ?float $monto_total;
   public ?float $adelanto;

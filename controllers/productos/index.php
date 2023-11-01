@@ -27,16 +27,15 @@ class ProductosController extends BaseController
     $fechaInicio = $params['fecha_inicio'] ?? null;
     $fechaFin = $params['fecha_fin'] ?? null;
 
+    $conCentralesCostos = isset($params['con-centrales-costos']);
+
     $productosDb = new ProductosDb();
 
     if ($hospedajes) {
-      $result = $productosDb->listarHospedajes();
+      $result = $productosDb->listarHospedajesConPrecios();
     }
     if ($grupos) {
       $result = $productosDb->listarPorGrupo($grupos);
-    }
-    if ($nombreProducto) {
-      $result = $productosDb->buscarPorNombre($nombreProducto);
     }
     if ($stock) {
       if ($nombreProducto) {
@@ -66,7 +65,7 @@ class ProductosController extends BaseController
         $acc[$producto["tipo_producto"]][] = $producto;
         return $acc;
       }, []);
-      
+
       // agrupar por grupo de producto
       foreach ($result as $grupo => $productos) {
         $result[$grupo] = array_reduce($productos, function ($acc, $producto) {
@@ -74,6 +73,27 @@ class ProductosController extends BaseController
           return $acc;
         }, []);
       }
+    }
+    if ($conCentralesCostos) {
+      $result = $productosDb->listarConCentralesCostos();
+      $result = array_reduce($result, function ($acc, $producto) {
+        // buscar si ya existe la central de costos en el acumulador
+        $key = array_search($producto["id_central_de_costos"], array_column($acc, 'id_central_de_costos'));
+
+        if ($key === false) {
+          // si no existe, se agrega
+          $acc[] = [
+            "id_central_de_costos" => $producto["id_central_de_costos"],
+            "nombre_del_costo" => $producto["nombre_del_costo"],
+            "productos" => [$producto]
+          ];
+        } else {
+          // si existe, se agrega el producto al array de productos
+          $acc[$key]["productos"][] = $producto;
+        }
+
+        return $acc;
+      }, []);
     }
     if (count($params) === 0) {
       $result = $productosDb->listarProductos();
@@ -119,6 +139,21 @@ class ProductosController extends BaseController
       $code = 200;
 
       $this->sendResponse($response, $code);
+
+    } else if ($action == 'con-precios') {
+
+      $productosDb = new ProductosDb();
+      $producto = $productosDb->obtenerProducto($id);
+
+      // comprobar que el producto exista
+      if (!$producto) {
+        $this->sendResponse(["mensaje" => "Producto no encontrado"], 404);
+        return;
+      }
+
+      $response = $productosDb->buscarConPrecios($id);
+      $this->sendResponse($response, 200);
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 400);
     }

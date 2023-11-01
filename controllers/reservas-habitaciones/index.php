@@ -11,9 +11,10 @@ class ReservasHabitacionesController extends BaseController
     $params = $this->getParams();
     $nroDocumento = $params['nro_reserva'] ?? null;
     $nroHabitacion = $params['nro_habitacion'] ?? null;
+    
+    $reservasHabitacionesDb = new ReservasHabitacionesDb();
 
     if ($nroDocumento) {
-      $reservasHabitacionesDb = new ReservasHabitacionesDb();
       $result = $reservasHabitacionesDb->buscarPorNroReserva($nroDocumento);
 
       if (!$result || count($result) === 0) {
@@ -21,8 +22,10 @@ class ReservasHabitacionesController extends BaseController
         return;
       }
     }
+    if ($nroHabitacion) {
+      $result = $reservasHabitacionesDb->buscarPorNroHabitacion($nroHabitacion);
+    }
     if (count($params) === 0) {
-      $reservasHabitacionesDb = new ReservasHabitacionesDb();
       $result = $reservasHabitacionesDb->listarReservasHabitaciones();
     }
 

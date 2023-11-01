@@ -22,7 +22,7 @@ class ReservasDb extends Database
 
     return $this->executeQuery($query, $params, "select-one");
   }
-
+  
   public function listarReservas()
   {
     $query = $this->prepareQuery("select");

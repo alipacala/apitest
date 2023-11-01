@@ -13,7 +13,8 @@ class HabitacionesController extends BaseController
     $nroHabitacion = $params['nro_habitacion'] ?? null;
 
     $conDisponibilidad = isset($params['con-disponibilidad']);
-    $fecha = $params['fecha'] ?? null;
+    $fechaIngreso = $params['fecha_ingreso'] ?? null;
+    $fechaSalida = $params['fecha_salida'] ?? null;
 
     $habitacionesDb = new HabitacionesDb();
 
@@ -30,7 +31,7 @@ class HabitacionesController extends BaseController
       }
     }
     if ($conDisponibilidad) {
-      $result = $habitacionesDb->listarConDisponibilidad($fecha);
+      $result = $habitacionesDb->listarConDisponibilidad($fechaIngreso, $fechaSalida);
     }
     if (count($params) === 0) {
       $result = $habitacionesDb->listarHabitaciones();

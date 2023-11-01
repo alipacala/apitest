@@ -128,7 +128,7 @@ class DocumentosDetallesDb extends Database
     )
     
     SELECT
-      *, SUM(ingreso - salida) OVER (ORDER BY fecha, tipo_movimiento, EXTRACT(HOUR FROM fecha)) AS existencias
+      *, SUM(ingreso - salida) OVER (ORDER BY fecha, tipo_movimiento, EXTRACT(HOUR FROM fecha)) AS existencias, SUM(ingreso - salida) OVER (ORDER BY fecha, tipo_movimiento, EXTRACT(HOUR FROM fecha)) * precio_unitario AS monto_total
     FROM monto_antes_y_dd_prev";
 
     $params = array(

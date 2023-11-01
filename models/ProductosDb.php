@@ -37,21 +37,29 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
-  public function buscarPorNombre($nombreProducto)
+  public function listarConCentralesCostos()
   {
-    $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.precio_venta_01, p.precio_venta_02, p.precio_venta_03 
-    FROM productos p WHERE p.nombre_producto = :nombre_producto";
+    $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta FROM productos p INNER JOIN centraldecostos cc ON p.id_central_de_costos = cc.id_central_de_costos WHERE p.tipo = 'PRD' ORDER BY cc.nombre_del_costo, p.nombre_producto ASC";
 
-    $params = array(
-      array("nombre" => "nombre_producto", "valor" => $nombreProducto, "tipo" => PDO::PARAM_STR)
-    );
-
-    return $this->executeQuery($query, $params);
+    return $this->executeQuery($query);
   }
 
-  public function listarHospedajes()
+  public function buscarConPrecios($idProducto)
   {
-    $query = "SELECT id_producto, nombre_producto FROM $this->tableName WHERE tipo = 'SVH'";
+    $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.precio_venta_01, p.precio_venta_02, p.precio_venta_03 
+    FROM productos p WHERE p.id_producto = :id_producto";
+
+    $params = array(
+      array("nombre" => "id_producto", "valor" => $idProducto, "tipo" => PDO::PARAM_STR)
+    );
+
+    return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function listarHospedajesConPrecios()
+  {
+    $query = "SELECT id_producto, nombre_producto, precio_venta_01, precio_venta_02, precio_venta_03 
+     FROM $this->tableName WHERE tipo = 'SVH'";
 
     return $this->executeQuery($query, null);
   }
