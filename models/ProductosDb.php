@@ -195,6 +195,7 @@ class ProductosDb extends Database
                     FROM productos pr
                         INNER JOIN documento_detalle dd ON pr.id_producto = dd.id_producto
                         LEFT JOIN documento_movimiento dm ON dd.id_documento_movimiento = dm.id_documento_movimiento
+                    AND pr.tipo = 'PRD'
                     GROUP BY
                         pr.id_producto,
                         pr.id_tipo_de_producto,
@@ -216,8 +217,7 @@ class ProductosDb extends Database
                     :codigo_grupo1 IS NULL
                     OR gr.codigo_subgrupo IS NULL
                     OR gr.codigo_subgrupo = :codigo_grupo2
-                )
-                AND sm.tipo != 'PRD'";
+                )";
 
     $params = array(
       ["nombre" => "fecha_inicio1", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
