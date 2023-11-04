@@ -216,7 +216,8 @@ class ProductosDb extends Database
                     :codigo_grupo1 IS NULL
                     OR gr.codigo_subgrupo IS NULL
                     OR gr.codigo_subgrupo = :codigo_grupo2
-                )";
+                )
+                AND sm.tipo != 'PRD'";
 
     $params = array(
       ["nombre" => "fecha_inicio1", "valor" => $fechaInicio, "tipo" => PDO::PARAM_STR],
