@@ -254,8 +254,8 @@ class CheckingsController extends BaseController
       $codigo = "HT" . date("y");
 
       $configDb = new ConfigDb();
-      $configDb->actualizarNumeroCorrelativo($codigo);
       $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
+      $configDb->actualizarNumeroCorrelativo($codigo);
 
       // actualizar la reserva
       $reservasDb = new ReservasDb();
