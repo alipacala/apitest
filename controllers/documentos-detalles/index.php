@@ -20,6 +20,12 @@ class DocumentosDetallesController extends BaseController
 
     $documentoMovimiento = $params['documento_movimiento'] ?? null;
 
+    $servicios = isset($params['servicios']);
+    $fecha = $params['fecha'] ?? null;
+
+    $liquidacion = isset($params['liquidacion']);
+    $idProfesional = $params['id_profesional'] ?? null;
+
     $documentosDetallesDb = new DocumentosDetallesDb();
 
     if ($nroRegistroMaestro) {
@@ -41,6 +47,12 @@ class DocumentosDetallesController extends BaseController
     }
     if ($documentoMovimiento) {
       $result = $documentosDetallesDb->buscarPorDocumentoMovimiento($documentoMovimiento);
+    }
+    if ($servicios) {
+      $result = $documentosDetallesDb->buscarServicios($fecha);
+    }
+    if ($liquidacion) {
+      $result = $documentosDetallesDb->buscarServiciosLiquidacion($fecha, $idProfesional);
     }
     if (count($params) === 0) {
       $result = $documentosDetallesDb->listarDocumentosDetalles();

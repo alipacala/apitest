@@ -49,6 +49,78 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
+  public function buscarServicios($fecha)
+  {
+    $query = "SELECT dd.id_documentos_detalle,
+    dd.hora_servicio AS hora_inicio,
+    dd.hora_termino AS hora_final,
+    ac.apellidos_y_nombres AS nombre_cliente, 
+    CASE
+      WHEN ch.tipo_de_servicio = 'HOTEL' THEN CONCAT(ch.tipo_de_servicio , ' ', COALESCE(dd.nro_habitacion, ch.nro_habitacion))
+      ELSE ch.tipo_de_servicio
+    END AS tipo_cliente,
+    CASE 
+      WHEN COUNT(prr.id_producto) > 0 THEN 'CON INSUMOS'
+      ELSE ''
+    END AS con_insumos,
+    pr.nombre_producto AS servicio,
+    dd.precio_total AS precio_venta,
+    CONCAT(te.nombres, ' ', te.apellidos) AS profesional_asignado,
+    dd.estado_servicio AS estado
+   FROM $this->tableName dd
+   INNER JOIN productos pr ON pr.id_producto = dd.id_producto
+   INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate
+   INNER JOIN cheking ch ON ch.nro_registro_maestro = dd.nro_registro_maestro
+   LEFT JOIN productosreceta prr ON pr.id_producto = prr.id_producto
+   LEFT JOIN terapistas te ON te.id_profesional = dd.id_profesional
+   WHERE dd.fecha_servicio = :fecha AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV'
+   GROUP BY dd.fecha_servicio, dd.id_documentos_detalle, dd.hora_servicio, dd.hora_termino , ac.apellidos_y_nombres, ch.tipo_de_servicio, dd.nro_habitacion, pr.nombre_producto, dd.precio_total, dd.estado_servicio";
+    $params = array(["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params);
+  }
+
+  public function buscarServiciosLiquidacion($fecha, $idProfesional)
+  {
+    $query = "SELECT 
+    dd.id_documentos_detalle,
+    pr.nombre_producto AS servicio,
+    CASE
+      WHEN ch.tipo_de_servicio = 'HOTEL' THEN CONCAT(ch.tipo_de_servicio , ' ', COALESCE(dd.nro_habitacion, ch.nro_habitacion))
+      ELSE ch.tipo_de_servicio
+    END AS tipo_cliente,
+    ac.apellidos_y_nombres AS cliente,
+    ROW_NUMBER() OVER(ORDER BY id_documentos_detalle) AS nro_servicio,
+    dd.precio_total AS costo_servicio,
+    CASE ROW_NUMBER() OVER(ORDER BY dd.id_documentos_detalle)
+    	WHEN 1 THEN 0.45
+        WHEN 2 THEN 0.45
+        WHEN 3 THEN 0.4
+        WHEN 4 THEN 0.4
+        ELSE 0.35
+    END AS porc_comision,
+    CASE ROW_NUMBER() OVER(ORDER BY dd.id_documentos_detalle)
+    	WHEN 1 THEN 0.45 * dd.precio_total
+        WHEN 2 THEN 0.45 * dd.precio_total
+        WHEN 3 THEN 0.4 * dd.precio_total
+        WHEN 4 THEN 0.4 * dd.precio_total
+        ELSE 0.35 * dd.precio_total
+    END AS monto_comision,
+    '' AS estado,
+    '' AS recibo
+   FROM documento_detalle dd
+   INNER JOIN productos pr ON pr.id_producto = dd.id_producto
+   INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate
+   INNER JOIN cheking ch ON ch.nro_registro_maestro = dd.nro_registro_maestro
+   WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV'";
+    $params = array(
+      ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id_profesional", "valor" => $idProfesional, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function generarKardex($idProducto, $fechaInicio, $fechaFin)
   {
     $query = "WITH dd_antes_fecha AS (
