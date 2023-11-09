@@ -4,6 +4,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
 
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
+require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 
 class DocumentosDetallesController extends BaseController
 {
@@ -42,7 +43,7 @@ class DocumentosDetallesController extends BaseController
     if ($nroComprobanteVenta) {
       $result = $documentosDetallesDb->buscarPorNroComprobanteVenta($nroComprobanteVenta);
     }
-    if($kardex) {
+    if ($kardex) {
       $result = $documentosDetallesDb->generarKardex($idProducto, $fechaInicio, $fechaFin);
     }
     if ($documentoMovimiento) {
@@ -151,8 +152,7 @@ class DocumentosDetallesController extends BaseController
       if ($documentoDetalle->estado_servicio == "1") {
         $documentoDetalle->fecha_termino = date("Y-m-d");
         $documentoDetalle->hora_termino = date("H:i");
-      }
-      else {
+      } else {
         $documentoDetalle->fecha_termino = "";
         $documentoDetalle->hora_termino = "";
       }
@@ -166,6 +166,45 @@ class DocumentosDetallesController extends BaseController
       $code = $result ? 200 : 400;
 
       $this->sendResponse($response, $code);
+
+    } else if ($action == "servicio") {
+
+      $documentoDetalleDelBody = $this->getBody();
+      $documentoDetalle = new DocumentoDetalle();
+      $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+
+      $prevDocumentoDetalle = $documentosDetallesDb->obtenerDocumentoDetalle($id);
+      unset($prevDocumentoDetalle->id_central_de_costos);
+
+      // comprobar que el documento detalle exista
+      if (!$prevDocumentoDetalle) {
+        $this->sendResponse(["mensaje" => "Documento Detalle no encontrado"], 404);
+        return;
+      }
+
+      // si los datos son iguales, no se hace nada
+      if ($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
+        $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
+        return;
+      }
+
+      $productosDb = new ProductosDb();
+      $producto = $productosDb->obtenerProducto($documentoDetalle->id_producto);
+      $documentoDetalle->precio_unitario = $producto->precio_venta_01;
+      $documentoDetalle->precio_total = $documentoDetalle->precio_unitario;
+      
+      $result = $documentosDetallesDb->actualizarDocumentoDetalle($id, $documentoDetalle);
+
+      $response = $result ? [
+        "mensaje" => "Documento Detalle actualizado correctamente",
+        "resultado" => $documentosDetallesDb->obtenerDocumentoDetalle($id)
+      ] : ["mensaje" => "Error al actualizar el Documento Detalle"];
+      $code = $result ? 200 : 400;
+
+      $this->sendResponse($response, $code);
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
     }

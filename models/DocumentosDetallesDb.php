@@ -54,6 +54,7 @@ class DocumentosDetallesDb extends Database
     $query = "SELECT dd.id_documentos_detalle,
     dd.nro_registro_maestro,
     dd.id_producto,
+    dd.id_acompanate,
     dd.hora_servicio AS hora_inicio,
     dd.hora_termino AS hora_final,
     ac.apellidos_y_nombres AS nombre_cliente, 
