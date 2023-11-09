@@ -24,6 +24,7 @@ class DocumentoDetalle
   public ?string $hora_termino;
   public ?string $nro_comprobante;
   public ?string $observaciones;
+  public ?int $estado_servicio;
   public ?int $id_recibo_de_pago;
   public ?int $anulado;
   public ?int $id_usuario;

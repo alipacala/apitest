@@ -29,6 +29,8 @@ class ProductosController extends BaseController
 
     $conCentralesCostos = isset($params['con-centrales-costos']);
 
+    $serviciosTerapistas = isset($params['servicios-terapistas']);
+
     $productosDb = new ProductosDb();
 
     if ($hospedajes) {
@@ -94,6 +96,9 @@ class ProductosController extends BaseController
 
         return $acc;
       }, []);
+    }
+    if ($serviciosTerapistas) {
+      $result = $productosDb->listarServiciosTerapistas();
     }
     if (count($params) === 0) {
       $result = $productosDb->listarProductos();

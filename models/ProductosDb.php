@@ -64,6 +64,14 @@ class ProductosDb extends Database
     return $this->executeQuery($query, null);
   }
 
+  public function listarServiciosTerapistas()
+  {
+    $query = "SELECT id_producto, nombre_producto, codigo_habilidad
+     FROM $this->tableName WHERE tipo = 'SRV' AND requiere_programacion = 1";
+
+    return $this->executeQuery($query);
+  }
+
   public function buscarConDocDetallesPorNombreProducto($nombresProducto)
   {
     $query = "SELECT pr.id_producto, tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,

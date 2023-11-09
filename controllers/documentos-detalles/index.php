@@ -124,6 +124,53 @@ class DocumentosDetallesController extends BaseController
     $this->sendResponse($response, $code);
   }
 
+  public function updatePartial($id, $action = null)
+  {
+    if ($action == 'estado') {
+      $documentoDetalleDelBody = $this->getBody();
+      $documentoDetalle = new DocumentoDetalle();
+      $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+
+      $prevDocumentoDetalle = $documentosDetallesDb->obtenerDocumentoDetalle($id);
+      unset($prevDocumentoDetalle->id_central_de_costos);
+
+      // comprobar que el documento detalle exista
+      if (!$prevDocumentoDetalle) {
+        $this->sendResponse(["mensaje" => "Documento Detalle no encontrado"], 404);
+        return;
+      }
+
+      // si los datos son iguales, no se hace nada
+      if ($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
+        $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
+        return;
+      }
+
+      if ($documentoDetalle->estado_servicio == "1") {
+        $documentoDetalle->fecha_termino = date("Y-m-d");
+        $documentoDetalle->hora_termino = date("H:i");
+      }
+      else {
+        $documentoDetalle->fecha_termino = "";
+        $documentoDetalle->hora_termino = "";
+      }
+
+      $result = $documentosDetallesDb->actualizarDocumentoDetalle($id, $documentoDetalle);
+
+      $response = $result ? [
+        "mensaje" => "Documento Detalle actualizado correctamente",
+        "resultado" => $documentosDetallesDb->obtenerDocumentoDetalle($id)
+      ] : ["mensaje" => "Error al actualizar el Documento Detalle"];
+      $code = $result ? 200 : 400;
+
+      $this->sendResponse($response, $code);
+    } else {
+      $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
+    }
+  }
+
   public function delete($id)
   {
     $documentosDetallesDb = new DocumentosDetallesDb();
