@@ -114,7 +114,7 @@ class DocumentosDetallesDb extends Database
    INNER JOIN productos pr ON pr.id_producto = dd.id_producto
    INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate
    INNER JOIN cheking ch ON ch.nro_registro_maestro = dd.nro_registro_maestro
-   WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV'";
+   WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV' AND dd.estado_servicio = 1";
     $params = array(
       ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR],
       ["nombre" => "id_profesional", "valor" => $idProfesional, "tipo" => PDO::PARAM_INT]
