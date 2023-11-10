@@ -174,7 +174,7 @@ class CheckingsController extends BaseController
       $checking->nro_adultos = 1;
       $checking->nro_ninos = 0;
       $checking->nro_infantes = 0;
-
+      
       foreach ($checkingDelBody->acompanantes as $acompanante) {
         if ($acompanante->edad < 3) {
           $checking->nro_infantes++;
