@@ -39,7 +39,19 @@ class ProductosDb extends Database
 
   public function listarConCentralesCostos()
   {
-    $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta FROM productos p INNER JOIN centraldecostos cc ON p.id_central_de_costos = cc.id_central_de_costos WHERE p.tipo = 'PRD' ORDER BY cc.nombre_del_costo, p.nombre_producto ASC";
+    $query = "SELECT
+    p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta,
+    SUM(CASE 
+        WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
+        WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad
+        ELSE 0
+      END) AS stock
+    FROM productos p
+    LEFT JOIN centraldecostos cc ON p.id_central_de_costos = cc.id_central_de_costos
+    LEFT JOIN documento_detalle dd ON dd.id_producto = p.id_producto
+    WHERE p.tipo = 'PRD'
+    GROUP BY p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta
+    ORDER BY cc.nombre_del_costo, p.nombre_producto ASC";
 
     return $this->executeQuery($query);
   }

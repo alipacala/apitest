@@ -15,9 +15,12 @@ class PersonasDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarPersonas()
+  public function listarPersonas($limite = null)
   {
     $query = $this->prepareQuery("select");
+    if ($limite) {
+      $query .= " LIMIT $limite";
+    }
 
     return $this->executeQuery($query, null, "select");
   }

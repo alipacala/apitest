@@ -10,11 +10,15 @@ class PersonasController extends BaseController
   {
     $params = $this->getParams();
     $dni = $params['dni'] ?? null;
+    $limite = $params['limite'] ?? null;
 
     $personasDb = new PersonasDb();
 
     if ($dni) {
       $result = $personasDb->buscarPorNroDocumento($dni);
+    }
+    if ($limite) {
+      $result = $personasDb->listarPersonas($limite);
     }
     if (count($params) === 0) {
       $result = $personasDb->listarPersonas();
