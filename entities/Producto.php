@@ -17,6 +17,7 @@ class Producto
   public ?int $stock_max_temporada_baja;
   public ?int $stock_min_temporada_alta;
   public ?int $stock_max_temporada_alta;
+  public ?float $cantidad_pedido;
   public ?int $requiere_programacion;
   public ?string $tiempo_estimado;
   public ?string $codigo_habilidad;

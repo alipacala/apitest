@@ -45,7 +45,9 @@ class ProductosDb extends Database
         WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
         WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad
         ELSE 0
-      END) AS stock
+      END) AS stock,
+    p.tipo_de_unidad,
+    p.cantidad_pedido
     FROM productos p
     LEFT JOIN centraldecostos cc ON p.id_central_de_costos = cc.id_central_de_costos
     LEFT JOIN documento_detalle dd ON dd.id_producto = p.id_producto
