@@ -32,7 +32,7 @@ class RoomingDb extends Database
 
   public function buscarPorIdCheckin($idCheckin)
   {
-    $query = "SELECT * FROM $this->tableName WHERE id_checkin = :id_checkin ORDER BY id_rooming GROUP BY nro_habitacion ASC";
+    $query = "SELECT nro_habitacion FROM $this->tableName WHERE id_checkin = :id_checkin GROUP BY nro_habitacion";
     $params = array(["nombre" => "id_checkin", "valor" => $idCheckin, "tipo" => PDO::PARAM_INT]);
 
     return $this->executeQuery($query, $params, "select-one");
