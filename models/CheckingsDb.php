@@ -32,16 +32,24 @@ class CheckingsDb extends Database
 
   public function listarCerrados()
   {
-    $query = "SELECT * FROM $this->tableName WHERE cerrada = 1";
+    $query = "SELECT ch.tipo_de_servicio, ch.id_checkin, ch.nombre, ro.nro_habitacion, ch.nro_personas, ch.nro_adultos, ch.nro_ninos, ch.nro_infantes, ch.fecha_in, ch.hora_in, ch.fecha_out, ch.nro_registro_maestro, ro.nro_habitacion
+    FROM cheking ch
+    INNER JOIN rooming ro ON ch.nro_registro_maestro = ro.nro_registro_maestro
+    WHERE ch.cerrada = 1
+    GROUP BY nro_registro_maestro, nro_habitacion";
 
     return $this->executeQuery($query, null, "select");
   }
 
   public function listarAbiertos()
   {
-    $query = "SELECT * FROM $this->tableName WHERE cerrada IS NULL OR cerrada = 0";
+    $query = "SELECT ch.tipo_de_servicio, ch.id_checkin, ch.nombre, ro.nro_habitacion, ch.nro_personas, ch.nro_adultos, ch.nro_ninos, ch.nro_infantes, ch.fecha_in, ch.hora_in, ch.fecha_out, ch.nro_registro_maestro, ro.nro_habitacion
+    FROM cheking ch
+    INNER JOIN rooming ro ON ch.nro_registro_maestro = ro.nro_registro_maestro
+    WHERE ch.cerrada IS NULL OR ch.cerrada = 0
+    GROUP BY nro_registro_maestro, nro_habitacion";
 
-    return $this->executeQuery($query, null, "select");
+    return $this->executeQuery($query);
   }
 
   public function buscarPorNroReserva($nroReserva)
