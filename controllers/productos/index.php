@@ -28,6 +28,9 @@ class ProductosController extends BaseController
     $fechaFin = $params['fecha_fin'] ?? null;
 
     $conCentralesCostos = isset($params['con-centrales-costos']);
+    $idCentralDeCostos = $params['central-costos'] ?? null;
+    $codigoProducto = $params['codigo'] ?? null;
+    $soloPedido = isset($params['solo-pedido']);
 
     $serviciosTerapistas = isset($params['servicios-terapistas']);
 
@@ -77,7 +80,7 @@ class ProductosController extends BaseController
       }
     }
     if ($conCentralesCostos) {
-      $result = $productosDb->listarConCentralesCostos();
+      $result = $productosDb->listarConCentralesCostos($idCentralDeCostos, $codigoProducto, $soloPedido);
       $result = array_reduce($result, function ($acc, $producto) {
         // buscar si ya existe la central de costos en el acumulador
         $key = array_search($producto["id_central_de_costos"], array_column($acc, 'id_central_de_costos'));
@@ -747,6 +750,27 @@ class ProductosController extends BaseController
 
       $this->sendResponse($response, $code);
 
+    } else if ($action == 'limpiar-pedido') {
+
+      $productosDb = new ProductosDb();
+
+      $result = $productosDb->hayProductosConPedido();
+      $cantidad = $result[0]["cantidad"];
+      
+      if ($cantidad <= 0) {
+        $this->sendResponse(["mensaje" => "No habían productos en el pedido"], 400);
+        return;
+      }
+      
+      $result = $productosDb->limpiarPedido();
+
+      $response = $result ? [
+        "mensaje" => "Pedido limpiado correctamente",
+        "resultado" => $result
+      ] : ["mensaje" => "Error al limpiar el Pedido"];
+      $code = $result ? 200 : 400;
+
+      $this->sendResponse($response, $code);
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 400);
     }

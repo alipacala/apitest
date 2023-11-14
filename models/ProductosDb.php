@@ -37,25 +37,44 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
-  public function listarConCentralesCostos()
+  public function listarConCentralesCostos($idCentralCostos = null, $codigoProducto = null, $soloPedido = false)
   {
     $query = "SELECT
     p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta,
+
     SUM(CASE 
         WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
         WHEN dd.tipo_movimiento = 'SA' THEN -dd.cantidad
         ELSE 0
       END) AS stock,
+
     p.tipo_de_unidad,
     p.cantidad_pedido
+
     FROM productos p
     LEFT JOIN centraldecostos cc ON p.id_central_de_costos = cc.id_central_de_costos
     LEFT JOIN documento_detalle dd ON dd.id_producto = p.id_producto
-    WHERE p.tipo = 'PRD'
+
+    WHERE (
+      p.tipo = 'PRD'
+      AND (
+        (:solo_pedido IS NOT NULL AND p.cantidad_pedido > 0)
+        OR (:id_central_costos1 IS NOT NULL AND p.id_central_de_costos = :id_central_costos2)
+        OR (:codigo_producto1 IS NOT NULL AND p.codigo LIKE :codigo_producto2)
+      )
+    )
+
     GROUP BY p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta
     ORDER BY cc.nombre_del_costo, p.nombre_producto ASC";
+    $params = array(
+      array("nombre" => "id_central_costos1", "valor" => $idCentralCostos, "tipo" => PDO::PARAM_INT),
+      array("nombre" => "id_central_costos2", "valor" => $idCentralCostos, "tipo" => PDO::PARAM_INT),
+      array("nombre" => "codigo_producto1", "valor" => $codigoProducto, "tipo" => PDO::PARAM_STR),
+      array("nombre" => "codigo_producto2", "valor" => "%$codigoProducto%", "tipo" => PDO::PARAM_STR),
+      array("nombre" => "solo_pedido", "valor" => $soloPedido, "tipo" => PDO::PARAM_STR)
+    );
 
-    return $this->executeQuery($query);
+    return $this->executeQuery($query, $params);
   }
 
   public function buscarConPrecios($idProducto)
@@ -149,7 +168,8 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params);
   }
 
-  public function listarInventario($unidadNegocio, $tipo, $grupo, $fechaInicio, $fechaFin) {
+  public function listarInventario($unidadNegocio, $tipo, $grupo, $fechaInicio, $fechaFin)
+  {
     $query = "SELECT
                 sm.id_producto,
                 sm.nombre_producto,
@@ -275,6 +295,20 @@ class ProductosDb extends Database
     $params = $this->prepareParams($productoArray, "update", $id);
 
     return $this->executeQuery($query, $params, "update");
+  }
+
+  public function hayProductosConPedido()
+  {
+    $query = "SELECT COUNT(*) AS cantidad FROM $this->tableName WHERE cantidad_pedido > 0";
+
+    return $this->executeQuery($query);
+  }
+
+  public function limpiarPedido()
+  {
+    $query = "UPDATE $this->tableName SET cantidad_pedido = 0 WHERE cantidad_pedido > 0";
+
+    return $this->executeQuery($query, null, "update");
   }
 
   public function eliminarProducto($id)
