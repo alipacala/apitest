@@ -10,6 +10,7 @@ require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
+require_once PROJECT_ROOT_PATH . "/models/RoomingDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
@@ -23,6 +24,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteCompras.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteConsultaProductosInsumos.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteKardex.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReportePedido.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDesayunos.php";
 
 class ReportesController extends BaseController
 {
@@ -205,6 +207,14 @@ class ReportesController extends BaseController
 
       $reportePedido = new ReportePedido();
       $this->sendResponse($reportePedido->generarReporte($result), 200);
+
+    } else if ($tipo = 'desayunos') {
+
+      $roomingDb = new RoomingDb();
+      $result = $roomingDb->listarRoomingConDatos($fecha);
+
+      $reporteDesayunos = new ReporteDesayunos();
+      $this->sendResponse($reporteDesayunos->generarReporte($result, $fecha), 200);
 
     } else {
       // no hay ese tipo de reporte

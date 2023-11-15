@@ -62,6 +62,7 @@ class RoomingDb extends Database
     COALESCE(ch.nro_personas, re.nro_personas) AS nro_personas,
     COALESCE(fechas_minmax.fecha_in, rh.fecha_ingreso) AS fecha_in,
     re.estado_pago AS estado_pago,
+    r.estado AS estado,
     COALESCE(CASE
       WHEN r.cambiado IS NULL THEN DATE_ADD(fechas_minmax.fecha_out, INTERVAL 1 DAY)
         ELSE fechas_minmax.fecha_out
