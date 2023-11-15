@@ -174,7 +174,7 @@ class CheckingsController extends BaseController
       $checking->nro_adultos = 1;
       $checking->nro_ninos = 0;
       $checking->nro_infantes = 0;
-      
+
       foreach ($checkingDelBody->acompanantes as $acompanante) {
         if ($acompanante->edad < 3) {
           $checking->nro_infantes++;
@@ -601,13 +601,13 @@ class CheckingsController extends BaseController
       // actualizar los roomings
       $roomingDb = new RoomingDb();
       $roomingDb->actualizarIdCheckingEnRoomings($checking->nro_registro_maestro, $checking->nro_habitacion, $id);
-      
+
       // actualizar el acompañante titular
       $acompanantesDb = new AcompanantesDb();
       $prevAcompananteTitular = $acompanantesDb->buscarTitularPorNroRegistroMaestro($checking->nro_registro_maestro);
 
       $acompananteTitular = new Acompanante();
-      
+
       $acompananteTitular->nro_registro_maestro = $checking->nro_registro_maestro;
       $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
       $acompananteTitular->nro_de_orden_unico = 0;
@@ -722,7 +722,17 @@ class CheckingsController extends BaseController
       } else {
         $this->sendResponse(["mensaje" => "Checking no encontrado"], 404);
       }
-  
+
+    } else if ($action == "checkout") {
+
+      $body = $this->getBody();
+      $nroHabitacion = $body->nro_habitacion;
+
+      $roomingDb = new RoomingDb();
+      $roomingDb->checkout($id, $nroHabitacion);
+
+      $this->sendResponse(["mensaje" => "Checkout realizado correctamente"], 200);
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }

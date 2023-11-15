@@ -74,7 +74,7 @@ class RoomingDb extends Database
     LEFT JOIN rooming r ON r.nro_habitacion = h.nro_habitacion AND (:fecha1 = r.fecha OR (
       r.cambiado IS NULL AND :fecha2 = DATE_ADD(r.fecha, INTERVAL 1 DAY)
       )
-    )
+    ) AND r.estado = 'OU'
 
 
     LEFT JOIN reservahabitaciones rh ON rh.nro_habitacion = h.nro_habitacion AND rh.fecha_ingreso <= :fecha3 AND rh.fecha_salida >= :fecha4
@@ -82,17 +82,19 @@ class RoomingDb extends Database
       SELECT nro_reserva, nombre, nro_personas
       FROM reservas
       WHERE
-        estado_pago NOT IN (1, 2, 4, 5)
+        estado_pago NOT IN (3, 5)
     ) re ON re.nro_reserva = rh.nro_reserva
 
-
-  /*   LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin */
     LEFT JOIN cheking ch ON ch.nro_reserva = re.nro_reserva
     LEFT JOIN productos p ON p.id_producto = h.id_producto
 
     LEFT JOIN (
-        SELECT nro_registro_maestro, nro_habitacion, MIN(fecha) AS fecha_in, MAX(fecha) AS fecha_out
-        FROM rooming
+        SELECT ro.nro_registro_maestro, ro.nro_habitacion, MIN(ro.fecha) AS fecha_in, MAX(ro.fecha) AS fecha_out
+        FROM rooming ro
+        INNER JOIN cheking ch ON ch.id_checkin = ro.id_checkin
+        INNER JOIN reservas re ON re.nro_reserva = ch.nro_reserva
+        WHERE ro.estado != 'OU'
+        AND re.estado_pago NOT IN (3, 5)
         GROUP BY nro_registro_maestro, nro_habitacion
     ) AS fechas_minmax ON fechas_minmax.nro_registro_maestro = r.nro_registro_maestro AND fechas_minmax.nro_habitacion = r.nro_habitacion
     
@@ -151,6 +153,18 @@ class RoomingDb extends Database
       ["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR],
       ["nombre" => "prev_nro_habitacion", "valor" => $prevNroHabitacion, "tipo" => PDO::PARAM_STR],
       ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function checkout($idChecking, $nroHabitacion)
+  {
+    $query = "UPDATE $this->tableName SET estado = 'OU' WHERE id_checkin = :id_checkin AND nro_habitacion = :nro_habitacion";
+    $params = array(
+      ["nombre" => "id_checkin", "valor" => $idChecking, "tipo" => PDO::PARAM_INT]
+      ,
+      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR]
     );
 
     return $this->executeQuery($query, $params, "update");
