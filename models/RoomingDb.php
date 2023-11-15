@@ -82,8 +82,7 @@ class RoomingDb extends Database
       SELECT nro_reserva, nombre, nro_personas
       FROM reservas
       WHERE
-        estado_pago IS NULL
-        OR estado_pago NOT IN (1, 2, 4, 5)
+        estado_pago NOT IN (1, 2, 4, 5)
     ) re ON re.nro_reserva = rh.nro_reserva
 
 
