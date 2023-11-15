@@ -78,7 +78,13 @@ class RoomingDb extends Database
 
 
     LEFT JOIN reservahabitaciones rh ON rh.nro_habitacion = h.nro_habitacion AND rh.fecha_ingreso <= :fecha3 AND rh.fecha_salida >= :fecha4
-    LEFT JOIN reservas re ON re.nro_reserva = rh.nro_reserva
+    LEFT JOIN (
+      SELECT nro_reserva
+      FROM reservas
+      WHERE
+        estado_pago IS NULL
+        OR estado_pago NOT IN (1, 2, 4, 5)
+    ) re ON re.nro_reserva = rh.nro_reserva
 
 
     LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin
@@ -91,6 +97,7 @@ class RoomingDb extends Database
     ) AS fechas_minmax ON fechas_minmax.nro_registro_maestro = r.nro_registro_maestro AND fechas_minmax.nro_habitacion = r.nro_habitacion
     
     WHERE h.id_unidad_de_negocio = 3
+
     GROUP BY h.nro_habitacion
     ORDER BY h.nro_habitacion ASC";
     $params = array(

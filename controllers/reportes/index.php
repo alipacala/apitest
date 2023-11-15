@@ -22,6 +22,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteListadoCatalogo.p
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteCompras.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteConsultaProductosInsumos.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteKardex.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReportePedido.php";
 
 class ReportesController extends BaseController
 {
@@ -51,7 +52,6 @@ class ReportesController extends BaseController
     $tipoProducto = $params['tipo_producto'] ?? null;
 
     $idProducto = $params['id_producto'] ?? null;
-
     $reportesDb = new ReportesDb();
 
     if ($tipo == "caja") {
@@ -197,6 +197,14 @@ class ReportesController extends BaseController
 
       $reporteKardex = new ReporteKardex();
       $this->sendResponse($reporteKardex->generarReporte($result, $nombreProducto, $fechaInicio, $fechaFin), 200);
+
+    } else if ($tipo == 'pedido') {
+
+      $productosDb = new ProductosDb();
+      $result = $productosDb->listarConCentralesCostos(null, null, true);
+
+      $reportePedido = new ReportePedido();
+      $this->sendResponse($reportePedido->generarReporte($result), 200);
 
     } else {
       // no hay ese tipo de reporte

@@ -45,7 +45,7 @@ class CheckingsDb extends Database
   {
     $query = "SELECT ch.tipo_de_servicio, ch.id_checkin, ch.nombre, ro.nro_habitacion, ch.nro_personas, ch.nro_adultos, ch.nro_ninos, ch.nro_infantes, ch.fecha_in, ch.hora_in, ch.fecha_out, ch.nro_registro_maestro, ro.nro_habitacion
     FROM cheking ch
-    INNER JOIN rooming ro ON ch.nro_registro_maestro = ro.nro_registro_maestro
+    LEFT JOIN rooming ro ON ch.nro_registro_maestro = ro.nro_registro_maestro
     WHERE ch.cerrada IS NULL OR ch.cerrada = 0
     GROUP BY nro_registro_maestro, nro_habitacion";
 
