@@ -60,7 +60,12 @@ class ProductosDb extends Database
       AND (
         (:solo_pedido IS NOT NULL AND p.cantidad_pedido > 0)
         OR (:id_central_costos1 IS NOT NULL AND p.id_central_de_costos = :id_central_costos2)
-        OR (:codigo_producto1 IS NOT NULL AND p.codigo LIKE :codigo_producto2)
+        OR (:codigo_producto1 IS NOT NULL AND (
+          CASE 
+          WHEN length(:codigo_producto2) <= 3 THEN p.codigo
+          ELSE p.nombre_producto
+          END LIKE :codigo_producto3
+        ))
       )
     )
 
@@ -70,7 +75,8 @@ class ProductosDb extends Database
       array("nombre" => "id_central_costos1", "valor" => $idCentralCostos, "tipo" => PDO::PARAM_INT),
       array("nombre" => "id_central_costos2", "valor" => $idCentralCostos, "tipo" => PDO::PARAM_INT),
       array("nombre" => "codigo_producto1", "valor" => $codigoProducto, "tipo" => PDO::PARAM_STR),
-      array("nombre" => "codigo_producto2", "valor" => "%$codigoProducto%", "tipo" => PDO::PARAM_STR),
+      array("nombre" => "codigo_producto2", "valor" => $codigoProducto, "tipo" => PDO::PARAM_STR),
+      array("nombre" => "codigo_producto3", "valor" => "%$codigoProducto%", "tipo" => PDO::PARAM_STR),
       array("nombre" => "solo_pedido", "valor" => $soloPedido, "tipo" => PDO::PARAM_STR)
     );
 
