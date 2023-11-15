@@ -81,8 +81,8 @@ class RoomingDb extends Database
     LEFT JOIN (
       SELECT nro_reserva, nombre, nro_personas
       FROM reservas
-      WHERE
-        estado_pago NOT IN (3, 5)
+      /* WHERE
+        estado_pago NOT IN (3, 5) */
     ) re ON re.nro_reserva = rh.nro_reserva
 
     LEFT JOIN cheking ch ON ch.nro_reserva = re.nro_reserva
@@ -94,7 +94,7 @@ class RoomingDb extends Database
         INNER JOIN cheking ch ON ch.id_checkin = ro.id_checkin
         INNER JOIN reservas re ON re.nro_reserva = ch.nro_reserva
         WHERE ro.estado != 'OU'
-        AND re.estado_pago NOT IN (3, 5)
+        /* AND re.estado_pago NOT IN (3, 5) */
         GROUP BY nro_registro_maestro, nro_habitacion
     ) AS fechas_minmax ON fechas_minmax.nro_registro_maestro = r.nro_registro_maestro AND fechas_minmax.nro_habitacion = r.nro_habitacion
     
