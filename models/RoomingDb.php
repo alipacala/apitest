@@ -79,7 +79,7 @@ class RoomingDb extends Database
 
     LEFT JOIN reservahabitaciones rh ON rh.nro_habitacion = h.nro_habitacion AND rh.fecha_ingreso <= :fecha3 AND rh.fecha_salida >= :fecha4
     LEFT JOIN (
-      SELECT nro_reserva
+      SELECT nro_reserva, nombre, nro_personas
       FROM reservas
       WHERE
         estado_pago IS NULL
