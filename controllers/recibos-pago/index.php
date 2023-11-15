@@ -212,6 +212,32 @@ class RecibosPagoController extends BaseController
 
     $this->sendResponse($response, $code);
   }
+
+  public function deleteCustom($id, $action = null) {
+    if ($action == "resetear-pagos") {
+      $body = $this->getBody();
+
+      $recibosPagoDb = new RecibosPagoDb();
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+
+      try {
+        $recibosPagoDb->empezarTransaccion();
+        $recibosPagoDb->eliminarRecibosPagoPorComprobante($body->id_comprobante_ventas);
+
+        $comprobantesVentasDb->resetearPagos($body->id_comprobante_ventas);
+        $recibosPagoDb->terminarTransaccion();
+
+        $this->sendResponse(["mensaje" => "Recibos de pago eliminados correctamente"], 200);
+      }
+      catch (Exception $e) {
+        $recibosPagoDb->cancelarTransaccion();
+        throw $e;
+      }
+    }
+    else {
+      $this->sendResponse(["mensaje" => "Acción no implementada"], 501);
+    }
+  }
 }
 
 try {

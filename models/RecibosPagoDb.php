@@ -1,3 +1,4 @@
+
 <?php
 require_once PROJECT_ROOT_PATH . "/entities/ReciboPago.php";
 

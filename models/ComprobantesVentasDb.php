@@ -123,6 +123,14 @@ class ComprobantesVentasDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function resetearPagos($id)
+  {
+    $query = "UPDATE $this->tableName SET por_pagar = total WHERE $this->idName = :id";
+    $params = array(["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]);
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function anularComprobanteVentas($id)
   {
     $query = "UPDATE $this->tableName SET estado = 0, por_pagar = total WHERE $this->idName = :id_comprobante";
