@@ -86,7 +86,8 @@ class RoomingDb extends Database
     ) re ON re.nro_reserva = rh.nro_reserva
 
 
-    LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin
+  /*   LEFT JOIN cheking ch ON ch.id_checkin = r.id_checkin */
+    LEFT JOIN cheking ch ON ch.nro_reserva = re.nro_reserva
     LEFT JOIN productos p ON p.id_producto = h.id_producto
 
     LEFT JOIN (
