@@ -54,6 +54,7 @@ class RoomingDb extends Database
   {
     $query = "SELECT
     COALESCE(p.nombre_producto, '') AS nombre_producto,
+    COALESCE(p.descripcion_del_producto, '') AS abreviatura_producto,
     h.nro_habitacion AS nro_habitacion,
     COALESCE(ch.id_checkin, '') AS id_checkin,
     COALESCE(ch.nro_registro_maestro, '') AS nro_registro_maestro,
