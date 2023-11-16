@@ -62,7 +62,7 @@ class RoomingDb extends Database
     COALESCE(ch.nro_personas, re.nro_personas) AS nro_personas,
     COALESCE(fechas_minmax.fecha_in, rh.fecha_ingreso) AS fecha_in,
     re.estado_pago AS estado_pago,
-    r.estado AS estado,
+    COALESCE(r.estado, 'NA') AS estado,
     COALESCE(CASE
       WHEN r.cambiado IS NULL THEN DATE_ADD(fechas_minmax.fecha_out, INTERVAL 1 DAY)
         ELSE fechas_minmax.fecha_out
@@ -76,7 +76,7 @@ class RoomingDb extends Database
     LEFT JOIN rooming r ON r.nro_habitacion = h.nro_habitacion AND (:fecha1 = r.fecha OR (
       r.cambiado IS NULL AND :fecha2 = DATE_ADD(r.fecha, INTERVAL 1 DAY)
       )
-    ) AND r.estado != 'OU'
+    )
 
 
     LEFT JOIN reservahabitaciones rh ON rh.nro_habitacion = h.nro_habitacion AND rh.fecha_ingreso <= :fecha3 AND rh.fecha_salida >= :fecha4
@@ -90,8 +90,6 @@ class RoomingDb extends Database
         FROM rooming ro
         INNER JOIN cheking ch ON ch.id_checkin = ro.id_checkin
         INNER JOIN reservas re ON re.nro_reserva = ch.nro_reserva
-        WHERE ro.estado != 'OU'
-        /* AND re.estado_pago NOT IN (3, 5) */
         GROUP BY nro_registro_maestro, nro_habitacion
     ) AS fechas_minmax ON fechas_minmax.nro_registro_maestro = r.nro_registro_maestro AND fechas_minmax.nro_habitacion = r.nro_habitacion
     

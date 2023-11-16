@@ -29,7 +29,11 @@ class ReporteDesayunos
 
     // filtrar registros por los que tienen nro_personas
     $result = array_filter($result, function ($habitacion) {
-      return $habitacion["nro_personas"] > 0;
+      return $habitacion["nro_personas"] > 0
+        and $habitacion["nro_personas"] != null
+        and $habitacion["nro_registro_maestro"] != null
+        and $habitacion["estado"] != "OU"
+        and ($habitacion["estado_pago"] != 5 or $habitacion["estado_pago"] != 3);
     });
 
     // calcular el total
@@ -69,7 +73,7 @@ class ReporteDesayunos
   {
     $pdf->Cell(42, $lineHeight, "PRODUCTO", 1, 0, "C");
     $pdf->Cell(18, $lineHeight, "NRO HAB.", 1, 0, "C");
-    $pdf->Cell(42, $lineHeight, "CLIENTE", 1, 0, "C");
+    $pdf->Cell(62, $lineHeight, "CLIENTE", 1, 0, "C");
     $pdf->Cell(20, $lineHeight, "NRO PERSONAS", 1, 0, "C");
     $pdf->Cell(24, $lineHeight, "FECHA LLEGADA", 1, 0, "C");
     $pdf->Cell(24, $lineHeight, "FECHA SALIDA", 1, 0, "C");
@@ -83,7 +87,7 @@ class ReporteDesayunos
 
       $pdf->Cell(42, $lineHeight, $habitacion["nombre_producto"]);
       $pdf->Cell(18, $lineHeight, $habitacion["nro_habitacion"], 0, 0, "C");
-      $pdf->Cell(42, $lineHeight, $habitacion["nombre"]);
+      $pdf->Cell(62, $lineHeight, $habitacion["nombre"]);
       $pdf->Cell(20, $lineHeight, $habitacion["nro_personas"], 0, 0, "C");
       $pdf->Cell(24, $lineHeight, $habitacion["fecha_in"], 0, 0, "C");
       $pdf->Cell(24, $lineHeight, $habitacion["fecha_out"], 0, 0, "C");
@@ -95,7 +99,7 @@ class ReporteDesayunos
   {
     $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
     $pdf->SetFont('Arial', null, $tamanoLetra);
-    $pdf->Cell(102, $lineHeight, "TOTAL PERSONAS: ", 0, 0, "R");
+    $pdf->Cell(122, $lineHeight, "TOTAL PERSONAS: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', $tamanoLetra);
     $pdf->Cell(20, $lineHeight, $header["TOTAL_PERSONAS"], 0, 0, "C");
