@@ -11,6 +11,7 @@ require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/RoomingDb.php";
+require_once PROJECT_ROOT_PATH . "/models/TerapistasDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
@@ -25,6 +26,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteConsultaProductos
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteKardex.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReportePedido.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDesayunos.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteLiquidacionServicios.php";
 
 class ReportesController extends BaseController
 {
@@ -55,6 +57,8 @@ class ReportesController extends BaseController
 
     $idProducto = $params['id_producto'] ?? null;
     $reportesDb = new ReportesDb();
+
+    $idProfesional = $params['id_profesional'] ?? null;
 
     if ($tipo == "caja") {
       $result = $reportesDb->obtenerReporteDiarioCaja($fecha);
@@ -208,13 +212,25 @@ class ReportesController extends BaseController
       $reportePedido = new ReportePedido();
       $this->sendResponse($reportePedido->generarReporte($result), 200);
 
-    } else if ($tipo = 'desayunos') {
+    } else if ($tipo == 'desayunos') {
 
       $roomingDb = new RoomingDb();
       $result = $roomingDb->listarRoomingConDatos($fecha);
 
       $reporteDesayunos = new ReporteDesayunos();
       $this->sendResponse($reporteDesayunos->generarReporte($result, $fecha), 200);
+
+    } else if ($tipo == 'liquidacion') {
+
+      $terapistasDb = new TerapistasDb();
+      $terapista = $terapistasDb->obtenerTerapista($idProfesional);
+      $nombreTerapista = $terapista->nombres . " " . $terapista->apellidos;
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+      $result = $documentosDetallesDb->buscarServiciosLiquidacion($fecha, $idProfesional);
+
+      $reporteLiquidacionServicios = new ReporteLiquidacionServicios();
+      $this->sendResponse($reporteLiquidacionServicios->generarReporte($result, $fecha, $nombreTerapista), 200);
 
     } else {
       // no hay ese tipo de reporte

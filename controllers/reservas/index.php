@@ -174,7 +174,12 @@ class ReservasController extends BaseController
         return;
       }
 
-      $result = $reservasDb->actualizarReserva($prevReserva->id_reserva, $reserva);
+      $resultReservaActualizada = $reservasDb->actualizarReserva($prevReserva->id_reserva, $reserva);
+
+      $reservasHabitacionesDb = new ReservasHabitacionesDb();
+      $resultHabitacionesActualizadas = $reservasHabitacionesDb->actualizarFechasPorReserva($reserva->nro_reserva, $reserva->fecha_llegada, $reserva->fecha_salida);
+
+      $result = $resultReservaActualizada && $resultHabitacionesActualizadas;
 
       $response = $result ? [
         "mensaje" => "Reserva actualizada correctamente",

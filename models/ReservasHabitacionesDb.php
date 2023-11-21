@@ -67,6 +67,18 @@ class ReservasHabitacionesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function actualizarFechasPorReserva($nroReserva, $fechaIngreso, $fechaSalida)
+  {
+    $query = "UPDATE $this->tableName SET fecha_ingreso = :fecha_ingreso, fecha_salida = :fecha_salida WHERE nro_reserva = :nro_reserva";
+    $params = array(
+      ["nombre" => "fecha_ingreso", "valor" => $fechaIngreso, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha_salida", "valor" => $fechaSalida, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "nro_reserva", "valor" => $nroReserva, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function eliminarReservaHabitacion($id)
   {
     $query = $this->prepareQuery("delete");

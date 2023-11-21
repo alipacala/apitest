@@ -727,9 +727,11 @@ class CheckingsController extends BaseController
 
       $body = $this->getBody();
       $nroHabitacion = $body->nro_habitacion;
+      $fechaCheckout = $body->fecha_checkout;
 
       $roomingDb = new RoomingDb();
-      $roomingDb->checkout($id, $nroHabitacion);
+      $roomingDb->borrarRestantesCheckout($id, $nroHabitacion, $fechaCheckout);
+      $roomingDb->checkout($id, $nroHabitacion, $fechaCheckout);
 
       $this->sendResponse(["mensaje" => "Checkout realizado correctamente"], 200);
 

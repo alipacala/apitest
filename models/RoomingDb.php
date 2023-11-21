@@ -185,16 +185,30 @@ class RoomingDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
-  public function checkout($idChecking, $nroHabitacion)
+  public function checkout($idChecking, $nroHabitacion, $fechaCheckout)
   {
-    $query = "UPDATE $this->tableName SET estado = 'OU' WHERE id_checkin = :id_checkin AND nro_habitacion = :nro_habitacion";
+    $query = "UPDATE $this->tableName SET estado = 'OU' AND cambiado = 1 WHERE id_checkin = :id_checkin AND nro_habitacion = :nro_habitacion AND fecha < :fecha";
     $params = array(
       ["nombre" => "id_checkin", "valor" => $idChecking, "tipo" => PDO::PARAM_INT]
       ,
-      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR]
+      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha", "valor" => $fechaCheckout, "tipo" => PDO::PARAM_STR]
     );
 
     return $this->executeQuery($query, $params, "update");
+  }
+
+  public function borrarRestantesCheckout($idChecking, $nroHabitacion, $fechaCheckout)
+  {
+    $query = "DELETE FROM $this->tableName WHERE id_checkin = :id_checkin AND nro_habitacion = :nro_habitacion AND fecha >= :fecha";
+    $params = array(
+      ["nombre" => "id_checkin", "valor" => $idChecking, "tipo" => PDO::PARAM_INT]
+      ,
+      ["nombre" => "nro_habitacion", "valor" => $nroHabitacion, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "fecha", "valor" => $fechaCheckout, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params, "delete");
   }
 
   public function actualizarIdCheckingEnRoomings($nroRegistroMaestro, $nroHabitacion, $idChecking)
