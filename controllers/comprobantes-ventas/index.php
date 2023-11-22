@@ -483,7 +483,7 @@ class ComprobantesVentasController extends BaseController
       foreach ($detalles as $detalle) {
         $comprobante->subtotal += $detalle->precio_unitario * $detalle->cantidad;
         $comprobantesDetalles[] = $detalle;
-      }      
+      }
 
       // si es una factura
       if ($comprobante->tipo_comprobante == '01') {
@@ -506,7 +506,7 @@ class ComprobantesVentasController extends BaseController
       }
 
       $comprobante->por_pagar = $comprobante->gran_total;
-      
+
       // buscar la persona juridica
       $personasDb = new PersonasDb();
       $personaPrev = $personasDb->buscarPorNroDocumento($comprobante->nro_documento_cliente);
@@ -593,7 +593,7 @@ class ComprobantesVentasController extends BaseController
 
           $comprobantesDetallesCreados[] = $idComprobanteDetalle;
         }
-        
+
         // crear o actualizar la persona
         if ($personaPrev) {
           $personaActualizar = new Persona();
@@ -675,6 +675,95 @@ class ComprobantesVentasController extends BaseController
         $newException = new Exception("Error al crear el comprobante, los detalles de comprobante, los detalles de documento, o actualizar/crear la persona", 0, $e);
         throw $newException;
       }
+
+    } else if ($action == 'liquidacion-servicios') {
+
+      $comprobanteDelBody = $this->getBody();
+      $idUsuario = $comprobanteDelBody->id_usuario;
+      $idProfesional = $comprobanteDelBody->id_profesional;
+      $fecha = $comprobanteDelBody->fecha;
+
+      $terapistasDb = new TerapistasDb();
+      $terapista = $terapistasDb->obtenerTerapista($idProfesional);
+
+      $documentosDetallesDb = new DocumentosDetallesDb();
+      $documentosDetalles = $documentosDetallesDb->buscarServiciosLiquidacion($fecha, $idProfesional);
+
+      $comprobante = new ComprobanteVentas();
+      $comprobante->tipo_comprobante = "00";
+      $comprobante->tipo_movimiento = "IN";
+      $comprobante->fecha_documento = $fecha;
+      $comprobante->hora_documento = $documentosDetallesDb->obtenerFechaYHora()["hora"];
+      $comprobante->id_usuario = $idUsuario;
+      $comprobante->id_usuario_responsable = $idUsuario;
+      $comprobante->id_unidad_de_negocio = $documentosDetalles[0]->id_unidad_de_negocio;
+      $comprobante->id_tipo_de_gasto = 1;
+      $comprobante->afecto_percepcion = 0;
+
+      $comprobante->subtotal = 0;
+      $comprobante->porcentaje_igv = 0;
+      $comprobante->igv = 0;
+      $comprobante->porcentaje_percepcion = 0;
+      $comprobante->valor_percepcion = 0;
+      $comprobante->monto_inicial = 0;
+
+      $configDb = new ConfigDb();
+
+      $serie = "1"; // TODO: tal vez no sea necesario
+      $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
+      $pre = "P";
+
+      $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
+      $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
+
+      $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
+
+      foreach ($documentosDetalles as $documentoDetalle) {
+        $comprobante->subtotal += $documentoDetalle->precio_total;
+      }
+
+      $comprobante->total = $comprobante->subtotal;
+      $comprobante->gran_total = $comprobante->total;
+      $comprobante->por_pagar = $comprobante->gran_total;
+
+      $comprobantesVentasDb = new ComprobantesVentasDb();
+      $comprobanteCreado = $comprobantesVentasDb->crearComprobanteVentas($comprobante);
+
+      $comprobantesDetallesDb = new ComprobantesDetallesDb();
+
+      $comprobantesDetallesCreados = [];
+
+      foreach ($documentosDetalles as $documentoDetalle) {
+        $comprobanteDetalle = new ComprobanteDetalle();
+        $comprobanteDetalle->id_comprobante_ventas = $comprobanteCreado;
+        $comprobanteDetalle->id_usuario = $idUsuario;
+        $comprobanteDetalle->id_producto = $documentoDetalle->id_producto;
+        $comprobanteDetalle->cantidad = $documentoDetalle->cantidad;
+        $comprobanteDetalle->precio_unitario = $documentoDetalle->precio_unitario;
+        $comprobanteDetalle->precio_total = $documentoDetalle->precio_total;
+        $comprobanteDetalle->tipo_de_unidad = $documentoDetalle->tipo_de_unidad;
+        $comprobanteDetalle->descripcion = $documentoDetalle->descripcion;
+        $comprobanteDetalle->tipo_movimiento = $comprobante->tipo_movimiento;
+
+        $comprobanteDetalleCreado = $comprobantesDetallesDb->crearComprobanteDetalle($comprobanteDetalle);
+        $comprobanteDetalle->id_comprobante_detalle = $comprobanteDetalleCreado;
+
+        $documentosDetallesDb->actualizarEstadoServicio($documentoDetalle->id_documentos_detalle, 10); // 10 es el id del estado de servicio liquidado
+
+        $comprobantesDetallesCreados[] = $comprobanteDetalle;
+      }
+
+      $response = $comprobanteCreado && count($documentosDetalles) === count($comprobantesDetallesCreados) ?
+        [
+          "mensaje" => "Comprobante y sus detalles se han creado correctamente",
+          "resultado" => [
+            "comprobante" => array_merge([$comprobantesVentasDb->idName => intval($comprobanteCreado)], (array) $comprobante, ["detalles" => $comprobantesDetallesCreados]),
+            "documentos_detalles" => $documentosDetalles
+          ]
+        ] : ["mensaje" => "Error al crear el Comprobante"];
+      $code = $comprobanteCreado && count($documentosDetalles) === count($comprobantesDetallesCreados) ? 201 : 400;
+
+      $this->sendResponse($response, $code);
     } else {
       $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
     }

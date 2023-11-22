@@ -23,7 +23,7 @@ class RoomingController extends BaseController
       $result = $roomingDb->listarRoomingConDatos($fecha);
     }
     if ($nroRegistroMaestro) {
-      $result = $roomingDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+      $result = $roomingDb->buscarUnoPorNroRegistroMaestro($nroRegistroMaestro);
     }
     if ($idCheckin) {
       $result = $roomingDb->buscarPorIdCheckin($idCheckin);

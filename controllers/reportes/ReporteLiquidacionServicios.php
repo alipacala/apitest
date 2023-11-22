@@ -96,7 +96,7 @@ class ReporteLiquidacionServicios
     $pdf->Cell(176, $lineHeight, "TOTAL: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', $tamanoLetra);
-    $pdf->Cell(14, $lineHeight, $header["TOTAL"], 0, 0, "R");
+    $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($header["TOTAL"]), 0, 0, "R");
     $pdf->Ln();
   }
 

@@ -39,9 +39,16 @@ class HabitacionesDb extends Database
       FROM $this->tableName h
       INNER JOIN rooming r ON h.nro_habitacion = r.nro_habitacion
       INNER JOIN reservahabitaciones rh ON h.nro_habitacion = rh.nro_habitacion
-      WHERE r.fecha BETWEEN :fecha_ingreso1 AND DATE_ADD(:fecha_salida1, INTERVAL -1 DAY)
-      OR (rh.fecha_ingreso > DATE_ADD(:fecha_salida2, INTERVAL -1 DAY)
-      AND rh.fecha_salida < :fecha_ingreso2)
+      WHERE
+        LENGTH(h.nro_habitacion) > 3 /* para que las habitaciones adicionales siempre se muestren */
+        OR (
+          r.fecha BETWEEN :fecha_ingreso1
+            AND DATE_ADD(:fecha_salida1, INTERVAL -1 DAY)
+        )
+        OR (
+          rh.fecha_ingreso > DATE_ADD(:fecha_salida2, INTERVAL -1 DAY)
+          AND rh.fecha_salida < :fecha_ingreso2
+        )
     ) AND h.id_unidad_de_negocio = 3";
 
     $params = array(

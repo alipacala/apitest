@@ -253,74 +253,100 @@ class CheckingsController extends BaseController
 
       $codigo = "HT" . date("y");
 
-      $configDb = new ConfigDb();
-      $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
-      $configDb->actualizarNumeroCorrelativo($codigo);
-
-      // actualizar la reserva
-      $reservasDb = new ReservasDb();
-      $reservasDb->asignarNroRegistroMaestroPorNroReserva($checkingDelBody->nro_reserva, $nroRegistroMaestro);
-
-      // consultar datos de la reserva
-      $reserva = $reservasDb->buscarConPrecioPorNroReserva($checkingDelBody->nro_reserva)[0];
-
-      // mapear los datos de la reserva al checking
-      $checking->id_unidad_de_negocio = $reserva["id_unidad_de_negocio"];
-      $checking->nro_registro_maestro = $nroRegistroMaestro;
-      $checking->tipo_de_servicio = "HOTEL";
-      $checking->nombre = $reserva["nombre"];
-      $checking->lugar_procedencia = $reserva["lugar_procedencia"];
-      $checking->id_modalidad = $reserva["id_modalidad"];
-      $checking->nro_personas = $reserva["nro_personas"];
-      $checking->fecha_in = $reserva["fecha_llegada"];
-      $checking->hora_in = $reserva["hora_llegada"];
-      $checking->fecha_out = $reserva["fecha_salida"];
-
-      $precioUnitario = $reserva["precio_unitario"];
-
-      // crear el checking
       $checkingsDb = new CheckingsDb();
-      $idChecking = $checkingsDb->crearChecking($checking);
 
-      // consultar la reserva con sus habitaciones
-      $reservasHabitacionesDb = new ReservasHabitacionesDb();
-      $reservasHabitaciones = $reservasHabitacionesDb->buscarReservaConHabitacionesPorNroHabitacion($checkingDelBody->nro_reserva);
+      try {
+        $checkingsDb->empezarTransaccion();
 
-      // crear los roomings
-      $roomingDb = new RoomingDb();
+        $configDb = new ConfigDb();
+        $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
+        $configDb->actualizarNumeroCorrelativo($codigo);
 
-      foreach ($reservasHabitaciones as $reservaHabitacion) {
-        for ($fecha = clone new DateTime($reservaHabitacion["fecha_llegada"]); $fecha < new DateTime($reservaHabitacion["fecha_salida"]); $fecha->modify('+1 day')) {
-          $rooming = new Rooming();
+        // actualizar la reserva
+        $reservasDb = new ReservasDb();
+        $reservasDb->asignarNroRegistroMaestroPorNroReserva($checkingDelBody->nro_reserva, $nroRegistroMaestro);
 
-          $rooming->id_checkin = $idChecking;
-          $rooming->nro_registro_maestro = $nroRegistroMaestro;
-          $rooming->fecha = $fecha->format('Y-m-d');
+        // consultar datos de la reserva
+        $reserva = $reservasDb->buscarConPrecioPorNroReserva($checkingDelBody->nro_reserva)[0];
 
-          $rooming->tarifa = $precioUnitario;
-          $rooming->estado = "NA";
+        // mapear los datos de la reserva al checking
+        $checking->id_unidad_de_negocio = $reserva["id_unidad_de_negocio"];
+        $checking->nro_registro_maestro = $nroRegistroMaestro;
+        $checking->tipo_de_servicio = "HOTEL";
+        $checking->nombre = $reserva["nombre"];
+        $checking->lugar_procedencia = $reserva["lugar_procedencia"];
+        $checking->id_modalidad = $reserva["id_modalidad"];
+        $checking->nro_personas = $reserva["nro_personas"];
+        $checking->fecha_in = $reserva["fecha_llegada"];
+        $checking->hora_in = $reserva["hora_llegada"];
+        $checking->fecha_out = $reserva["fecha_salida"];
 
-          $rooming->nro_habitacion = $reservaHabitacion["nro_habitacion"];
-          $rooming->id_producto = $reservaHabitacion["id_producto"];
-          $rooming->hora = $reservaHabitacion["hora_llegada"];
-          $rooming->nro_personas = $reservaHabitacion["nro_personas"];
+        $precioUnitario = $reserva["precio_unitario"];
 
-          $roomingDb->crearRooming($rooming);
+        // crear el checking
+        $idChecking = $checkingsDb->crearChecking($checking);
 
-          $documentoDetalle = new DocumentoDetalle();
-          $documentoDetalle->tipo_movimiento = "SA";
-          $documentoDetalle->nro_registro_maestro = $nroRegistroMaestro;
-          $documentoDetalle->fecha = $fecha->format('Y-m-d');
-          $documentoDetalle->id_producto = $reservaHabitacion["id_producto"];
-          $documentoDetalle->nivel_descargo = 1;
-          $documentoDetalle->cantidad = 1;
-          $documentoDetalle->tipo_de_unidad = "UND";
-          $documentoDetalle->precio_unitario = $precioUnitario;
-          $documentoDetalle->precio_total = $precioUnitario;
-          // TODO: falta asignar el id_usuario
-          $documentoDetalle->id_usuario = 12;
-          $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
+        // consultar la reserva con sus habitaciones
+        $reservasHabitacionesDb = new ReservasHabitacionesDb();
+        $reservasHabitaciones = $reservasHabitacionesDb->buscarReservaConHabitacionesPorNroHabitacion($checkingDelBody->nro_reserva);
+
+        foreach ($reservasHabitaciones as $reservaHabitacion) {
+          for ($fecha = clone new DateTime($reservaHabitacion["fecha_llegada"]); $fecha < new DateTime($reservaHabitacion["fecha_salida"]); $fecha->modify('+1 day')) {
+            $rooming = new Rooming();
+
+            $rooming->id_checkin = $idChecking;
+            $rooming->nro_registro_maestro = $nroRegistroMaestro;
+            $rooming->fecha = $fecha->format('Y-m-d');
+
+            $rooming->tarifa = $reservaHabitacion["precio_unitario"];
+            $rooming->estado = "NA";
+
+            $rooming->nro_habitacion = $reservaHabitacion["nro_habitacion"];
+            $rooming->id_producto = $reservaHabitacion["id_producto"];
+            $rooming->hora = $reservaHabitacion["hora_llegada"];
+            $rooming->nro_personas = $reservaHabitacion["nro_personas"];
+
+            // crear el rooming
+            $roomingDb = new RoomingDb();
+            $roomingDb->crearRooming($rooming);
+
+            $documentoDetalle = new DocumentoDetalle();
+            $documentoDetalle->tipo_movimiento = "SA";
+            $documentoDetalle->nro_registro_maestro = $nroRegistroMaestro;
+            $documentoDetalle->fecha = $fecha->format('Y-m-d');
+            $documentoDetalle->id_producto = $reservaHabitacion["id_producto"];
+            $documentoDetalle->nivel_descargo = 1;
+            $documentoDetalle->cantidad = 1;
+            $documentoDetalle->tipo_de_unidad = "UND";
+            $documentoDetalle->precio_unitario = $reservaHabitacion["precio_unitario"];
+            $documentoDetalle->precio_total = $reservaHabitacion["precio_unitario"];
+            // TODO: falta asignar el id_usuario
+            $documentoDetalle->id_usuario = 12;
+            $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
+
+            // crear el detalle del documento
+            $documentosDetallesDb = new DocumentosDetallesDb();
+            $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
+          }
         }
+
+        $checkingsDb->terminarTransaccion();
+
+        $response = $idChecking ? [
+          "mensaje" => "Checking creado correctamente",
+          "resultado" => array_merge((array) $checking, ["precio_unitario" => $precioUnitario])
+        ] : ["mensaje" => "Error al crear el Checking"];
+        $code = $idChecking ? 201 : 400;
+
+        $this->sendResponse($response, $code);
+
+      } catch (Exception $e) {
+        $checkingsDb->cancelarTransaccion();
+        $this->sendResponse([
+          "mensaje" => "Error al crear el checking",
+          "error" => $e->getMessage()
+        ], 400);
+        return;
       }
 
     } else if ($action == 'normal') {
@@ -537,7 +563,7 @@ class CheckingsController extends BaseController
       // buscar roomings por id_checking
       $roomingDb = new RoomingDb();
 
-      $roomings = $roomingDb->buscarVariosPorIdChecking($checking->id_checkin, $checking->nro_habitacion);
+      $roomings = $roomingDb->buscarVariosPorNroRegistroMaestro($checking->nro_registro_maestro);
 
       // borrar los roomings de la db de los cuales la fecha no esté en el rango de fechas del checking
       foreach ($roomings as $rooming) {
@@ -639,60 +665,68 @@ class CheckingsController extends BaseController
 
         $acompanantesDb->crearAcompanante($acompanante);
       }
+      
+      // agrupar los roomings por nro_habitacion
+      $habitaciones = array_reduce($roomings, function ($habitaciones, $rooming) {
+        $habitaciones[$rooming->nro_habitacion][] = $rooming;
+        return $habitaciones;
+      }, []);
 
-      // crear los roomings que estén en el rango de fechas del checking y que las fechas
-      for ($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
+      foreach ($habitaciones as $habitacion => $roomingsHabitacion) {
+        // crear los roomings que estén en el rango de fechas del checking y que las fechas
+        for ($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
 
-        // si la fecha está en los roomings, no se hace nada
-        if (
-          array_filter($roomings, function ($rooming) use ($fecha) {
-            return $rooming->fecha == $fecha->format('Y-m-d');
-          })
-        ) {
-          continue;
+          // si la fecha está en los roomings, no se hace nada
+          if (
+            array_filter($roomingsHabitacion, function ($rooming) use ($fecha) {
+              return $rooming->fecha == $fecha->format('Y-m-d');
+            })
+          ) {
+            continue;
+          }
+
+          // obtener el id_producto del primer rooming en roomings
+          $roomingAnterior = $roomingsHabitacion[0];
+          $idProducto = $roomingAnterior->id_producto;
+
+          $rooming = new Rooming();
+
+          $rooming->id_checkin = $id;
+          $rooming->nro_registro_maestro = $checking->nro_registro_maestro;
+          $rooming->fecha = $fecha->format('Y-m-d');
+
+          $rooming->tarifa = $roomingAnterior->tarifa;
+          $rooming->estado = "NA";
+
+          $rooming->nro_habitacion = $roomingAnterior->nro_habitacion;
+          $rooming->id_producto = $idProducto;
+          $rooming->hora = $checking->hora_in;
+          $rooming->nro_personas = $checking->nro_personas;
+
+          $roomingDb->crearRooming($rooming);
+
+          // crear el detalle del documento
+          $documentoDetalle = new DocumentoDetalle();
+
+          $documentoDetalle->tipo_movimiento = "SA";
+          $documentoDetalle->nro_registro_maestro = $checking->nro_registro_maestro;
+          $documentoDetalle->fecha = $fecha->format('Y-m-d');
+          $documentoDetalle->id_producto = $idProducto;
+          $documentoDetalle->nivel_descargo = 1;
+          $documentoDetalle->cantidad = 1;
+          $documentoDetalle->tipo_de_unidad = "UND";
+          $documentoDetalle->precio_unitario = $rooming->tarifa;
+          $documentoDetalle->precio_total = $rooming->tarifa;
+
+          $documentoDetalle->nro_habitacion = $rooming->nro_habitacion;
+          $documentoDetalle->fecha_servicio = $fecha->format('Y-m-d');
+          $documentoDetalle->id_usuario = 12;
+
+          $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
+
+          $documentosDetallesDb = new DocumentosDetallesDb();
+          $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
         }
-
-        // obtener el id_producto del primer rooming en roomings
-        $roomingAnterior = $roomings[0];
-        $idProducto = $roomingAnterior->id_producto;
-
-        $rooming = new Rooming();
-
-        $rooming->id_checkin = $id;
-        $rooming->nro_registro_maestro = $checking->nro_registro_maestro;
-        $rooming->fecha = $fecha->format('Y-m-d');
-
-        $rooming->tarifa = $precioUnitario;
-        $rooming->estado = "NA";
-
-        $rooming->nro_habitacion = $checking->nro_habitacion;
-        $rooming->id_producto = $idProducto;
-        $rooming->hora = $checking->hora_in;
-        $rooming->nro_personas = $checking->nro_personas;
-
-        $roomingDb->crearRooming($rooming);
-
-        // crear el detalle del documento
-        $documentoDetalle = new DocumentoDetalle();
-
-        $documentoDetalle->tipo_movimiento = "SA";
-        $documentoDetalle->nro_registro_maestro = $checking->nro_registro_maestro;
-        $documentoDetalle->fecha = $fecha->format('Y-m-d');
-        $documentoDetalle->id_producto = $idProducto;
-        $documentoDetalle->nivel_descargo = 1;
-        $documentoDetalle->cantidad = 1;
-        $documentoDetalle->tipo_de_unidad = "UND";
-        $documentoDetalle->precio_unitario = $precioUnitario;
-        $documentoDetalle->precio_total = $precioUnitario;
-
-        $documentoDetalle->nro_habitacion = $checking->nro_habitacion;
-        $documentoDetalle->fecha_servicio = $fecha->format('Y-m-d');
-        $documentoDetalle->id_usuario = 12;
-
-        $documentoDetalle->fecha_hora_registro = $roomingDb->obtenerFechaYHora()['fecha_y_hora'];
-
-        $documentosDetallesDb = new DocumentosDetallesDb();
-        $documentosDetallesDb->crearDocumentoDetalle($documentoDetalle);
       }
 
       $this->sendResponse(["mensaje" => "Checking actualizado correctamente"], 200);

@@ -247,6 +247,17 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params, "update");
   }
 
+  public function actualizarEstadoServicio($id, $estado)
+  {
+    $query = "UPDATE $this->tableName SET estado_servicio = :estado_servicio WHERE $this->idName = :id";
+    $params = array(
+      ["nombre" => "estado_servicio", "valor" => $estado, "tipo" => PDO::PARAM_INT],
+      ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
   public function actualizarDocumentoMovimiento($id, $idDocumentoMovimiento)
   {
     $query = "UPDATE $this->tableName SET id_documento_movimiento = :id_documento_movimiento WHERE $this->idName = :id";

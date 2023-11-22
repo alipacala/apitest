@@ -22,12 +22,19 @@ class RoomingDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function buscarPorNroRegistroMaestro($nroRegistroMaestro)
+  public function buscarUnoPorNroRegistroMaestro($nroRegistroMaestro)
   {
     $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro ORDER BY id_checkin DESC LIMIT 1";
     $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
 
     return $this->executeQuery($query, $params, "select-one");
+  }
+
+  public function buscarVariosPorNroRegistroMaestro($nroRegistroMaestro) {
+    $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro";
+    $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params, "select");
   }
 
   public function buscarPorIdCheckin($idCheckin)
