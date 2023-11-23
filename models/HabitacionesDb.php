@@ -40,16 +40,22 @@ class HabitacionesDb extends Database
       INNER JOIN rooming r ON h.nro_habitacion = r.nro_habitacion
       INNER JOIN reservahabitaciones rh ON h.nro_habitacion = rh.nro_habitacion
       WHERE
-        LENGTH(h.nro_habitacion) <= 3 /* para que las habitaciones adicionales siempre se muestren */
-        OR (
+        (
           r.fecha BETWEEN :fecha_ingreso1
             AND DATE_ADD(:fecha_salida1, INTERVAL -1 DAY)
         )
-        OR (
+        OR
+        (
           rh.fecha_ingreso > DATE_ADD(:fecha_salida2, INTERVAL -1 DAY)
           AND rh.fecha_salida < :fecha_ingreso2
         )
-    ) AND h.id_unidad_de_negocio = 3";
+    ) AND h.id_unidad_de_negocio = 3
+    
+    UNION
+
+    SELECT h.id_habitacion, h.nro_habitacion, h.id_producto
+    FROM habitaciones h WHERE h.nro_habitacion LIKE 'ADI%'
+    ";
 
     $params = array(
       ["nombre" => "fecha_ingreso1", "valor" => $fechaIngreso, "tipo" => PDO::PARAM_STR],
