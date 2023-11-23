@@ -40,7 +40,7 @@ class HabitacionesDb extends Database
       INNER JOIN rooming r ON h.nro_habitacion = r.nro_habitacion
       INNER JOIN reservahabitaciones rh ON h.nro_habitacion = rh.nro_habitacion
       WHERE
-        LENGTH(h.nro_habitacion) > 3 /* para que las habitaciones adicionales siempre se muestren */
+        LENGTH(h.nro_habitacion) <= 3 /* para que las habitaciones adicionales siempre se muestren */
         OR (
           r.fecha BETWEEN :fecha_ingreso1
             AND DATE_ADD(:fecha_salida1, INTERVAL -1 DAY)
