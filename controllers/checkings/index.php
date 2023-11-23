@@ -286,6 +286,16 @@ class CheckingsController extends BaseController
         // crear el checking
         $idChecking = $checkingsDb->crearChecking($checking);
 
+        // crear acompanante
+        $acompanante = new Acompanante();
+        $acompanante->nro_registro_maestro = $checking->nro_registro_maestro;
+        $acompanante->tipo_de_servicio = $checking->tipo_de_servicio;
+        $acompanante->nro_de_orden_unico = 0;
+        $acompanante->apellidos_y_nombres = $reserva["nombre"];
+
+        $acompanantesDb = new AcompanantesDb();
+        $acompanantesDb->crearAcompanante($acompanante);
+
         // consultar la reserva con sus habitaciones
         $reservasHabitacionesDb = new ReservasHabitacionesDb();
         $reservasHabitaciones = $reservasHabitacionesDb->buscarReservaConHabitacionesPorNroHabitacion($checkingDelBody->nro_reserva);
