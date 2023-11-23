@@ -315,6 +315,7 @@ class CheckingsController extends BaseController
             $documentoDetalle->nro_registro_maestro = $nroRegistroMaestro;
             $documentoDetalle->fecha = $fecha->format('Y-m-d');
             $documentoDetalle->id_producto = $reservaHabitacion["id_producto"];
+            $documentoDetalle->nro_habitacion = $reservaHabitacion["nro_habitacion"];
             $documentoDetalle->nivel_descargo = 1;
             $documentoDetalle->cantidad = 1;
             $documentoDetalle->tipo_de_unidad = "UND";
@@ -698,7 +699,7 @@ class CheckingsController extends BaseController
           $rooming->tarifa = $roomingAnterior->tarifa;
           $rooming->estado = "NA";
 
-          $rooming->nro_habitacion = $roomingAnterior->nro_habitacion;
+          $rooming->nro_habitacion = $habitacion;
           $rooming->id_producto = $idProducto;
           $rooming->hora = $checking->hora_in;
           $rooming->nro_personas = $checking->nro_personas;
@@ -718,7 +719,7 @@ class CheckingsController extends BaseController
           $documentoDetalle->precio_unitario = $rooming->tarifa;
           $documentoDetalle->precio_total = $rooming->tarifa;
 
-          $documentoDetalle->nro_habitacion = $rooming->nro_habitacion;
+          $documentoDetalle->nro_habitacion = $habitacion;
           $documentoDetalle->fecha_servicio = $fecha->format('Y-m-d');
           $documentoDetalle->id_usuario = 12;
 
