@@ -42,6 +42,9 @@ class ReporteEstadoCuenta
       $result[$detalle["grupo"]][] = $detalle;
     }
 
+    usort($result['HOSPEDAJES'], [$this, 'ordenacionCallback']);
+    usort($result['PRODUCTOS Y PAQUETES'], [$this, 'ordenacionCallback']);
+
     // borrar los detalles no agrupados
     foreach ($result as $index => $detalle) {
       if (is_numeric($index))
@@ -49,6 +52,30 @@ class ReporteEstadoCuenta
     }
 
     return [$result, $header];
+  }
+
+  function ordenacionCallback($a, $b)
+  {
+    if (strpos($a["nro_habitacion"], "ADI") !== false) {
+      return 1;
+    }
+    if (strpos($b["nro_habitacion"], "ADI") !== false) {
+      return -1;
+    }
+
+    if ($a["nro_habitacion"] < $b["nro_habitacion"]) {
+      return -1;
+    } else if ($a["nro_habitacion"] > $b["nro_habitacion"]) {
+      return 1;
+    } else {
+      if ($a["fecha_hora_registro"] < $b["fecha_hora_registro"]) {
+        return -1;
+      }
+      if ($a["fecha_hora_registro"] > $b["fecha_hora_registro"]) {
+        return 1;
+      }
+    }
+    return 0;
   }
 
   function imprimirCabecera(FPDF $pdf, $lineHeight, $tamanoLetra, $header)

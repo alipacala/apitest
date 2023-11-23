@@ -78,7 +78,8 @@ class ReportesDb extends Database
     dd.precio_unitario,
     dd.precio_total,
     dd.nro_habitacion,
-  
+    
+    dd.fecha_hora_registro,
     dd.fecha_servicio,
 
   	CASE
