@@ -87,6 +87,12 @@ class DocumentosDetallesDb extends Database
   {
     $query = "SELECT 
     dd.id_documentos_detalle,
+    
+    pr.id_producto,
+    pr.tipo_de_unidad,
+    dd.recibo_liquidado,
+    dd.estado_servicio,
+    
     pr.nombre_producto AS servicio,
     CASE
       WHEN ch.tipo_de_servicio = 'HOTEL' THEN CONCAT(ch.tipo_de_servicio , ' ', COALESCE(dd.nro_habitacion, ch.nro_habitacion))
@@ -115,7 +121,7 @@ class DocumentosDetallesDb extends Database
    INNER JOIN productos pr ON pr.id_producto = dd.id_producto
    INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate
    INNER JOIN cheking ch ON ch.nro_registro_maestro = dd.nro_registro_maestro
-   WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV' AND dd.estado_servicio = 1";
+   WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV' AND (dd.estado_servicio = 1 OR dd.estado_servicio = 10)";
     $params = array(
       ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR],
       ["nombre" => "id_profesional", "valor" => $idProfesional, "tipo" => PDO::PARAM_INT]
@@ -353,6 +359,17 @@ class DocumentosDetallesDb extends Database
       ["nombre" => "id1", "valor" => $id, "tipo" => PDO::PARAM_INT],
       ["nombre" => "id2", "valor" => $id, "tipo" => PDO::PARAM_INT],
       ["nombre" => "id3", "valor" => $id, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params, "update");
+  }
+
+  public function actualizarNroReciboLiquidado($id, $nroRecibo)
+  {
+    $query = "UPDATE $this->tableName SET recibo_liquidado = :recibo_liquidado WHERE $this->idName = :id";
+    $params = array(
+      ["nombre" => "recibo_liquidado", "valor" => $nroRecibo, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id", "valor" => $id, "tipo" => PDO::PARAM_INT]
     );
 
     return $this->executeQuery($query, $params, "update");

@@ -27,6 +27,7 @@ class DocumentoDetalle
   public ?int $estado_servicio;
   public ?int $id_recibo_de_pago;
   public ?int $anulado;
+  public ?string $recibo_liquidado;
   public ?int $id_usuario;
   public ?string $fecha_hora_registro;
   public ?int $id_item;
