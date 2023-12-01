@@ -1,21 +1,19 @@
 <?php
-require_once __DIR__ . "/../../inc/bootstrap.php";
-require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
+require_once __DIR__."/../../inc/bootstrap.php";
+require_once PROJECT_ROOT_PATH."/controllers/BaseController.php";
 
-require_once PROJECT_ROOT_PATH . "/models/CheckingsDb.php";
-require_once PROJECT_ROOT_PATH . "/models/PersonasDb.php";
-require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
-require_once PROJECT_ROOT_PATH . "/models/AcompanantesDb.php";
-require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
-require_once PROJECT_ROOT_PATH . "/models/ComprobantesVentasDb.php";
-require_once PROJECT_ROOT_PATH . "/models/ReservasDb.php";
-require_once PROJECT_ROOT_PATH . "/models/ReservasHabitacionesDb.php";
-require_once PROJECT_ROOT_PATH . "/models/RoomingDb.php";
+require_once PROJECT_ROOT_PATH."/models/CheckingsDb.php";
+require_once PROJECT_ROOT_PATH."/models/PersonasDb.php";
+require_once PROJECT_ROOT_PATH."/models/ConfigDb.php";
+require_once PROJECT_ROOT_PATH."/models/AcompanantesDb.php";
+require_once PROJECT_ROOT_PATH."/models/DocumentosDetallesDb.php";
+require_once PROJECT_ROOT_PATH."/models/ComprobantesVentasDb.php";
+require_once PROJECT_ROOT_PATH."/models/ReservasDb.php";
+require_once PROJECT_ROOT_PATH."/models/ReservasHabitacionesDb.php";
+require_once PROJECT_ROOT_PATH."/models/RoomingDb.php";
 
-class CheckingsController extends BaseController
-{
-  public function get()
-  {
+class CheckingsController extends BaseController {
+  public function get() {
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $nroHabitacion = $params['nro_habitacion'] ?? null;
@@ -27,32 +25,57 @@ class CheckingsController extends BaseController
 
     $nroReserva = $params['nro_reserva'] ?? null;
 
+    $buscarEscaneo = isset($params['buscar_escaneo']);
+    $idUnidadDeNegocio = $params['un'] ?? null;
+
     $checkingsDb = new CheckingsDb();
 
-    if ($conTipoPrecio) {
+    $result = null;
+    if($conTipoPrecio) {
       $result = $checkingsDb->buscarPorNroRegistroMaestroNroHabitacionIdChecking($nroRegistroMaestro, $idChecking, $nroHabitacion);
     }
-    if ($nroRegistroMaestro) {
+    if($nroRegistroMaestro) {
       $result = $checkingsDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
     }
-    if ($cerrados) {
+    if($cerrados) {
       $result = $checkingsDb->listarCerrados();
     }
-    if ($abiertos) {
+    if($abiertos) {
       $result = $checkingsDb->listarAbiertos();
     }
-    if ($nroReserva) {
+    if($nroReserva) {
       $result = $checkingsDb->buscarPorNroReserva($nroReserva);
     }
-    if (count($params) === 0) {
+    if($buscarEscaneo) {
+      $result = $checkingsDb->buscarPorEscaneo($idUnidadDeNegocio);
+
+      // separar los datos checking de las habitaciones, solo hay un checking
+      $habitaciones = [];
+      $checking = null;
+      foreach($result as $index => $rooming) {
+        if($index == 0) {
+          $checking = $rooming;
+          unset($checking['habitacion']);
+        }
+        $habitaciones[] = $rooming['habitacion'];
+      }
+
+      $result = [
+        "checking" => $checking,
+        "habitaciones" => $habitaciones
+      ];
+
+      // cambiar el estado del checking a 2
+      $checkingsDb->cambiarEstadoChecking($checking['id_checkin'], 2);
+    }
+    if(count($params) === 0) {
       $result = $checkingsDb->listarCheckings();
     }
 
     $this->sendResponse($result, 200);
   }
 
-  public function getOne($id)
-  {
+  public function getOne($id) {
     $checkingsDb = new CheckingsDb();
     $checking = $checkingsDb->obtenerChecking($id);
 
@@ -62,8 +85,7 @@ class CheckingsController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function create()
-  {
+  public function create() {
     $checkingDelBody = $this->getBody();
     $checking = new Checking();
     $this->mapJsonToObj($checkingDelBody, $checking);
@@ -73,16 +95,15 @@ class CheckingsController extends BaseController
 
     $response = $id ? [
       "mensaje" => "Checking creado correctamente",
-      "resultado" => array_merge([$checkingsDb->idName => intval($id)], (array) $checkingDelBody)
+      "resultado" => array_merge([$checkingsDb->idName => intval($id)], (array)$checkingDelBody)
     ] : ["mensaje" => "Error al crear el Checking"];
     $code = $id ? 201 : 400;
 
     $this->sendResponse($response, $code);
   }
 
-  public function createCustom($action)
-  {
-    if ($action == 'spa') {
+  public function createCustom($action) {
+    if($action == 'spa') {
       $checkingDelBody = $this->getBody();
 
       $personasDb = new PersonasDb();
@@ -92,13 +113,13 @@ class CheckingsController extends BaseController
 
       unset($titularDelBody->es_nuevo);
 
-      if ($nuevaPersona) {
+      if($nuevaPersona) {
 
         $camposRequeridos = ["nro_documento", "apellidos_y_nombres", "sexo", "edad"];
         $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $titularDelBody);
 
-        if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: " . implode(", ", $camposFaltantes)], 400);
+        if(count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: ".implode(", ", $camposFaltantes)], 400);
           return;
         }
 
@@ -110,13 +131,13 @@ class CheckingsController extends BaseController
         // buscar la última coma
         $posicionUltimaComa = strrpos($titularDelBody->apellidos_y_nombres, ",");
 
-        if ($posicionUltimaComa !== false) {
+        if($posicionUltimaComa !== false) {
           $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimaComa));
           $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimaComa + 1));
         } else {
           // buscar el último espacio en blanco
           $posicionUltimoEspacio = strrpos($titularDelBody->apellidos_y_nombres, " ");
-          if ($posicionUltimoEspacio !== false) {
+          if($posicionUltimoEspacio !== false) {
             $apellidos = trim(substr($titularDelBody->apellidos_y_nombres, 0, $posicionUltimoEspacio));
             $nombres = trim(substr($titularDelBody->apellidos_y_nombres, $posicionUltimoEspacio + 1));
           } else {
@@ -140,8 +161,8 @@ class CheckingsController extends BaseController
         $camposRequeridos = ["nro_documento"];
         $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $titularDelBody);
 
-        if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: " . implode(", ", $camposFaltantes)], 400);
+        if(count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en el titular: ".implode(", ", $camposFaltantes)], 400);
           return;
         }
 
@@ -150,7 +171,7 @@ class CheckingsController extends BaseController
 
         $edad = $titularDelBody->edad ?? null;
 
-        if ($edad && $titular->edad != $edad) {
+        if($edad && $titular->edad != $edad) {
           $personasDb->actualizarEdadPersona($titular->id_persona, $edad);
         }
         $idTitular = $titular->id_persona;
@@ -165,7 +186,7 @@ class CheckingsController extends BaseController
 
       $checking->id_unidad_de_negocio = 3;
       $checking->tipo_de_servicio = "SPA";
-      $checking->nombre = $titular->apellidos . ", " . $titular->nombres;
+      $checking->nombre = $titular->apellidos.", ".$titular->nombres;
       $checking->id_persona = $idTitular;
       $checking->fecha_in = $personasDb->obtenerFechaYHora()['fecha'];
       $checking->hora_in = $personasDb->obtenerFechaYHora()['hora'];
@@ -175,10 +196,10 @@ class CheckingsController extends BaseController
       $checking->nro_ninos = 0;
       $checking->nro_infantes = 0;
 
-      foreach ($checkingDelBody->acompanantes as $acompanante) {
-        if ($acompanante->edad < 3) {
+      foreach($checkingDelBody->acompanantes as $acompanante) {
+        if($acompanante->edad < 3) {
           $checking->nro_infantes++;
-        } else if ($acompanante->edad < 12) {
+        } else if($acompanante->edad < 12) {
           $checking->nro_ninos++;
         } else {
           $checking->nro_adultos++;
@@ -200,7 +221,7 @@ class CheckingsController extends BaseController
       $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
       $acompananteTitular->nro_de_orden_unico = 0;
       $acompananteTitular->nro_documento = $titularCreado->nro_documento;
-      $acompananteTitular->apellidos_y_nombres = $titularCreado->apellidos . ", " . $titularCreado->nombres;
+      $acompananteTitular->apellidos_y_nombres = $titularCreado->apellidos.", ".$titularCreado->nombres;
       $acompananteTitular->sexo = $titularCreado->sexo;
       $acompananteTitular->edad = $titularCreado->edad;
 
@@ -211,7 +232,7 @@ class CheckingsController extends BaseController
 
       $acompanantes = $checkingDelBody->acompanantes;
 
-      foreach ($acompanantes as $index => $acompanante) {
+      foreach($acompanantes as $index => $acompanante) {
 
         $acompananteTemp = $acompanante;
         $acompanante = new Acompanante();
@@ -220,8 +241,8 @@ class CheckingsController extends BaseController
         $camposRequeridos = ["apellidos_y_nombres", "sexo", "edad", "parentesco"];
         $camposFaltantes = $this->comprobarCamposRequeridos($camposRequeridos, $acompanante);
 
-        if (count($camposFaltantes) > 0) {
-          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en un acompañante: " . implode(", ", $camposFaltantes)], 400);
+        if(count($camposFaltantes) > 0) {
+          $this->sendResponse(["mensaje" => "Faltan los siguientes campos en un acompañante: ".implode(", ", $camposFaltantes)], 400);
           return;
         }
 
@@ -239,19 +260,19 @@ class CheckingsController extends BaseController
 
       $response = $checkingYAcompanantesCreados ? [
         "mensaje" => "Checking creado correctamente",
-        "resultado" => array_merge((array) $checkingCreado, ["titular" => $titularCreado], ["acompanantes" => $acompanantesCreados])
+        "resultado" => array_merge((array)$checkingCreado, ["titular" => $titularCreado], ["acompanantes" => $acompanantesCreados])
       ] : ["mensaje" => "Error al crear el Checking"];
       $code = $checkingYAcompanantesCreados ? 201 : 400;
 
       $this->sendResponse($response, $code);
 
-    } else if ($action == 'hotel') {
+    } else if($action == 'hotel') {
 
       $checkingDelBody = $this->getBody();
       $checking = new Checking();
       $this->mapJsonToObj($checkingDelBody, $checking);
 
-      $codigo = "HT" . date("y");
+      $codigo = "HT".date("y");
 
       $checkingsDb = new CheckingsDb();
 
@@ -300,8 +321,8 @@ class CheckingsController extends BaseController
         $reservasHabitacionesDb = new ReservasHabitacionesDb();
         $reservasHabitaciones = $reservasHabitacionesDb->buscarReservaConHabitacionesPorNroHabitacion($checkingDelBody->nro_reserva);
 
-        foreach ($reservasHabitaciones as $reservaHabitacion) {
-          for ($fecha = clone new DateTime($reservaHabitacion["fecha_llegada"]); $fecha < new DateTime($reservaHabitacion["fecha_salida"]); $fecha->modify('+1 day')) {
+        foreach($reservasHabitaciones as $reservaHabitacion) {
+          for($fecha = clone new DateTime($reservaHabitacion["fecha_llegada"]); $fecha < new DateTime($reservaHabitacion["fecha_salida"]); $fecha->modify('+1 day')) {
             $rooming = new Rooming();
 
             $rooming->id_checkin = $idChecking;
@@ -345,7 +366,7 @@ class CheckingsController extends BaseController
 
         $response = $idChecking ? [
           "mensaje" => "Checking creado correctamente",
-          "resultado" => array_merge((array) $checking, ["precio_unitario" => $precioUnitario])
+          "resultado" => array_merge((array)$checking, ["precio_unitario" => $precioUnitario])
         ] : ["mensaje" => "Error al crear el Checking"];
         $code = $idChecking ? 201 : 400;
 
@@ -360,7 +381,7 @@ class CheckingsController extends BaseController
         return;
       }
 
-    } else if ($action == 'normal') {
+    } else if($action == 'normal') {
 
       $body = $this->getBody();
 
@@ -377,7 +398,7 @@ class CheckingsController extends BaseController
       $personasDb = new PersonasDb();
       $personaBuscada = $personasDb->buscarPorNroDocumento($persona->nro_documento);
 
-      if ($personaBuscada) {
+      if($personaBuscada) {
         // actualizar la persona
         $personasDb->actualizarPersona($personaBuscada->id_persona, $persona);
         $persona->id_persona = $personaBuscada->id_persona;
@@ -409,7 +430,7 @@ class CheckingsController extends BaseController
       // crear los acompañantes
       $acompanantesDb = new AcompanantesDb();
 
-      foreach ($acompanantes as $index => $acompananteTemp) {
+      foreach($acompanantes as $index => $acompananteTemp) {
         $acompanante = new Acompanante();
         $this->mapJsonToObj($acompananteTemp, $acompanante);
 
@@ -418,16 +439,16 @@ class CheckingsController extends BaseController
         $acompanante->nro_de_orden_unico = $index;
         $acompanante->nro_habitacion = $checking->nro_habitacion;
 
-        if ($index == 0) {
+        if($index == 0) {
           $acompanante->nro_documento = $persona->nro_documento;
-          $acompanante->apellidos_y_nombres = $persona->apellidos . ", " . $persona->nombres;
+          $acompanante->apellidos_y_nombres = $persona->apellidos.", ".$persona->nombres;
         }
 
         $acompanantesDb->crearAcompanante($acompanante);
       }
 
       // crear los roomings
-      for ($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
+      for($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
         $rooming = new Rooming();
 
         $rooming->id_checkin = $idChecking;
@@ -464,14 +485,13 @@ class CheckingsController extends BaseController
 
       // incrementar el correlativo
       $configDb->incrementarCorrelativo(11);
-
+  
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }
   }
 
-  public function update($id)
-  {
+  public function update($id) {
     $checkingDelBody = $this->getBody();
     $checking = new Checking();
     $this->mapJsonToObj($checkingDelBody, $checking);
@@ -482,13 +502,13 @@ class CheckingsController extends BaseController
     unset($prevChecking->id_checkin);
 
     // comprobar que el checking exista
-    if (!$prevChecking) {
+    if(!$prevChecking) {
       $this->sendResponse(["mensaje" => "Checking no encontrado"], 404);
       return;
     }
 
     // si los datos son iguales, no se hace nada
-    if ($this->compararObjetoActualizar($checking, $prevChecking)) {
+    if($this->compararObjetoActualizar($checking, $prevChecking)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
@@ -504,9 +524,8 @@ class CheckingsController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function updatePartial($id, $action = null)
-  {
-    if ($action == 'cerrar') {
+  public function updatePartial($id, $action = null) {
+    if($action == 'cerrar') {
       $checkingsDb = new CheckingsDb();
       $checking = $checkingsDb->obtenerChecking($id);
 
@@ -519,8 +538,8 @@ class CheckingsController extends BaseController
       });
 
       // comprobar que todos los detalles tengan nro_comprobante
-      foreach ($detalles as $detalle) {
-        if (!$detalle->nro_comprobante) {
+      foreach($detalles as $detalle) {
+        if(!$detalle->nro_comprobante) {
           $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay detalles sin nro_comprobante"], 400);
           return;
         }
@@ -535,8 +554,8 @@ class CheckingsController extends BaseController
         return $comprobante["estado"] == 1;
       });
 
-      foreach ($comprobantes as $comprobante) {
-        if (floatval($comprobante["por_pagar"]) > 0) {
+      foreach($comprobantes as $comprobante) {
+        if(floatval($comprobante["por_pagar"]) > 0) {
           $this->sendResponse(["mensaje" => "No se puede cerrar el checking porque hay comprobantes por pagar"], 400);
           return;
         }
@@ -558,7 +577,7 @@ class CheckingsController extends BaseController
 
       $this->sendResponse($response, $code);
 
-    } else if ($action == 'normal') {
+    } else if($action == 'normal') {
 
       $body = $this->getBody();
 
@@ -577,9 +596,9 @@ class CheckingsController extends BaseController
       $roomings = $roomingDb->buscarVariosPorNroRegistroMaestro($checking->nro_registro_maestro);
 
       // borrar los roomings de la db de los cuales la fecha no esté en el rango de fechas del checking
-      foreach ($roomings as $rooming) {
+      foreach($roomings as $rooming) {
         $fechaRooming = new DateTime($rooming->fecha);
-        if ($fechaRooming < new DateTime($checking->fecha_in) || $fechaRooming >= new DateTime($checking->fecha_out)) {
+        if($fechaRooming < new DateTime($checking->fecha_in) || $fechaRooming >= new DateTime($checking->fecha_out)) {
           $roomingDb->eliminarRooming($rooming->id_rooming);
 
           // elimninar el documento detalle
@@ -592,7 +611,7 @@ class CheckingsController extends BaseController
       $personasDb = new PersonasDb();
       $personaBuscada = $personasDb->buscarPorNroDocumento($persona->nro_documento);
 
-      if ($personaBuscada) {
+      if($personaBuscada) {
         // actualizar la persona
         unset($persona->id_persona);
         $personasDb->actualizarPersona($personaBuscada->id_persona, $persona);
@@ -625,7 +644,7 @@ class CheckingsController extends BaseController
 
       $checking->tipo_de_servicio = "HOTEL";
       $checking->id_persona = $persona->id_persona;
-      $checking->nombre = $persona->apellidos . ", " . $persona->nombres;
+      $checking->nombre = $persona->apellidos.", ".$persona->nombres;
 
       $checking->nro_adultos = $checking->nro_adultos ?? 0;
       $checking->nro_ninos = $checking->nro_ninos ?? 0;
@@ -649,7 +668,7 @@ class CheckingsController extends BaseController
       $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
       $acompananteTitular->nro_de_orden_unico = 0;
       $acompananteTitular->nro_documento = $persona->nro_documento;
-      $acompananteTitular->apellidos_y_nombres = $persona->apellidos . ", " . $persona->nombres;
+      $acompananteTitular->apellidos_y_nombres = $persona->apellidos.", ".$persona->nombres;
       $acompananteTitular->sexo = $persona->sexo;
       $acompananteTitular->edad = $persona->edad;
 
@@ -661,8 +680,8 @@ class CheckingsController extends BaseController
       }, 0);
 
       // crear los acompañantes
-      foreach ($acompanantes as $index => $acompananteTemp) {
-        if ($acompananteTemp->id_acompanante) {
+      foreach($acompanantes as $index => $acompananteTemp) {
+        if($acompananteTemp->id_acompanante) {
           continue;
         }
 
@@ -676,19 +695,19 @@ class CheckingsController extends BaseController
 
         $acompanantesDb->crearAcompanante($acompanante);
       }
-      
+
       // agrupar los roomings por nro_habitacion
       $habitaciones = array_reduce($roomings, function ($habitaciones, $rooming) {
         $habitaciones[$rooming->nro_habitacion][] = $rooming;
         return $habitaciones;
       }, []);
 
-      foreach ($habitaciones as $habitacion => $roomingsHabitacion) {
+      foreach($habitaciones as $habitacion => $roomingsHabitacion) {
         // crear los roomings que estén en el rango de fechas del checking y que las fechas
-        for ($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
+        for($fecha = clone new DateTime($checking->fecha_in); $fecha < new DateTime($checking->fecha_out); $fecha->modify('+1 day')) {
 
           // si la fecha está en los roomings, no se hace nada
-          if (
+          if(
             array_filter($roomingsHabitacion, function ($rooming) use ($fecha) {
               return $rooming->fecha == $fecha->format('Y-m-d');
             })
@@ -742,7 +761,100 @@ class CheckingsController extends BaseController
 
       $this->sendResponse(["mensaje" => "Checking actualizado correctamente"], 200);
 
-    } else if ($action == 'habitacion') {
+    } else if($action == 'visitante') {
+
+      $body = $this->getBody();
+
+      $checking = new Checking();
+      $this->mapJsonToObj($body->checking, $checking);
+
+      $persona = new Persona();
+      $this->mapJsonToObj($body->persona, $persona);
+
+      $acompanantes = $body->acompanantes;
+
+      // buscar la persona por nro_documento
+      $personasDb = new PersonasDb();
+      $personaBuscada = $personasDb->buscarPorNroDocumento($persona->nro_documento);
+      
+      $persona->edad = date_diff(date_create($persona->fecha), date_create('today'))->y;
+
+      if($personaBuscada) {
+        // actualizar la persona
+        unset($persona->id_persona);
+        
+        $personasDb->actualizarPersona($personaBuscada->id_persona, $persona);
+        $persona->id_persona = $personaBuscada->id_persona;
+        // calcular la edad según la fecha de nacimiento
+      } else {
+        // crear la persona
+        $persona->tipo_persona = 0;
+        $persona->id_usuario_creacion = 12;
+
+        $persona->fecha_creacion = $personasDb->obtenerFechaYHora()['fecha_y_hora'];
+
+        $persona->id_persona = $personasDb->crearPersona($persona);
+      }
+
+      // actualizar el checking
+      $checkingsDb = new CheckingsDb();
+
+      // obtener el checkin anterior
+      $prevChecking = $checkingsDb->obtenerChecking($id);
+
+      $checking->lugar_procedencia = $persona->ciudad;
+      // TODO: falta el tipo_transporte
+
+      $checking->tipo_de_servicio = "HOTEL";
+      $checking->id_persona = $persona->id_persona;
+      $checking->nombre = $persona->apellidos.", ".$persona->nombres;
+
+      $checking->nro_adultos = $checking->nro_adultos ?? 0;
+      $checking->nro_ninos = $checking->nro_ninos ?? 0;
+      $checking->nro_infantes = $checking->nro_infantes ?? 0;
+      $checking->nro_personas = $checking->nro_adultos + $checking->nro_ninos + $checking->nro_infantes;
+      unset($checking->id_checkin);
+
+      $checkingsDb->actualizarChecking($id, $checking);
+
+      // actualizar el acompañante titular
+      $acompanantesDb = new AcompanantesDb();
+      $prevAcompananteTitular = $acompanantesDb->buscarTitularPorNroRegistroMaestro($checking->nro_registro_maestro);
+
+      $acompananteTitular = new Acompanante();
+
+      $acompananteTitular->nro_registro_maestro = $checking->nro_registro_maestro;
+      $acompananteTitular->tipo_de_servicio = $checking->tipo_de_servicio;
+      $acompananteTitular->nro_de_orden_unico = 0;
+      $acompananteTitular->nro_documento = $persona->nro_documento;
+      $acompananteTitular->apellidos_y_nombres = $persona->apellidos.", ".$persona->nombres;
+      $acompananteTitular->sexo = $persona->sexo;
+      $acompananteTitular->edad = $persona->edad;
+
+      $acompanantesDb->actualizarAcompanante($prevAcompananteTitular->id_acompanante, $acompananteTitular);
+
+      // obtener el último nro_de_orden_unico de los acompañantes
+      $ultimoNro = 0;
+
+      // crear los acompañantes
+      foreach($acompanantes as $index => $acompananteTemp) {
+        $acompananteTemp->edad = intval($acompananteTemp->edad);
+
+        $acompanante = new Acompanante();
+        $this->mapJsonToObj($acompananteTemp, $acompanante);
+
+        $acompanante->nro_registro_maestro = $checking->nro_registro_maestro;
+        $acompanante->tipo_de_servicio = "HOTEL";
+        $acompanante->nro_de_orden_unico = $ultimoNro + $index + 1;
+
+        $acompanantesDb->crearAcompanante($acompanante);
+      }
+      
+      $checkingsDb->cambiarEstadoChecking($id, 3);
+
+      $this->sendResponse(["mensaje" => "Checking actualizado correctamente"], 200);
+
+    } else if($action == 'habitacion') {
 
       $body = $this->getBody();
       $nroHabitacion = $body->nro_habitacion;
@@ -751,7 +863,7 @@ class CheckingsController extends BaseController
 
       $checkingsDb = new CheckingsDb();
       $checking = $checkingsDb->obtenerChecking($id);
-      if ($checking) {
+      if($checking) {
         $roomingDb = new RoomingDb();
         $roomingDb->cambiarNroHabitacion($checking->nro_registro_maestro, $prevNroHabitacion, $nroHabitacion, $fecha);
 
@@ -768,7 +880,7 @@ class CheckingsController extends BaseController
         $this->sendResponse(["mensaje" => "Checking no encontrado"], 404);
       }
 
-    } else if ($action == "checkout") {
+    } else if($action == "checkout") {
 
       $body = $this->getBody();
       $nroHabitacion = $body->nro_habitacion;
@@ -780,18 +892,52 @@ class CheckingsController extends BaseController
 
       $this->sendResponse(["mensaje" => "Checkout realizado correctamente"], 200);
 
+    } else if($action == 'estado-por-defecto') {
+
+      $checkingsDb = new CheckingsDb();
+      $checkingsDb->cambiarEstadoChecking($id, 0);
+
+      $this->sendResponse(["mensaje" => "Se cambió el estado a por defecto correctamente"], 200);
+
+    } else if($action == 'activar-escaneo') {
+
+      $checkingsDb = new CheckingsDb();
+      $checkingsDb->cambiarEstadoChecking($id, 1);
+
+      $this->sendResponse(["mensaje" => "Se activó el escaneo correctamente"], 200);
+
+    } else if($action == 'en-progreso') {
+
+      $checkingsDb = new CheckingsDb();
+      $checkingsDb->cambiarEstadoChecking($id, 2);
+
+      $this->sendResponse(["mensaje" => "Se cambió el estado a en progreso correctamente"], 200);
+
+    } else if($action == 'guardar') {
+
+      $checkingsDb = new CheckingsDb();
+      $checkingsDb->cambiarEstadoChecking($id, 3);
+
+      $this->sendResponse(["mensaje" => "Se guardó el checking correctamente"], 200);
+
+    } else if($action == 'visto-bueno-terminado') {
+
+      $checkingsDb = new CheckingsDb();
+      $checkingsDb->cambiarEstadoChecking($id, 4);
+
+      $this->sendResponse(["mensaje" => "Se cambió el estado a visto bueno terminado correctamente"], 200);
+
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);
     }
   }
 
-  public function delete($id)
-  {
+  public function delete($id) {
     $checkingsDb = new CheckingsDb();
     $prevChecking = $checkingsDb->obtenerChecking($id);
 
     // comprobar que el checking exista
-    if (!$prevChecking) {
+    if(!$prevChecking) {
       $this->sendResponse(["mensaje" => "Checking no encontrado"], 404);
       return;
     }

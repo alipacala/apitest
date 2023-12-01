@@ -716,6 +716,11 @@ class ComprobantesVentasController extends BaseController
       $comprobante->valor_percepcion = 0;
       $comprobante->monto_inicial = 0;
 
+      $comprobante->tipo_documento_cliente = $terapista->tipo_documento;
+      $comprobante->nro_documento_cliente = $terapista->nro_documento;
+      $comprobante->direccion_cliente = $terapista->direccion;
+      $comprobante->forma_de_pago = "CT";
+
       $configDb = new ConfigDb();
 
       $serie = "1"; // TODO: tal vez no sea necesario
@@ -775,7 +780,7 @@ class ComprobantesVentasController extends BaseController
           $comprobanteDetalle->cantidad = 1;
           $comprobanteDetalle->precio_unitario = $documentoDetalle['monto_comision'];
           $comprobanteDetalle->precio_total = $documentoDetalle['monto_comision'];
-          $comprobanteDetalle->tipo_de_unidad = $documentoDetalle['tipo_de_unidad'];
+          $comprobanteDetalle->tipo_de_unidad = 'UN';
           $comprobanteDetalle->descripcion = $documentoDetalle['servicio'];
           $comprobanteDetalle->tipo_movimiento = $comprobante->tipo_movimiento;
 

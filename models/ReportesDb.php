@@ -130,13 +130,13 @@ class ReportesDb extends Database
     FROM comprobante_ventas co
     INNER JOIN comprobante_detalle cd
     ON co.id_comprobante_ventas = cd.id_comprobante_ventas
-    INNER JOIN fe_comprobante fc
+    LEFT JOIN fe_comprobante fc
     ON co.id_comprobante_ventas = fc.NroMov
-    INNER JOIN productos pr
+    LEFT JOIN productos pr
     ON cd.id_producto = pr.id_producto
-    INNER JOIN cheking ch
+    LEFT JOIN cheking ch
     ON co.nro_registro_maestro = ch.nro_registro_maestro
-    INNER JOIN personanaturaljuridica pe
+    LEFT JOIN personanaturaljuridica pe
     ON ch.id_persona = pe.id_persona
     
     WHERE co.nro_comprobante = :nro_comprobante

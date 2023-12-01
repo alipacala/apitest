@@ -71,6 +71,7 @@ class RoomingDb extends Database
       COALESCE(rh.fecha_ingreso, '') AS fecha_in,
       COALESCE(re.estado_pago, '') AS estado_pago,
       '' AS estado,
+      '' AS estado_cheking,
       COALESCE(rh.fecha_salida, '') AS fecha_out,
   
       CASE WHEN re.nro_registro_maestro IS NOT NULL THEN 1 ELSE 0 END AS ocupado,
@@ -103,6 +104,13 @@ class RoomingDb extends Database
       COALESCE(fechas_minmax.fecha_in, '') AS fecha_in,
       '' AS estado_pago,
       COALESCE(r.estado, '') AS estado,
+      CASE WHEN ch.estado_cheking = 0 THEN 'S/DATOS'
+        WHEN ch.estado_cheking = 1 THEN 'ESCANEO'
+        WHEN ch.estado_cheking = 2 THEN 'EN PROCESO'
+        WHEN ch.estado_cheking = 3 THEN 'GUARDADO'
+        WHEN ch.estado_cheking = 4 THEN 'VISTO BUENO TERMINADO'
+        ELSE ''
+        END AS estado_cheking,
       COALESCE(CASE
         WHEN r.cambiado IS NULL THEN DATE_ADD(fechas_minmax.fecha_out, INTERVAL 1 DAY)
           ELSE fechas_minmax.fecha_out

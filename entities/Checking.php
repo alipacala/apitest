@@ -30,6 +30,7 @@ class Checking
   public ?string $fecha_pago;
   public ?string $forma_pago;
   public ?int $cerrada;
+  public ?int $estado_cheking;
   public ?string $fecha_cerrada;
   public ?string $hora_cerrada;
   public ?string $tipo_documento;
