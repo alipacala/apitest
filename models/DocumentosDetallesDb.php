@@ -83,6 +83,30 @@ class DocumentosDetallesDb extends Database
     return $this->executeQuery($query, $params);
   }
 
+  public function buscarServiciosTerapista($fecha, $idProfesional)
+  {
+    $query = "SELECT 
+    dd.id_documentos_detalle,
+    
+    pr.nombre_producto AS producto,
+    ac.apellidos_y_nombres AS paciente,
+    dd.precio_total AS precio,
+
+    dd.hora_servicio AS hora,
+    dd.estado_servicio AS estado
+
+    FROM documento_detalle dd
+    INNER JOIN productos pr ON pr.id_producto = dd.id_producto
+    INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate
+    WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV'";
+    $params = array(
+      ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "id_profesional", "valor" => $idProfesional, "tipo" => PDO::PARAM_INT]
+    );
+
+    return $this->executeQuery($query, $params);
+  }
+
   public function buscarServiciosLiquidacion($fecha, $idProfesional)
   {
     $query = "SELECT 
@@ -116,7 +140,10 @@ class DocumentosDetallesDb extends Database
         ELSE 0.35 * dd.precio_total
     END AS monto_comision,
     '' AS estado,
-    '' AS recibo
+    '' AS recibo,
+
+    dd.hora_servicio AS hora
+
    FROM documento_detalle dd
    INNER JOIN productos pr ON pr.id_producto = dd.id_producto
    INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate

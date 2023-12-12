@@ -52,15 +52,26 @@ class UsuariosDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
-  public function buscarPorNroDoc($nroDoc) {
-    
-  }
-
   public function loginAdministrador($usuario, $clave)
   {
     $query = "SELECT COUNT(*) AS logueado
      FROM usuarios us
      WHERE us.usuario = :usuario AND us.clave = :clave AND us.id_tipo_de_usuario = 11";
+    $params = array(
+      ["nombre" => "usuario", "valor" => $usuario, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "clave", "valor" => $clave, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params);
+  }
+
+  public function loginTerapeuta($usuario, $clave)
+  {
+    $query = "SELECT id_usuario, p.nombres, p.apellidos, p.id_persona, t.id_profesional
+     FROM usuarios us
+     INNER JOIN personanaturaljuridica p ON p.id_persona = us.id_persona
+     INNER JOIN terapistas t ON t.id_persona = p.id_persona
+     WHERE us.usuario = :usuario AND us.clave = :clave AND us.id_tipo_de_usuario = 4";
     $params = array(
       ["nombre" => "usuario", "valor" => $usuario, "tipo" => PDO::PARAM_STR],
       ["nombre" => "clave", "valor" => $clave, "tipo" => PDO::PARAM_STR]

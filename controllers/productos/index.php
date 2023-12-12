@@ -34,6 +34,9 @@ class ProductosController extends BaseController
 
     $serviciosTerapistas = isset($params['servicios-terapistas']);
 
+    $serviciosDeTerapista = isset($params['servicios-de-terapista']);
+    $idProfesional = $params['id_profesional'] ?? null;
+
     $productosDb = new ProductosDb();
 
     if ($hospedajes) {
@@ -102,6 +105,9 @@ class ProductosController extends BaseController
     }
     if ($serviciosTerapistas) {
       $result = $productosDb->listarServiciosTerapistas();
+    }
+    if ($serviciosDeTerapista) {
+      $result = $productosDb->listarServiciosDeTerapista($idProfesional);
     }
     if (count($params) === 0) {
       $result = $productosDb->listarProductos();

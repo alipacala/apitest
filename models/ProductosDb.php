@@ -1,29 +1,25 @@
 <?php
-require_once PROJECT_ROOT_PATH . "/entities/Producto.php";
+require_once PROJECT_ROOT_PATH."/entities/Producto.php";
 
-class ProductosDb extends Database
-{
+class ProductosDb extends Database {
   public $class = Producto::class;
   public $idName = "id_producto";
   public $tableName = "productos";
 
-  public function obtenerProducto($id)
-  {
+  public function obtenerProducto($id) {
     $query = $this->prepareQuery("select-one");
     $params = $this->prepareParams(null, "select-one", $id);
 
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarProductos()
-  {
+  public function listarProductos() {
     $query = $this->prepareQuery("select");
 
     return $this->executeQuery($query, null, "select");
   }
 
-  public function listarPorGrupo($grupos)
-  {
+  public function listarPorGrupo($grupos) {
     $grupos = explode(",", $grupos);
 
     $query = "SELECT * FROM productos WHERE id_grupo IN (";
@@ -37,8 +33,7 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params, "select");
   }
 
-  public function listarConCentralesCostos($idCentralCostos = null, $codigoProducto = null, $soloPedido = false)
-  {
+  public function listarConCentralesCostos($idCentralCostos = null, $codigoProducto = null, $soloPedido = false) {
     $query = "SELECT
     p.id_producto, p.nombre_producto, p.codigo, p.costo_unitario, p.tipo_de_unidad, cc.id_central_de_costos, cc.nombre_del_costo, p.stock_min_temporada_baja, p.stock_max_temporada_baja, p.stock_min_temporada_alta, p.stock_max_temporada_alta,
 
@@ -83,8 +78,7 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params);
   }
 
-  public function buscarConPrecios($idProducto)
-  {
+  public function buscarConPrecios($idProducto) {
     $query = "SELECT p.id_producto, p.nombre_producto, p.codigo, p.precio_venta_01, p.precio_venta_02, p.precio_venta_03 
     FROM productos p WHERE p.id_producto = :id_producto";
 
@@ -95,24 +89,35 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params, "select-one");
   }
 
-  public function listarHospedajesConPrecios()
-  {
+  public function listarHospedajesConPrecios() {
     $query = "SELECT id_producto, nombre_producto, precio_venta_01, precio_venta_02, precio_venta_03 
      FROM $this->tableName WHERE tipo = 'SVH'";
 
     return $this->executeQuery($query, null);
   }
 
-  public function listarServiciosTerapistas()
-  {
+  public function listarServiciosTerapistas() {
     $query = "SELECT id_producto, nombre_producto, codigo_habilidad
      FROM $this->tableName WHERE tipo = 'SRV' AND requiere_programacion = 1";
 
     return $this->executeQuery($query);
   }
 
-  public function buscarConDocDetallesPorNombreProducto($nombresProducto)
-  {
+  public function listarServiciosDeTerapista($idProfesional) {
+    $query = "SELECT pr.id_producto AS id, pr.nombre_producto AS nombre, pr.precio_venta_01 AS precio
+      FROM productos pr
+      INNER JOIN habilidadesprofesionales hp ON hp.codigo_habilidad = pr.codigo_habilidad
+      INNER JOIN terapistashabilidades th ON th.id_habilidad = hp.id_habilidad
+      INNER JOIN terapistas ter ON ter.id_persona = th.id_persona
+      WHERE pr.tipo = 'SRV' AND pr.requiere_programacion = 1 AND ter.id_profesional = :id_profesional;";
+    $params = array(
+      array("nombre" => "id_profesional", "valor" => $idProfesional, "tipo" => PDO::PARAM_INT)
+    );
+
+    return $this->executeQuery($query, $params);
+  }
+
+  public function buscarConDocDetallesPorNombreProducto($nombresProducto) {
     $query = "SELECT pr.id_producto, tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
       SUM(CASE 
         WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
@@ -130,9 +135,9 @@ class ProductosDb extends Database
     WHERE ";
 
     // buscar por nombre de producto
-    foreach ($nombresProducto as $key => $nombreProducto) {
+    foreach($nombresProducto as $key => $nombreProducto) {
       $query .= "pr.nombre_producto LIKE :nombre_producto_$key";
-      if (next($nombresProducto)) {
+      if(next($nombresProducto)) {
         $query .= " OR ";
       }
     }
@@ -147,8 +152,7 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params);
   }
 
-  public function buscarConDocDetallesPorTipoProducto($tipoProducto)
-  {
+  public function buscarConDocDetallesPorTipoProducto($tipoProducto) {
     $query = "SELECT pr.id_producto, tp.nombre_tipo_de_producto AS tipo_producto, pr.nombre_producto, pr.costo_unitario, pr.tipo_de_unidad,
       SUM(CASE 
         WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad
@@ -174,8 +178,7 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params);
   }
 
-  public function listarInventario($unidadNegocio, $tipo, $grupo, $fechaInicio, $fechaFin)
-  {
+  public function listarInventario($unidadNegocio, $tipo, $grupo, $fechaInicio, $fechaFin) {
     $query = "SELECT
                 sm.id_producto,
                 sm.nombre_producto,
@@ -285,40 +288,35 @@ class ProductosDb extends Database
     return $this->executeQuery($query, $params);
   }
 
-  public function crearProducto(Producto $producto)
-  {
-    $productoArray = $this->prepareData((array) $producto, "insert");
+  public function crearProducto(Producto $producto) {
+    $productoArray = $this->prepareData((array)$producto, "insert");
     $query = $this->prepareQuery("insert", $productoArray);
     $params = $this->prepareParams($productoArray);
 
     return $this->executeQuery($query, $params, "insert");
   }
 
-  public function actualizarProducto($id, Producto $producto)
-  {
-    $productoArray = $this->prepareData((array) $producto);
+  public function actualizarProducto($id, Producto $producto) {
+    $productoArray = $this->prepareData((array)$producto);
     $query = $this->prepareQuery("update", $productoArray);
     $params = $this->prepareParams($productoArray, "update", $id);
 
     return $this->executeQuery($query, $params, "update");
   }
 
-  public function hayProductosConPedido()
-  {
+  public function hayProductosConPedido() {
     $query = "SELECT COUNT(*) AS cantidad FROM $this->tableName WHERE cantidad_pedido > 0";
 
     return $this->executeQuery($query);
   }
 
-  public function limpiarPedido()
-  {
+  public function limpiarPedido() {
     $query = "UPDATE $this->tableName SET cantidad_pedido = 0 WHERE cantidad_pedido > 0";
 
     return $this->executeQuery($query, null, "update");
   }
 
-  public function eliminarProducto($id)
-  {
+  public function eliminarProducto($id) {
     $query = $this->prepareQuery("delete");
     $params = $this->prepareParams(null, "delete", $id);
 

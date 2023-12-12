@@ -1,15 +1,13 @@
 <?php
-require_once __DIR__ . "/../../inc/bootstrap.php";
-require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
+require_once __DIR__."/../../inc/bootstrap.php";
+require_once PROJECT_ROOT_PATH."/controllers/BaseController.php";
 
-require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
-require_once PROJECT_ROOT_PATH . "/models/RecibosPagoDb.php";
-require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
+require_once PROJECT_ROOT_PATH."/models/DocumentosDetallesDb.php";
+require_once PROJECT_ROOT_PATH."/models/RecibosPagoDb.php";
+require_once PROJECT_ROOT_PATH."/models/ProductosDb.php";
 
-class DocumentosDetallesController extends BaseController
-{
-  public function get()
-  {
+class DocumentosDetallesController extends BaseController {
+  public function get() {
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
     $nroComprobanteVenta = $params['nro_comprobante_venta'] ?? null;
@@ -27,9 +25,11 @@ class DocumentosDetallesController extends BaseController
     $liquidacion = isset($params['liquidacion']);
     $idProfesional = $params['id_profesional'] ?? null;
 
+    $serviciosTerapista = isset($params['servicios-terapista']);
+
     $documentosDetallesDb = new DocumentosDetallesDb();
 
-    if ($nroRegistroMaestro) {
+    if($nroRegistroMaestro) {
       $result = $documentosDetallesDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
 
       $result = array_map(function ($documentoDetalle) {
@@ -40,30 +40,32 @@ class DocumentosDetallesController extends BaseController
         return $documentoDetalle;
       }, $result);
     }
-    if ($nroComprobanteVenta) {
+    if($nroComprobanteVenta) {
       $result = $documentosDetallesDb->buscarPorNroComprobanteVenta($nroComprobanteVenta);
     }
-    if ($kardex) {
+    if($kardex) {
       $result = $documentosDetallesDb->generarKardex($idProducto, $fechaInicio, $fechaFin);
     }
-    if ($documentoMovimiento) {
+    if($documentoMovimiento) {
       $result = $documentosDetallesDb->buscarPorDocumentoMovimiento($documentoMovimiento);
     }
-    if ($servicios) {
+    if($servicios) {
       $result = $documentosDetallesDb->buscarServicios($fecha);
     }
-    if ($liquidacion) {
+    if($liquidacion) {
       $result = $documentosDetallesDb->buscarServiciosLiquidacion($fecha, $idProfesional);
     }
-    if (count($params) === 0) {
+    if($serviciosTerapista) {
+      $result = $documentosDetallesDb->buscarServiciosTerapista($fecha, $idProfesional);
+    }
+    if(count($params) === 0) {
       $result = $documentosDetallesDb->listarDocumentosDetalles();
     }
 
     $this->sendResponse($result, 200);
   }
 
-  public function getOne($id)
-  {
+  public function getOne($id) {
     $documentosDetallesDb = new DocumentosDetallesDb();
     $documentoDetalle = $documentosDetallesDb->obtenerDocumentoDetalle($id);
 
@@ -73,8 +75,7 @@ class DocumentosDetallesController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function create()
-  {
+  public function create() {
     $documentoDetalleDelBody = $this->getBody();
     $documentoDetalle = new DocumentoDetalle();
     $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
@@ -84,15 +85,14 @@ class DocumentosDetallesController extends BaseController
 
     $response = $id ? [
       "mensaje" => "Documento Detalle creado correctamente",
-      "resultado" => array_merge([$documentosDetallesDb->idName => intval($id)], (array) $documentoDetalleDelBody)
+      "resultado" => array_merge([$documentosDetallesDb->idName => intval($id)], (array)$documentoDetalleDelBody)
     ] : ["mensaje" => "Error al crear el Documento Detalle"];
     $code = $id ? 201 : 400;
 
     $this->sendResponse($response, $code);
   }
 
-  public function update($id)
-  {
+  public function update($id) {
     $documentoDetalleDelBody = $this->getBody();
     $documentoDetalle = new DocumentoDetalle();
     $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
@@ -103,13 +103,13 @@ class DocumentosDetallesController extends BaseController
     unset($prevDocumentoDetalle->id_central_de_costos);
 
     // comprobar que el documento detalle exista
-    if (!$prevDocumentoDetalle) {
+    if(!$prevDocumentoDetalle) {
       $this->sendResponse(["mensaje" => "Documento Detalle no encontrado"], 404);
       return;
     }
 
     // si los datos son iguales, no se hace nada
-    if ($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
+    if($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }
@@ -125,9 +125,8 @@ class DocumentosDetallesController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function updatePartial($id, $action = null)
-  {
-    if ($action == 'estado') {
+  public function updatePartial($id, $action = null) {
+    if($action == 'estado') {
       $documentoDetalleDelBody = $this->getBody();
       $documentoDetalle = new DocumentoDetalle();
       $this->mapJsonToObj($documentoDetalleDelBody, $documentoDetalle);
@@ -138,36 +137,41 @@ class DocumentosDetallesController extends BaseController
       unset($prevDocumentoDetalle->id_central_de_costos);
 
       // comprobar que el documento detalle exista
-      if (!$prevDocumentoDetalle) {
+      if(!$prevDocumentoDetalle) {
         $this->sendResponse(["mensaje" => "Documento Detalle no encontrado"], 404);
         return;
       }
 
       // si los datos son iguales, no se hace nada
-      if ($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
+      if($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
         $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
         return;
       }
 
-      if ($documentoDetalle->estado_servicio == "1") {
+      if($documentoDetalle->estado_servicio == "0") {
+        $documentoDetalle->fecha_servicio = null;
+        $documentoDetalle->hora_servicio = null;
+        $documentoDetalle->fecha_termino = null;
+        $documentoDetalle->hora_termino = null;
+      } else if($documentoDetalle->estado_servicio == "1") {
         $documentoDetalle->fecha_termino = date("Y-m-d");
         $documentoDetalle->hora_termino = date("H:i");
-      } else {
-        $documentoDetalle->fecha_termino = "";
-        $documentoDetalle->hora_termino = "";
+      } else if($documentoDetalle->estado_servicio == "3") {
+        $documentoDetalle->fecha_servicio = date("Y-m-d");
+        $documentoDetalle->hora_servicio = date("H:i");
       }
 
       $result = $documentosDetallesDb->actualizarDocumentoDetalle($id, $documentoDetalle);
 
       $response = $result ? [
-        "mensaje" => "Documento Detalle actualizado correctamente",
+        "mensaje" => "Estado del servicio actualizado correctamente",
         "resultado" => $documentosDetallesDb->obtenerDocumentoDetalle($id)
-      ] : ["mensaje" => "Error al actualizar el Documento Detalle"];
+      ] : ["mensaje" => "Error al actualizar el estado del servicio"];
       $code = $result ? 200 : 400;
 
       $this->sendResponse($response, $code);
 
-    } else if ($action == "servicio") {
+    } else if($action == "servicio") {
 
       $documentoDetalleDelBody = $this->getBody();
       $documentoDetalle = new DocumentoDetalle();
@@ -179,13 +183,13 @@ class DocumentosDetallesController extends BaseController
       unset($prevDocumentoDetalle->id_central_de_costos);
 
       // comprobar que el documento detalle exista
-      if (!$prevDocumentoDetalle) {
+      if(!$prevDocumentoDetalle) {
         $this->sendResponse(["mensaje" => "Documento Detalle no encontrado"], 404);
         return;
       }
 
       // si los datos son iguales, no se hace nada
-      if ($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
+      if($this->compararObjetoActualizar($documentoDetalle, $prevDocumentoDetalle)) {
         $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
         return;
       }
@@ -194,7 +198,7 @@ class DocumentosDetallesController extends BaseController
       $producto = $productosDb->obtenerProducto($documentoDetalle->id_producto);
       $documentoDetalle->precio_unitario = $producto->precio_venta_01;
       $documentoDetalle->precio_total = $documentoDetalle->precio_unitario;
-      
+
       $result = $documentosDetallesDb->actualizarDocumentoDetalle($id, $documentoDetalle);
 
       $response = $result ? [
@@ -210,13 +214,12 @@ class DocumentosDetallesController extends BaseController
     }
   }
 
-  public function delete($id)
-  {
+  public function delete($id) {
     $documentosDetallesDb = new DocumentosDetallesDb();
     $prevDocumentoDetalle = $documentosDetallesDb->obtenerDocumentoDetalle($id);
 
     // comprobar que el documento detalle exista
-    if (!$prevDocumentoDetalle) {
+    if(!$prevDocumentoDetalle) {
       $this->sendResponse(["mensaje" => "Documento Detalle no encontrado"], 404);
       return;
     }
@@ -232,9 +235,8 @@ class DocumentosDetallesController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function deleteCustom($id, $action)
-  {
-    if ($action == "anular") {
+  public function deleteCustom($id, $action) {
+    if($action == "anular") {
       $documentosDetallesDb = new DocumentosDetallesDb();
 
       try {

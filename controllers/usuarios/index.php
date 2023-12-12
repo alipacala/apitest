@@ -1,14 +1,12 @@
 <?php
-require_once __DIR__ . "/../../inc/bootstrap.php";
-require_once PROJECT_ROOT_PATH . "/controllers/BaseController.php";
+require_once __DIR__."/../../inc/bootstrap.php";
+require_once PROJECT_ROOT_PATH."/controllers/BaseController.php";
 
-require_once PROJECT_ROOT_PATH . "/models/UsuariosDb.php";
-require_once PROJECT_ROOT_PATH . "/models/UsuariosModulosDb.php";
+require_once PROJECT_ROOT_PATH."/models/UsuariosDb.php";
+require_once PROJECT_ROOT_PATH."/models/UsuariosModulosDb.php";
 
-class UsuariosController extends BaseController
-{
-  public function get()
-  {
+class UsuariosController extends BaseController {
+  public function get() {
     $params = $this->getParams();
     $conPersonas = isset($params['con-personas']);
     $activos = isset($params['activos']);
@@ -17,24 +15,23 @@ class UsuariosController extends BaseController
 
     $usuariosDb = new UsuariosDb();
 
-    if ($conPersonas) {
+    if($conPersonas) {
       $result = $usuariosDb->listarConPersonas();
     }
-    if ($activos) {
+    if($activos) {
       $result = $usuariosDb->listarActivosConPersonas();
     }
-    if ($nroDoc) {
+    if($nroDoc) {
       $result = $usuariosDb->buscarPorNroDoc($nroDoc);
     }
-    if (count($params) === 0) {
+    if(count($params) === 0) {
       $result = $usuariosDb->listarUsuarios();
     }
 
     $this->sendResponse($result, 200);
   }
 
-  public function getOne($id)
-  {
+  public function getOne($id) {
     $usuariosDb = new UsuariosDb();
     $usuario = $usuariosDb->obtenerUsuario($id);
 
@@ -44,8 +41,7 @@ class UsuariosController extends BaseController
     $this->sendResponse($response, $code);
   }
 
-  public function create()
-  {
+  public function create() {
     $usuarioDelBody = $this->getBody();
 
     $permisos = $usuarioDelBody["permisos"];
@@ -61,7 +57,7 @@ class UsuariosController extends BaseController
       $usuariosDb->empezarTransaccion();
       $idUsuario = $usuariosDb->crearUsuario($usuario);
 
-      foreach ($permisos as &$permiso) {
+      foreach($permisos as &$permiso) {
         $permiso["id_usuario"] = $idUsuario;
         $permiso["cese_fecha_hora"] = null;
 
@@ -80,15 +76,39 @@ class UsuariosController extends BaseController
 
     $response = $idUsuario ? [
       "mensaje" => "Usuario creada correctamente",
-      "resultado" => array_merge([$usuariosDb->idName => intval($idUsuario)], (array) $usuarioDelBody, ["permisos" => $permisos])
+      "resultado" => array_merge([$usuariosDb->idName => intval($idUsuario)], (array)$usuarioDelBody, ["permisos" => $permisos])
     ] : ["mensaje" => "Error al crear la Usuario"];
     $code = $idUsuario ? 201 : 400;
 
     $this->sendResponse($response, $code);
   }
 
-  public function update($id)
-  {
+  public function createCustom($action) {
+    switch($action) {
+      case "login-terapeutas":
+        $usuarioDelBody = $this->getBody();
+
+        $usuario = $usuarioDelBody->usuario;
+        $contrasena = $usuarioDelBody->contrasena;
+
+        $usuariosDb = new UsuariosDb();
+        $result = $usuariosDb->loginTerapeuta($usuario, $contrasena);
+
+        $response = $result ? [
+          "mensaje" => "Terapeuta logueado correctamente",
+          "resultado" => $result[0]
+        ] : ["mensaje" => "Usuario o contraseña incorrectos"];
+        $code = $result ? 200 : 400;
+
+        $this->sendResponse($response, $code);
+        break;
+      default:
+        $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
+        break;
+    }
+  }
+
+  public function update($id) {
     $usuarioDelBody = $this->getBody();
     $usuario = new Usuario();
     $this->mapJsonToObj($usuarioDelBody, $usuario);
@@ -99,13 +119,13 @@ class UsuariosController extends BaseController
     unset($prevUsuario->id_usuario);
 
     // comprobar que la usuario exista
-    if (!$prevUsuario) {
+    if(!$prevUsuario) {
       $this->sendResponse(["mensaje" => "Usuario no encontrada"], 404);
       return;
     }
 
     // si los datos son iguales, no se hace nada
-    if ($this->compararObjetoActualizar($usuario, $prevUsuario)) {
+    if($this->compararObjetoActualizar($usuario, $prevUsuario)) {
       $this->sendResponse(["mensaje" => "No se realizaron cambios"], 200);
       return;
     }

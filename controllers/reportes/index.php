@@ -12,6 +12,8 @@ require_once PROJECT_ROOT_PATH . "/models/ProductosDb.php";
 require_once PROJECT_ROOT_PATH . "/models/DocumentosDetallesDb.php";
 require_once PROJECT_ROOT_PATH . "/models/RoomingDb.php";
 require_once PROJECT_ROOT_PATH . "/models/TerapistasDb.php";
+require_once PROJECT_ROOT_PATH . "/models/AcompanantesDb.php";
+require_once PROJECT_ROOT_PATH . "/models/PersonasDb.php";
 
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
@@ -27,6 +29,7 @@ require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteKardex.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReportePedido.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteDesayunos.php";
 require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteLiquidacionServicios.php";
+require_once PROJECT_ROOT_PATH . "/controllers/reportes/ReporteFichaChecking.php";
 
 class ReportesController extends BaseController
 {
@@ -231,6 +234,23 @@ class ReportesController extends BaseController
 
       $reporteLiquidacionServicios = new ReporteLiquidacionServicios();
       $this->sendResponse($reporteLiquidacionServicios->generarReporte($result, $fecha, $nombreTerapista), 200);
+
+    } else if ($tipo == 'ficha-checkin') {
+
+      $checkingsDb = new CheckingsDb();
+      $checking = $checkingsDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+
+      $personasDb = new PersonasDb();
+      $persona = $personasDb->obtenerPersona($checking->id_persona);
+
+      $roomingDb = new RoomingDb();
+      $roomings = $roomingDb->buscarPorNroRegistroMaestroConFechaINOUT($nroRegistroMaestro);
+
+      $acompanantesDb = new AcompanantesDb();
+      $acompanantes = $acompanantesDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+
+      $reporteFichaChecking = new ReporteFichaChecking();
+      $this->sendResponse($reporteFichaChecking->generarReporte($checking, $persona, $roomings, $acompanantes), 200);
 
     } else {
       // no hay ese tipo de reporte
