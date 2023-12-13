@@ -210,9 +210,9 @@ class BaseController
   {
     return [
       "mensaje" => $e->getMessage(),
-      "archivo" => $e->getPrevious()->getFile() ?? $e->getFile(),
-      "linea" => $e->getPrevious()->getLine() ?? $e->getLine(),
-      "trace" => $e->getPrevious()->getTrace() ?? $e->getTrace()
+      "archivo" => $e->getPrevious()?->getFile() ?? $e->getFile(),
+      "linea" => $e->getPrevious()?->getLine() ?? $e->getLine(),
+      "trace" => $e->getPrevious()?->getTrace() ?? $e->getTrace()
     ];
   }
 }
