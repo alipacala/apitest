@@ -123,16 +123,19 @@ class DocumentosDetallesDb extends Database
       ELSE ch.tipo_de_servicio
     END AS tipo_cliente,
     ac.apellidos_y_nombres AS cliente,
-    ROW_NUMBER() OVER(ORDER BY id_documentos_detalle) AS nro_servicio,
+    /* ROW_NUMBER() OVER(ORDER BY id_documentos_detalle) AS nro_servicio, */
+    (@row_number:=@row_number + 1) AS nro_servicio,
     dd.precio_total AS costo_servicio,
-    CASE ROW_NUMBER() OVER(ORDER BY dd.id_documentos_detalle)
+    /* CASE ROW_NUMBER() OVER(ORDER BY dd.id_documentos_detalle) */
+    CASE (@row_number)
     	WHEN 1 THEN 0.45
         WHEN 2 THEN 0.45
         WHEN 3 THEN 0.4
         WHEN 4 THEN 0.4
         ELSE 0.35
     END AS porc_comision,
-    CASE ROW_NUMBER() OVER(ORDER BY dd.id_documentos_detalle)
+    /* CASE ROW_NUMBER() OVER(ORDER BY dd.id_documentos_detalle) */
+    CASE (@row_number)
     	WHEN 1 THEN 0.45 * dd.precio_total
         WHEN 2 THEN 0.45 * dd.precio_total
         WHEN 3 THEN 0.4 * dd.precio_total
@@ -147,7 +150,8 @@ class DocumentosDetallesDb extends Database
    FROM documento_detalle dd
    INNER JOIN productos pr ON pr.id_producto = dd.id_producto
    INNER JOIN acompanantes ac ON ac.id_acompanante = dd.id_acompanate
-   INNER JOIN cheking ch ON ch.nro_registro_maestro = dd.nro_registro_maestro
+   INNER JOIN cheking ch ON ch.nro_registro_maestro = dd.nro_registro_maestro,
+(SELECT @row_number := 0) AS rownumber
    WHERE dd.fecha_servicio = :fecha AND dd.id_profesional = :id_profesional AND dd.tipo_movimiento = 'SA' AND pr.tipo = 'SRV' AND (dd.estado_servicio = 1 OR dd.estado_servicio = 10)";
     $params = array(
       ["nombre" => "fecha", "valor" => $fecha, "tipo" => PDO::PARAM_STR],

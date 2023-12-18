@@ -24,9 +24,10 @@ class ReporteEstadoCuenta
   function prepararDatos($result = null, $nroRegistroMaestro = null)
   {
     $header = [];
-    $header["TITULAR"] = $result[0]["titular"];
+    $header["TITULAR"] = $this->aUTF8($result[0]["titular"]);
     $header["NRO_REGISTRO_MAESTRO"] = $nroRegistroMaestro;
-    $header["FECHA_INGRESO"] = $result[0]["fecha_in"];
+    // dar formato a la fecha
+    $header["FECHA_INGRESO"] = date_format(date_create($result[0]["fecha_in"]), "d/m/Y");
 
     // calcular el total y el total por cobrar
     $header["TOTAL"] = 0;
@@ -42,8 +43,12 @@ class ReporteEstadoCuenta
       $result[$detalle["grupo"]][] = $detalle;
     }
 
-    usort($result['HOSPEDAJES'], [$this, 'ordenacionCallback']);
-    usort($result['PRODUCTOS Y PAQUETES'], [$this, 'ordenacionCallback']);
+    if (isset($result["HOSPEDAJES"])) {
+      usort($result['HOSPEDAJES'], [$this, 'ordenacionCallback']);
+    }
+    if (isset($result["PRODUCTOS Y PAQUETES"])) {
+      usort($result['PRODUCTOS Y PAQUETES'], [$this, 'ordenacionCallback']);
+    }
 
     // borrar los detalles no agrupados
     foreach ($result as $index => $detalle) {
@@ -131,7 +136,7 @@ class ReporteEstadoCuenta
 
         $pdf->Cell(14, $lineHeight, $grupo == 'SERVICIOS' ? $detalle["fecha_servicio"] : $detalle["fecha"], 0, 0, "C");
         $pdf->Cell(10, $lineHeight, intval($detalle["cantidad"]), 0, 0, "C");
-        $pdf->Cell(60, $lineHeight, $detalle["nombre_producto"]);
+        $pdf->Cell(60, $lineHeight, $this->aUTF8($detalle["nombre_producto"]));
         $pdf->Cell(10, $lineHeight, $detalle["nro_habitacion"], 0, 0, "C");
         $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($detalle["precio_unitario"]), 0, 0, "R");
         $pdf->Cell(14, $lineHeight, $this->darFormatoMoneda($detalle["precio_total"]), 0, 0, "R");
@@ -142,7 +147,7 @@ class ReporteEstadoCuenta
         if ($grupo == 'SERVICIOS') {
           // imprimir el cliente que consumio el servicio
           $pdf->Cell(24, $lineHeight, "", 0, 0, "C");
-          $pdf->Cell(60, $lineHeight, "\t\t" . $detalle["cliente"]);
+          $pdf->Cell(60, $lineHeight, "\t\t" . $this->aUTF8($detalle["cliente"]));
           $pdf->Ln();
         }
       }
@@ -173,7 +178,7 @@ class ReporteEstadoCuenta
     $pdf->Line(72, $pdf->GetY(), 132, $pdf->GetY());
 
     $pdf->SetFont('Arial', null, $tamanoLetra);
-    $pdf->Cell(98, 8 , "TOTAL POR COBRAR: ", 0, 0, "R");
+    $pdf->Cell(98, 8, "TOTAL POR COBRAR: ", 0, 0, "R");
 
     $pdf->SetFont('Arial', 'B', 12);
     $pdf->Cell(24, 8, $this->darFormatoMoneda($header["X_COBRAR"]), 0, 0, "R");
@@ -182,6 +187,10 @@ class ReporteEstadoCuenta
   function darFormatoMoneda($monto)
   {
     return number_format($monto, 2, '.', ',');
+  }
+  
+  function aUTF8($string) {
+    return mb_convert_encoding($string, "ISO-8859-1", "UTF-8");
   }
 }
 
