@@ -22,6 +22,13 @@ class AcompanantesDb extends Database
     return $this->executeQuery($query, null, "select");
   }
 
+  public function listarAcompanantesConCuentasAbiertas()
+  {
+    $query = "SELECT * FROM $this->tableName ac INNER JOIN cheking ch ON ac.nro_registro_maestro = ch.nro_registro_maestro WHERE ch.cerrada IS NULL8";
+    
+    return $this->executeQuery($query, null, "select");
+  }
+
   public function buscarTitularPorNroRegistroMaestro($nroRegistroMaestro)
   {
     $query = "SELECT * FROM $this->tableName WHERE nro_registro_maestro = :nro_registro_maestro AND nro_de_orden_unico = 0";

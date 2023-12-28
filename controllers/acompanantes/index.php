@@ -11,11 +11,16 @@ class AcompanantesController extends BaseController
     $params = $this->getParams();
     $nroRegistroMaestro = $params['nro_registro_maestro'] ?? null;
 
+    $cuentasAbiertas = isset($params['cuentas_abiertas']);
+
     $acompanantesDb = new AcompanantesDb();
 
     $result = null;
     if ($nroRegistroMaestro) {
       $result = $acompanantesDb->buscarPorNroRegistroMaestro($nroRegistroMaestro);
+    }
+    if ($cuentasAbiertas) {
+      $result = $acompanantesDb->listarAcompanantesConCuentasAbiertas();
     }
     if (count($params) === 0) {
       $result = $acompanantesDb->listarAcompanantes();
