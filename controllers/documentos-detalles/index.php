@@ -55,7 +55,7 @@ class DocumentosDetallesController extends BaseController
 
       // Filtrar datos para dd_entre_fechas
       $DDEntreFechas = array_filter($result, function ($item) use ($fechaInicio, $fechaFin) {
-        return $item['fecha'] >= $fechaInicio && $item['fecha'] <= $fechaFin;
+        return $item['fecha'] >= $fechaInicio && $item['fecha'] <= date('Y-m-d', strtotime($fechaFin . ' + 1 day'));
       });
 
       // Calcular monto_antes_fecha
