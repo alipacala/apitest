@@ -265,7 +265,7 @@ class DocumentosDetallesDb extends Database
       CASE WHEN dd.tipo_movimiento = 'IN' THEN dd.cantidad ELSE 0 END AS ingreso,
       CASE WHEN dd.tipo_movimiento = 'SA' THEN dd.cantidad ELSE 0 END AS salida
 
-    FROM $this->tableName dd
+    FROM documento_detalle dd
 
     INNER JOIN productos pr ON pr.id_producto = dd.id_producto
     LEFT JOIN comprobante_detalle cd ON dd.id_documentos_detalle = cd.id_documentos_detalle
@@ -274,7 +274,7 @@ class DocumentosDetallesDb extends Database
     LEFT JOIN documento_movimiento dm ON dd.id_documento_movimiento = dm.id_documento_movimiento
     LEFT JOIN personanaturaljuridica pe2 ON dm.nro_documento = pe2.nro_documento
 
-    WHERE dd.id_producto = :id_producto AND CAST(dd.fecha AS DATE) < :fecha_fin";
+    WHERE dd.id_producto = :id_producto AND CAST(dd.fecha AS DATE) <= :fecha_fin";
     $params = array(
       ["nombre" => "id_producto", "valor" => $idProducto, "tipo" => PDO::PARAM_INT],
       ["nombre" => "fecha_fin", "valor" => $fechaFin, "tipo" => PDO::PARAM_STR]
