@@ -785,7 +785,14 @@ class CheckingsController extends BaseController {
         
         $personasDb->actualizarPersona($personaBuscada->id_persona, $persona);
         $persona->id_persona = $personaBuscada->id_persona;
-        // calcular la edad según la fecha de nacimiento
+
+        // actualizar el acompañante titular
+        $acompanantesDb = new AcompanantesDb();
+        $prevAcompananteTitular = $acompanantesDb->buscarTitularPorNroRegistroMaestro($checking->nro_registro_maestro);
+
+        $acompananteTitular = new Acompanante();
+
+        
       } else {
         // crear la persona
         $persona->tipo_persona = 0;

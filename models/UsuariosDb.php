@@ -79,6 +79,20 @@ class UsuariosDb extends Database
 
     return $this->executeQuery($query, $params);
   }
+
+  public function loginColaborador($usuario, $clave)
+  {
+    $query = "SELECT id_usuario, p.nombres, p.apellidos, p.id_persona
+     FROM usuarios us
+     INNER JOIN personanaturaljuridica p ON p.id_persona = us.id_persona
+     WHERE us.usuario = :usuario AND us.clave = :clave AND us.id_tipo_de_usuario = 2";
+    $params = array(
+      ["nombre" => "usuario", "valor" => $usuario, "tipo" => PDO::PARAM_STR],
+      ["nombre" => "clave", "valor" => $clave, "tipo" => PDO::PARAM_STR]
+    );
+
+    return $this->executeQuery($query, $params);
+  }
   
   public function crearUsuario(Usuario $usuario)
   {

@@ -24,7 +24,7 @@ class AcompanantesDb extends Database
 
   public function listarAcompanantesConCuentasAbiertas()
   {
-    $query = "SELECT * FROM $this->tableName ac INNER JOIN cheking ch ON ac.nro_registro_maestro = ch.nro_registro_maestro WHERE ch.cerrada IS NULL8";
+    $query = "SELECT * FROM $this->tableName ac INNER JOIN cheking ch ON ac.nro_registro_maestro = ch.nro_registro_maestro WHERE ch.cerrada IS NULL";
     
     return $this->executeQuery($query, null, "select");
   }

@@ -288,6 +288,14 @@ class ProductosDb extends Database {
     return $this->executeQuery($query, $params);
   }
 
+  public function listarSoloProductos() {
+    $query = "SELECT * FROM $this->tableName
+      WHERE (tipo = 'PRD' OR tipo = 'PAQ')
+      AND (id_tipo_de_producto = 12 OR id_tipo_de_producto = 13)";
+
+    return $this->executeQuery($query);
+  }
+
   public function crearProducto(Producto $producto) {
     $productoArray = $this->prepareData((array)$producto, "insert");
     $query = $this->prepareQuery("insert", $productoArray);

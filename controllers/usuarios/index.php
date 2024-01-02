@@ -102,6 +102,24 @@ class UsuariosController extends BaseController {
 
         $this->sendResponse($response, $code);
         break;
+
+        case "login-colaboradores":
+          $usuarioDelBody = $this->getBody();
+  
+          $usuario = $usuarioDelBody->usuario;
+          $contrasena = $usuarioDelBody->contrasena;
+  
+          $usuariosDb = new UsuariosDb();
+          $result = $usuariosDb->loginColaborador($usuario, $contrasena);
+  
+          $response = $result ? [
+            "mensaje" => "Colaborador logueado correctamente",
+            "resultado" => $result[0]
+          ] : ["mensaje" => "Usuario o contraseña incorrectos"];
+          $code = $result ? 200 : 400;
+  
+          $this->sendResponse($response, $code);
+          break;
       default:
         $this->sendResponse(["mensaje" => "Acción no encontrada"], 404);
         break;
