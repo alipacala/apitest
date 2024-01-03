@@ -60,7 +60,10 @@ class ReservasController extends BaseController
     $reserva->nro_personas = $reserva->nro_adultos + $reserva->nro_ninos + $reserva->nro_infantes;
 
     $configDb = new ConfigDb();
-    $codigoReserva = $configDb->obtenerCodigo(2);
+    
+    $codigo = "HT".date("y");
+
+    $codigoReserva = $configDb->obtenerCodigo(27);
     $reserva->nro_reserva = $codigoReserva["codigo"];
 
     $reservasDb = new ReservasDb();
@@ -90,7 +93,7 @@ class ReservasController extends BaseController
         $reservasHabitacionesDb->crearReservaHabitacion($reservaHabitacion);
       }
 
-      $seActualizoConfig = $configDb->incrementarCorrelativo(2);
+      $seActualizoConfig = $configDb->actualizarNumeroCorrelativo($codigo);
 
       if ($idReserva && $seActualizoConfig) {
         $this->sendResponse([

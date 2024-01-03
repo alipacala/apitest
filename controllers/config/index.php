@@ -6,6 +6,53 @@ require_once PROJECT_ROOT_PATH . "/models/ConfigDb.php";
 
 class ConfigController extends BaseController
 {
+  public function get()
+  {
+    $params = $this->getParams();
+    $codigo = $params['codigo'] ?? null;
+
+    $configDb = new ConfigDb();
+
+    $cantidadDigitos = 8;
+
+    if ($codigo) {
+      $nombresCodigos = [
+        "RESERVA" => "RE",
+        "MA" => "MA",
+        "SPA" => "SP",
+        "COMANDA" => "CM",
+        "HOTEL" => "HT",
+      ];
+
+      if ($codigo == 'GUIA_INTERNA') {
+        $codigo = date("y") . "01";
+        $cantidadDigitos = 4;
+      }
+
+      $tienePrefijo = array_key_exists($codigo, $nombresCodigos);
+
+      if ($tienePrefijo) {
+        $codigo = $nombresCodigos[$codigo] . date("y");
+        $cantidadDigitos = 6;
+      }
+
+      $result = $configDb->obtenerCorrelativoDeCodigo($codigo);
+
+      if ($tienePrefijo && !$result) {
+        $nuevoConfig = new Config();
+        $nuevoConfig->codigo = $codigo;
+        $nuevoConfig->numero_correlativo = 1;
+        $configDb->crearConfig($nuevoConfig);
+      }
+
+      $result = $codigo . str_pad($result[0]["codigo"], $cantidadDigitos, "0", STR_PAD_LEFT);
+    } else {
+      $result = $configDb->listarConfig();
+    }
+
+    $this->sendResponse($result, 200);
+  }
+
   public function getOne($id)
   {
     $configDb = new ConfigDb();

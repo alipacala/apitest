@@ -39,7 +39,7 @@ class ComprobanteImprimible
     ];
 
     $header = [];
-    $header["FECHA"] = $result[0]["fecha"];
+    $header["FECHA"] = date("d/m/Y", strtotime($result[0]["fecha"]));
     $header["HORA"] = $result[0]["hora"];
     $header["NRO_COMPROBANTE"] = $result[0]["nro_comprobante"];
     $header["TIPO_DOC"] = $tiposDoc[$result[0]["tipo_doc"]];

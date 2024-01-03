@@ -182,7 +182,10 @@ class CheckingsController extends BaseController {
       $checking = new Checking();
 
       $configDb = new ConfigDb();
-      $checking->nro_registro_maestro = $configDb->obtenerCodigo(4)['codigo'];
+
+      $codigo = "SP-".date("Y");
+
+      $checking->nro_registro_maestro = $codigo . str_pad($configDb->obtenerCorrelativoDeCodigo($codigo)[0]['codigo'], 6, "0", STR_PAD_LEFT);
 
       $checking->id_unidad_de_negocio = 3;
       $checking->tipo_de_servicio = "SPA";
@@ -280,7 +283,7 @@ class CheckingsController extends BaseController {
         $checkingsDb->empezarTransaccion();
 
         $configDb = new ConfigDb();
-        $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
+        $nroRegistroMaestro = $configDb->obtenerCodigo(28)['codigo'];
         $configDb->actualizarNumeroCorrelativo($codigo);
 
         // actualizar la reserva

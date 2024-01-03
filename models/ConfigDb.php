@@ -33,7 +33,7 @@ class ConfigDb extends Database
           str_pad($result->numero_correlativo, 8, "0", STR_PAD_LEFT)
       );
 
-    } else if ($id == 2 || $id == 11) {
+    } else if ($id == 2 || $id == 11 || $id == 27 || $id == 28) {
       // id de la config de reservas y de hotel
       $result = array(
         "codigo" => $result->codigo . str_pad($result->numero_correlativo, 6, "0", STR_PAD_LEFT)
@@ -53,6 +53,13 @@ class ConfigDb extends Database
       );
     }
     return $result;
+  }
+
+  public function obtenerCorrelativoDeCodigo($codigo) {
+    $query = "SELECT numero_correlativo AS codigo FROM config WHERE codigo = :codigo";
+    $params = array(["nombre" => "codigo", "valor" => $codigo, "tipo" => PDO::PARAM_STR]);
+
+    return $this->executeQuery($query, $params);
   }
 
   public function listarConfig()

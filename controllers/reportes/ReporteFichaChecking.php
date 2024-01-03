@@ -134,7 +134,7 @@ class ReporteFichaChecking
     $this->pdf->AddPage();
 
     $this->pdf->SetFont('Arial', 'B');
-    
+
     $this->pdf->Cell(null, 7, $this->aUTF8("DATOS ACOMPAÑANTES"), 0, 0, "C");
     $this->pdf->Ln();
 
@@ -185,7 +185,7 @@ class ReporteFichaChecking
     $this->pdf->Cell(28, $this->lineHeight, $this->aUTF8($checking->forma_pago));
     $this->pdf->Ln();
 
-    $this->pdf->Cell(28, $this->lineHeight, "NRO $checking->tipo_comprobante:");
+    $this->pdf->Cell(28, $this->lineHeight, "NRO " . strtoupper($checking->tipo_comprobante) . ":");
     $this->pdf->Cell(28, $this->lineHeight, $checking->nro_documento_comprobante);
     $this->pdf->Ln();
 
