@@ -55,6 +55,44 @@ class ConfigDb extends Database
     return $result;
   }
 
+  public function obtenerCodigoOGenerar($codigo) {
+    $nombresCodigos = [
+      "RESERVA" => "RE",
+      "MA" => "MA",
+      "SPA" => "SP",
+      "COMANDA" => "CM",
+      "HOTEL" => "HT",
+    ];
+
+    $cantidadDigitos = 6;
+
+    if ($codigo == 'GUIA_INTERNA') {
+      $codigo = date("y") . "01";
+      $cantidadDigitos = 4;
+    }
+    if ($codigo == 'PEDIDO') {
+      $codigo = "P001-";
+      $cantidadDigitos = 8;
+    }
+
+    $tienePrefijo = array_key_exists($codigo, $nombresCodigos);
+
+    if ($tienePrefijo) {
+      $codigo = $nombresCodigos[$codigo] . date("y");
+    }
+
+    $result = $this->obtenerCorrelativoDeCodigo($codigo);
+
+    if ($tienePrefijo && !$result) {
+      $nuevoConfig = new Config();
+      $nuevoConfig->codigo = $codigo;
+      $nuevoConfig->numero_correlativo = 1;
+      $this->crearConfig($nuevoConfig);
+    }
+
+    return $codigo . str_pad($result[0]["codigo"], $cantidadDigitos, "0", STR_PAD_LEFT);
+  }
+
   public function obtenerCorrelativoDeCodigo($codigo) {
     $query = "SELECT numero_correlativo AS codigo FROM config WHERE codigo = :codigo";
     $params = array(["nombre" => "codigo", "valor" => $codigo, "tipo" => PDO::PARAM_STR]);

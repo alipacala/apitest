@@ -183,9 +183,7 @@ class CheckingsController extends BaseController {
 
       $configDb = new ConfigDb();
 
-      $codigo = "SP-".date("Y");
-
-      $checking->nro_registro_maestro = $codigo . str_pad($configDb->obtenerCorrelativoDeCodigo($codigo)[0]['codigo'], 6, "0", STR_PAD_LEFT);
+      $checking->nro_registro_maestro = $configDb->obtenerCodigoOGenerar("SPA");
 
       $checking->id_unidad_de_negocio = 3;
       $checking->tipo_de_servicio = "SPA";
@@ -211,8 +209,9 @@ class CheckingsController extends BaseController {
 
       $checkingsDb = new CheckingsDb();
       $idChecking = $checkingsDb->crearChecking($checking);
-
-      $configDb->incrementarCorrelativo(4);
+      
+      $codigo = "SP".date("y");
+      $configDb->actualizarNumeroCorrelativo($codigo);
 
       $checkingCreado = $checkingsDb->obtenerChecking($idChecking);
 
@@ -283,7 +282,7 @@ class CheckingsController extends BaseController {
         $checkingsDb->empezarTransaccion();
 
         $configDb = new ConfigDb();
-        $nroRegistroMaestro = $configDb->obtenerCodigo(28)['codigo'];
+        $nroRegistroMaestro = $configDb->obtenerCodigoOGenerar($codigo);
         $configDb->actualizarNumeroCorrelativo($codigo);
 
         // actualizar la reserva
@@ -419,7 +418,7 @@ class CheckingsController extends BaseController {
       }
 
       $configDb = new ConfigDb();
-      $nroRegistroMaestro = $configDb->obtenerCodigo(11)['codigo'];
+      $nroRegistroMaestro = $configDb->obtenerCodigoOGenerar("HOTEL");
 
       // crear el checking
       $checkingsDb = new CheckingsDb();
@@ -487,7 +486,8 @@ class CheckingsController extends BaseController {
       }
 
       // incrementar el correlativo
-      $configDb->incrementarCorrelativo(11);
+      $codigo = "HT".date("y");
+      $configDb->actualizarNumeroCorrelativo($codigo);
   
     } else {
       $this->sendResponse(["mensaje" => "Acción no válida"], 404);

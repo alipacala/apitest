@@ -89,7 +89,7 @@ class DocumentosMovimientoController extends BaseController
       $documentoMovimiento->hora_movimiento = $fechaYHora['hora'];
       $documentoMovimiento->fecha_hora_registro = $fechaYHora['fecha_y_hora'];
 
-      $documentoMovimiento->nro_de_comanda = $configDb->obtenerCodigo(5)["codigo"]; // 5 es el id de las comandas en la tabla config
+      $documentoMovimiento->nro_de_comanda = $configDb->obtenerCodigoOGenerar("COMANDA");
 
       $documentoMovimiento->id_unidad_de_negocio = $checkingsDb->buscarPorNroRegistroMaestro($documentoMovimiento->nro_registro_maestro)->id_unidad_de_negocio;
 
@@ -299,7 +299,8 @@ class DocumentosMovimientoController extends BaseController
       $documentoMovimientoYDetallesCreados = $idDocumento && count($detallesCreados) >= count($detallesDescargo1);
 
       if ($documentoMovimientoYDetallesCreados) {
-        $configDb->incrementarCorrelativo(5); // 5 es el id de las comandas en la tabla config
+        $codigo = "CM" . date("y");
+        $configDb->actualizarNumeroCorrelativo($codigo);
         $response = [
           "mensaje" => "Documento Movimiento creado correctamente",
           "resultado" => array_merge(
@@ -384,7 +385,7 @@ class DocumentosMovimientoController extends BaseController
 
       // si es una guia interna, se le asigna el codigo de guia interna
       if ($documentoMovimiento->tipo_documento == 'GI') {
-        $documentoMovimiento->nro_documento = $configDb->obtenerCodigo(25)["codigo"]; // 25 es el id de las guias internas en la tabla config
+        $documentoMovimiento->nro_documento = $configDb->obtenerCodigoOGenerar('GUIA_INTERNA');
       }
 
       // calcular los totales

@@ -179,7 +179,7 @@ class ComprobantesVentasController extends BaseController
       $pre = "F";
     } else {
       $serie = "1"; // TODO: tal vez no sea necesario
-      $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
+      $correlativoBoleta = $configDb->obtenerCodigoOGenerar("PEDIDO"); // 20 es el id del correlativo de los pedidos
       $pre = "P";
     }
 
@@ -200,7 +200,7 @@ class ComprobantesVentasController extends BaseController
     $documentosDetallesDb = new DocumentosDetallesDb();
     $comprobantesVentasDb = new ComprobantesVentasDb();
 
-    $porcentajeIGV = $configDb->obtenerConfig(17)->numero_correlativo; // 17 es el id del porcentaje de igv, 2 es el índice del valor en el array
+    $porcentajeIGV = $configDb->obtenerConfig(17)->numero_correlativo; // 17 es el id del porcentaje de igv
 
     try {
       $documentosDetallesDb->empezarTransaccion();
@@ -452,14 +452,7 @@ class ComprobantesVentasController extends BaseController
       $configDb = new ConfigDb();
 
       if ($comprobante->tipo_comprobante == '00') {
-        $serie = "1"; // TODO: tal vez no sea necesario
-        $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
-        $pre = "P";
-
-        $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
-        $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
-
-        $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
+        $comprobante->nro_comprobante = $configDb->obtenerCodigoOGenerar("PEDIDO");
       }
 
       $comprobante->monto_inicial = 0;
@@ -723,14 +716,7 @@ class ComprobantesVentasController extends BaseController
 
       $configDb = new ConfigDb();
 
-      $serie = "1"; // TODO: tal vez no sea necesario
-      $correlativoBoleta = $configDb->obtenerConfig(20)->numero_correlativo; // 20 es el id del correlativo de los pedidos
-      $pre = "P";
-
-      $serie = str_pad($serie, 3, "0", STR_PAD_LEFT);
-      $nro = str_pad($correlativoBoleta, 8, "0", STR_PAD_LEFT);
-
-      $comprobante->nro_comprobante = $pre . $serie . "-" . $nro;
+      $comprobante->nro_comprobante = $configDb->obtenerCodigoOGenerar("PEDIDO");
 
       $reciboPago = new ReciboPago();
       $reciboPago->total = 0;

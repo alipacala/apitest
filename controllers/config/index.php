@@ -13,39 +13,10 @@ class ConfigController extends BaseController
 
     $configDb = new ConfigDb();
 
-    $cantidadDigitos = 8;
+    $cantidadDigitos = 6;
 
     if ($codigo) {
-      $nombresCodigos = [
-        "RESERVA" => "RE",
-        "MA" => "MA",
-        "SPA" => "SP",
-        "COMANDA" => "CM",
-        "HOTEL" => "HT",
-      ];
-
-      if ($codigo == 'GUIA_INTERNA') {
-        $codigo = date("y") . "01";
-        $cantidadDigitos = 4;
-      }
-
-      $tienePrefijo = array_key_exists($codigo, $nombresCodigos);
-
-      if ($tienePrefijo) {
-        $codigo = $nombresCodigos[$codigo] . date("y");
-        $cantidadDigitos = 6;
-      }
-
-      $result = $configDb->obtenerCorrelativoDeCodigo($codigo);
-
-      if ($tienePrefijo && !$result) {
-        $nuevoConfig = new Config();
-        $nuevoConfig->codigo = $codigo;
-        $nuevoConfig->numero_correlativo = 1;
-        $configDb->crearConfig($nuevoConfig);
-      }
-
-      $result = $codigo . str_pad($result[0]["codigo"], $cantidadDigitos, "0", STR_PAD_LEFT);
+      $result = $configDb->obtenerCodigoOGenerar($codigo);
     } else {
       $result = $configDb->listarConfig();
     }
