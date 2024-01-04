@@ -61,12 +61,16 @@ class ReservasController extends BaseController
 
     $configDb = new ConfigDb();
 
-    $reserva->nro_reserva = $configDb->obtenerCodigoOGenerar("RESERVA");
-
+    
     $reservasDb = new ReservasDb();
-
+    
     try {
       $reservasDb->empezarTransaccion();
+      
+      // primero actualizar el numero correlativo y luego obtenerlo
+      $codigo = "RE" . date("y");
+      $seActualizoConfig = $configDb->actualizarNumeroCorrelativo($codigo);
+      $reserva->nro_reserva = $configDb->obtenerCodigoOGenerar("RESERVA");
 
       $idReserva = $reservasDb->crearReserva($reserva);
 
@@ -89,9 +93,6 @@ class ReservasController extends BaseController
 
         $reservasHabitacionesDb->crearReservaHabitacion($reservaHabitacion);
       }
-
-      $codigo = "RE" . date("y");
-      $seActualizoConfig = $configDb->actualizarNumeroCorrelativo($codigo);
 
       if ($idReserva && $seActualizoConfig) {
         $this->sendResponse([

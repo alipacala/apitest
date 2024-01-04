@@ -86,7 +86,7 @@ class ConfigDb extends Database
     if ($tienePrefijo && !$result) {
       $nuevoConfig = new Config();
       $nuevoConfig->codigo = $codigo;
-      $nuevoConfig->numero_correlativo = 1;
+      $nuevoConfig->numero_correlativo = 0;
       $this->crearConfig($nuevoConfig);
     }
 
@@ -94,7 +94,7 @@ class ConfigDb extends Database
   }
 
   public function obtenerCorrelativoDeCodigo($codigo) {
-    $query = "SELECT numero_correlativo AS codigo FROM config WHERE codigo = :codigo";
+    $query = "SELECT numero_correlativo + 1 AS codigo FROM config WHERE codigo = :codigo";
     $params = array(["nombre" => "codigo", "valor" => $codigo, "tipo" => PDO::PARAM_STR]);
 
     return $this->executeQuery($query, $params);

@@ -180,10 +180,7 @@ class CheckingsController extends BaseController {
       $titularCreado = $personasDb->obtenerPersona($idTitular);
 
       $checking = new Checking();
-
       $configDb = new ConfigDb();
-
-      $checking->nro_registro_maestro = $configDb->obtenerCodigoOGenerar("SPA");
 
       $checking->id_unidad_de_negocio = 3;
       $checking->tipo_de_servicio = "SPA";
@@ -207,12 +204,14 @@ class CheckingsController extends BaseController {
         }
       }
 
+      // primero actualizar el numero correlativo y luego obtenerlo
+      $codigo = "SP".date("y");
+      $configDb->actualizarNumeroCorrelativo($codigo);
+      $checking->nro_registro_maestro = $configDb->obtenerCodigoOGenerar("SPA");
+
       $checkingsDb = new CheckingsDb();
       $idChecking = $checkingsDb->crearChecking($checking);
       
-      $codigo = "SP".date("y");
-      $configDb->actualizarNumeroCorrelativo($codigo);
-
       $checkingCreado = $checkingsDb->obtenerChecking($idChecking);
 
       $acompanantesDb = new AcompanantesDb();
