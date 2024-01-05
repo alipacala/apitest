@@ -290,7 +290,7 @@ class ProductosDb extends Database {
 
   public function listarSoloProductos() {
     $query = "SELECT * FROM $this->tableName
-      WHERE (tipo = 'PRD' OR tipo = 'PAQ')
+      WHERE (tipo = 'PRD' OR tipo = 'PAQ' OR tipo = 'RST')
       AND (id_tipo_de_producto = 12 OR id_tipo_de_producto = 13)";
 
     return $this->executeQuery($query);
