@@ -9,9 +9,10 @@ class ComprobanteImprimible
 
     $pdf = new FPDF('P', 'mm', array(100, 270));
     $pdf->AddPage();
+    $pdf->SetMargins(0, 0, 0);
 
     $lineHeight = 4;
-    $tamanoLetra = 8;
+    $tamanoLetra = 10;
 
     $pdf->SetFont('Arial', null, $tamanoLetra);
 
@@ -58,7 +59,7 @@ class ComprobanteImprimible
 
     $soles = floor($header["TOTAL"]);
     $centimos = $header["TOTAL"] - $soles;
-    
+
     $formatterES = new \NumberFormatter("es", \NumberFormatter::SPELLOUT);
     $header["TOTAL_LITERAL"] = $this->aUTF8(strtoupper($this->quitarTildes($formatterES->format($soles)))) . " Y " . str_pad(round($centimos * 100), 2, "0") . "/100 SOLES";
 
@@ -75,7 +76,7 @@ class ComprobanteImprimible
 
   function imprimirCabecera(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
   {
-    $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", 35, null, 30, 0, "PNG");
+    $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", 25, null, 50, 0, "PNG");
 
     $pdf->Cell(0, $lineHeight);
     $pdf->Ln();
@@ -97,8 +98,8 @@ class ComprobanteImprimible
     $pdf->Ln();
     $pdf->Ln();
 
-    $pdf->Cell(20, $lineHeight, "Fecha: " . $header["FECHA"]);
-    $pdf->Cell(20, $lineHeight, "Hora: " . $header["HORA"]);
+    $pdf->Cell(40, $lineHeight, "Fecha: " . $header["FECHA"]);
+    $pdf->Cell(40, $lineHeight, "Hora: " . $header["HORA"]);
     $pdf->Ln();
 
     if ($header["TIPO_DOC"] != "NOTA DE PEDIDO") {
@@ -107,37 +108,41 @@ class ComprobanteImprimible
         $pdf->Ln();
       }
 
-      $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
+      $pdf->Ln(2);
+      $pdf->Line(0, $pdf->GetY(), 100, $pdf->GetY());
+      $pdf->Ln(2);
 
       $pdf->Cell(14, $lineHeight, $header["TIPO_DOC_CLIENTE"] . ":");
       $pdf->Cell(14, $lineHeight, $header["RUC"]);
       $pdf->Ln();
       $pdf->Cell(0, $lineHeight, "NOMBRE:");
       $pdf->Ln();
-      $pdf->Cell(0, $lineHeight, strtoupper($header["NOMBRE"]));
-      $pdf->Ln();
+      $pdf->MultiCell(0, $lineHeight, strtoupper($header["NOMBRE"]));
 
       if ($header["TIPO_DOC_CLIENTE"] == "RUC") {
         $pdf->Cell(0, $lineHeight, "DIRECCION:");
         $pdf->Ln();
-        $pdf->Cell(0, $lineHeight, strtoupper($header["DIRECCION"]));
-        $pdf->Ln();
-        $pdf->Cell(0, $lineHeight, strtoupper($header["LUGAR"]));
-        $pdf->Ln();
+        $pdf->MultiCell(0, $lineHeight, strtoupper($header["DIRECCION"]));
+        $pdf->MultiCell(0, $lineHeight, strtoupper($header["LUGAR"]));
       }
     }
 
-    $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
+    $pdf->Ln(2);
+    $pdf->Line(0, $pdf->GetY(), 100, $pdf->GetY());
+    $pdf->Ln(2);
   }
 
   function imprimirCabeceraTabla(FPDF $pdf, $lineHeight, $tamanoLetra)
   {
     $pdf->Cell(44, $lineHeight, "DESCRIPCION", 0, 0, "C");
-    $pdf->Cell(12, $lineHeight, "CANT.", 0, 0, "C");
-    $pdf->Cell(12, $lineHeight, "P.UNIT.", 0, 0, "C");
-    $pdf->Cell(12, $lineHeight, "IMPORTE", 0, 0, "C");
+    $pdf->Cell(18, $lineHeight, "CANT.", 0, 0, "C");
+    $pdf->Cell(18, $lineHeight, "P.UNIT.", 0, 0, "C");
+    $pdf->Cell(18, $lineHeight, "IMPORTE", 0, 0, "C");
+
     $pdf->Ln();
-    $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
+    $pdf->Ln(2);
+    $pdf->Line(0, $pdf->GetY(), 100, $pdf->GetY());
+    $pdf->Ln(2);
   }
 
   function imprimirComprobantesTabla(FPDF $pdf, $lineHeight, $tamanoLetra, $result)
@@ -146,52 +151,59 @@ class ComprobanteImprimible
       $pdf->Cell(0, $lineHeight, $comprobante["nombre_producto"]);
       $pdf->Ln();
       $pdf->Cell(44, $lineHeight, "");
-      $pdf->Cell(12, $lineHeight, $comprobante["cantidad"], 0, 0, "C");
-      $pdf->Cell(12, $lineHeight, $comprobante["precio_unitario"], 0, 0, "R");
-      $pdf->Cell(12, $lineHeight, $comprobante["precio_total"], 0, 0, "R");
+      $pdf->Cell(18, $lineHeight, $comprobante["cantidad"], 0, 0, "C");
+      $pdf->Cell(18, $lineHeight, $comprobante["precio_unitario"], 0, 0, "R");
+      $pdf->Cell(18, $lineHeight, $comprobante["precio_total"], 0, 0, "R");
       $pdf->Ln();
     }
   }
 
   function imprimirTotales(FPDF $pdf, $lineHeight, $tamanoLetra, $header)
   {
-    $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
+    $pdf->Ln(2);
+    $pdf->Line(0, $pdf->GetY(), 100, $pdf->GetY());
+    $pdf->Ln(2);
 
     if ($header["TIPO_DOC"] != "NOTA DE PEDIDO") {
-      $pdf->Cell(38, $lineHeight, "", 0, 0, "R");
-      $pdf->Cell(24, $lineHeight, "OPE. GRAVADA");
+      $pdf->Cell(40, $lineHeight);
+      $pdf->Cell(34, $lineHeight, "OPE. GRAVADA");
       $pdf->Cell(4, $lineHeight, ": S/");
-      $pdf->Cell(14, $lineHeight, $header["OPE_GRAVADA"], 0, 0, "R");
+      $pdf->Cell(20, $lineHeight, $header["OPE_GRAVADA"], 0, 0, "R");
       $pdf->Ln();
 
-      $pdf->Cell(38, $lineHeight, "", 0, 0, "R");
-      $pdf->Cell(24, $lineHeight, "OPE. NO GRAVADA");
+      $pdf->Cell(40, $lineHeight);
+      $pdf->Cell(34, $lineHeight, "OPE. NO GRAVADA");
       $pdf->Cell(4, $lineHeight, ": S/");
-      $pdf->Cell(14, $lineHeight, $header["OPE_NO_GRAVADA"], 0, 0, "R");
+      $pdf->Cell(20, $lineHeight, $header["OPE_NO_GRAVADA"], 0, 0, "R");
       $pdf->Ln();
 
-      $pdf->Cell(38, $lineHeight, "", 0, 0, "R");
-      $pdf->Cell(24, $lineHeight, "MONTO IGV " . $header["IGV"] . "%");
+      $pdf->Cell(40, $lineHeight);
+      $pdf->Cell(34, $lineHeight, "MONTO IGV " . $header["IGV"] . "%");
       $pdf->Cell(4, $lineHeight, ": S/");
-      $pdf->Cell(14, $lineHeight, $header["MONTO_IGV"], 0, 0, "R");
+      $pdf->Cell(20, $lineHeight, $header["MONTO_IGV"], 0, 0, "R");
       $pdf->Ln();
       $pdf->Ln();
     }
 
-    $pdf->Cell(38, $lineHeight, "", 0, 0, "R");
-    $pdf->Cell(24, $lineHeight, "TOTAL");
+    $pdf->Cell(40, $lineHeight);
+    $pdf->Cell(34, $lineHeight, "TOTAL");
     $pdf->Cell(4, $lineHeight, ": S/");
-    $pdf->Cell(14, $lineHeight, $header["TOTAL"], 0, 0, "R");
+    $pdf->Cell(20, $lineHeight, $header["TOTAL"], 0, 0, "R");
     $pdf->Ln();
 
     if ($header["TIPO_DOC"] != "NOTA DE PEDIDO") {
-      $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
-      $pdf->Cell(0, $lineHeight, "SON: " . $header["TOTAL_LITERAL"]);
-      $pdf->Ln();
-      $pdf->Line(10, $pdf->GetY(), 90, $pdf->GetY());
+      $pdf->Ln(2);
+      $pdf->Line(0, $pdf->GetY(), 100, $pdf->GetY());
+      $pdf->Ln(2);
+      $pdf->MultiCell(0, $lineHeight, "SON: " . $header["TOTAL_LITERAL"]);
 
+      $pdf->Ln(2);
+      $pdf->Line(0, $pdf->GetY(), 100, $pdf->GetY());
+      $pdf->Ln(2);
+
+      $pdf->Cell(0, $lineHeight, "REPRESENTACION IMPRESA DEL COMPROBANTE");
       $pdf->Ln();
-      $pdf->Cell(0, $lineHeight, "REPRESENTACION IMPRESA DEL COMPROBANTE DE VENTA ELECTRONICA");
+      $pdf->Cell(0, $lineHeight, "DE VENTA ELECTRONICA");
     }
   }
 
