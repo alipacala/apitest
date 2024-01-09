@@ -14,7 +14,7 @@ class ComprobanteImprimible
     $lineHeight = 4;
     $tamanoLetra = 10;
 
-    $pdf->SetFont('Arial', null, $tamanoLetra);
+    $pdf->SetFont('Courier', 'B', $tamanoLetra);
 
     $this->imprimirCabecera($pdf, $lineHeight, $tamanoLetra, $header);
     $this->imprimirCabeceraTabla($pdf, $lineHeight, $tamanoLetra);
@@ -85,7 +85,9 @@ class ComprobanteImprimible
     $pdf->Ln();
     $pdf->Cell(0, $lineHeight, "DOM. FISCAL: AV. Tarapaca Nro. 379", 0, 0, "C");
     $pdf->Ln();
-    $pdf->Cell(0, $lineHeight, $this->aUTF8("DIRECCIÓN: CALLE LAS VILCAS B1 - URB. LOS OLIVOS"), 0, 0, "C");
+    $pdf->Cell(0, $lineHeight, $this->aUTF8("DIRECCIÓN: CALLE LAS VILCAS B1"), 0, 0, "C");
+    $pdf->Ln();
+    $pdf->Cell(0, $lineHeight,"URB. LOS OLIVOS", 0, 0, "C");
     $pdf->Ln();
     $pdf->Cell(0, $lineHeight, "TACNA - TACNA - TACNA", 0, 0, "C");
     $pdf->Ln();
