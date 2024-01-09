@@ -40,21 +40,21 @@ class RoomingDb extends Database
   public function buscarPorNroRegistroMaestroConFechaINOUT($nroRegistroMaestro)
   {
     $query = "SELECT
-      fechas_minmax.nro_habitacion,
-      fechas_minmax.fecha_in AS fecha_in,
-      ch.hora_in AS hora_in,
-      fechas_minmax.fecha_out AS fecha_out,
-      ch.hora_out AS hora_out,
-      r.tarifa
+    fechas_minmax.nro_habitacion,
+    MIN(fechas_minmax.fecha_in) AS fecha_in,
+    fechas_minmax.hora AS hora_in,
+    MAX(DATE_ADD(fechas_minmax.fecha_out, INTERVAL 1 DAY)) AS fecha_out,
+    fechas_minmax.hora AS hora_out,
+    r.tarifa
     FROM rooming r
     INNER JOIN (
-          SELECT ro.nro_registro_maestro, ro.nro_habitacion, MIN(ro.fecha) AS fecha_in, MAX(ro.fecha) AS fecha_out
+          SELECT ro.nro_registro_maestro, ro.nro_habitacion, MIN(ro.fecha) AS fecha_in, MAX(ro.fecha) AS fecha_out, ro.hora AS hora
           FROM rooming ro
           INNER JOIN cheking ch ON ch.id_checkin = ro.id_checkin
           GROUP BY nro_registro_maestro, nro_habitacion
       ) AS fechas_minmax ON fechas_minmax.nro_registro_maestro = r.nro_registro_maestro AND fechas_minmax.nro_habitacion = r.nro_habitacion
-    INNER JOIN cheking ch ON ch.nro_registro_maestro = r.nro_registro_maestro
-    WHERE r.nro_registro_maestro = :nro_registro_maestro";
+    WHERE r.nro_registro_maestro = :nro_registro_maestro 
+    GROUP BY nro_habitacion ORDER BY nro_habitacion";
     $params = array(["nombre" => "nro_registro_maestro", "valor" => $nroRegistroMaestro, "tipo" => PDO::PARAM_STR]);
 
     return $this->executeQuery($query, $params);

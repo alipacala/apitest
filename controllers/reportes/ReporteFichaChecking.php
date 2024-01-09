@@ -93,6 +93,8 @@ class ReporteFichaChecking
 
     $this->pdf->Cell(56, $this->lineHeight, "REQUIERE ESTACIONAMIENTO? " . ($checking->estacionamiento == 1 ? "SI" : "NO"));
     $this->pdf->Cell(44, $this->lineHeight, $this->aUTF8("N° PLACA: ") . $checking->nro_placa);
+    
+    $this->pdf->Ln();
     $this->pdf->Ln();
   }
 
@@ -131,7 +133,8 @@ class ReporteFichaChecking
 
   function imprimirDatosAcompanantes($acompanantes = null, $checking = null)
   {
-    $this->pdf->AddPage();
+    $this->pdf->Ln();
+    $this->pdf->Ln();
 
     $this->pdf->SetFont('Arial', 'B');
 
