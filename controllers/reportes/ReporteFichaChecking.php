@@ -3,9 +3,8 @@ require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
 class PDF extends FPDF
 {
-
   protected $col = 0; // Current column
-  protected $y0 = 30;      // Ordinate of column start
+  protected $y0 = 15;      // Ordinate of column start
 
   function SetCol($col)
   {
@@ -62,9 +61,10 @@ class ReporteFichaChecking
 
     $this->pdf->SetFont('Arial', 'B', 10);
 
-    $this->pdf->Cell(null, $this->lineHeight, "REGISTRO DE HUESPEDES", 0, 0, "C");
+    $this->pdf->Cell(20, $this->lineHeight);
+    $this->pdf->Cell(null, $this->lineHeight, "REGISTRO DE HUESPEDES");
     $this->pdf->Ln();
-    $this->pdf->Cell(null, $this->lineHeight, "DATOS PERSONALES - TITULAR DE HABITACION", 0, 0, "C");
+    $this->pdf->Cell(null, $this->lineHeight, "DATOS PERSONALES - TITULAR DE HABITACION");
     $this->pdf->Ln();
     $this->pdf->Ln();
 
@@ -162,17 +162,17 @@ class ReporteFichaChecking
     // imprimir observaciones
     $this->pdf->MultiCell(null, 4, "OBSERVACIONES: " . $checking->observaciones_hospedaje);
 
+    for ($i = 0; $i < 8 - count($roomings); $i++) {
+      $this->pdf->Ln();
+    }
   }
 
   function imprimirDatosAcompanantes($acompanantes = null, $checking = null)
   {
-    $this->pdf->Ln();
-    $this->pdf->Ln();
-
-
     $this->pdf->SetFont('Arial', 'B');
 
-    $this->pdf->Cell(null, 7, $this->aUTF8("DATOS ACOMPAÑANTES"), 0, 0, "C");
+    $this->pdf->Cell(25, $this->lineHeight);
+    $this->pdf->Cell(null, 7, $this->aUTF8("DATOS ACOMPAÑANTES"));
     $this->pdf->Ln();
 
     $this->pdf->SetFont('Arial', null);
