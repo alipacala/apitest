@@ -11,7 +11,7 @@ class ComprobanteImprimible
     $pdf->AddPage();
 
     $lineHeight = 4;
-    $tamanoLetra = 6;
+    $tamanoLetra = 8;
 
     $pdf->SetFont('Arial', null, $tamanoLetra);
 
@@ -77,7 +77,7 @@ class ComprobanteImprimible
   {
     $pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", 35, null, 30, 0, "PNG");
 
-    $pdf->Cell(0);
+    $pdf->Cell(0, $lineHeight);
     $pdf->Ln();
 
     $pdf->Cell(0, $lineHeight, "DAFFS S.A.C.", 0, 0, "C");

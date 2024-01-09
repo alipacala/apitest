@@ -4,7 +4,7 @@ require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 class PDF extends FPDF
 {
   protected $col = 0; // Current column
-  protected $y0 = 15;      // Ordinate of column start
+  protected $y0 = 15; // Ordinate of column start
 
   function SetCol($col)
   {
