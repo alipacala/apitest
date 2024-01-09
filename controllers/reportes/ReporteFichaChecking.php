@@ -1,6 +1,40 @@
 <?php
 require_once PROJECT_ROOT_PATH . "/fpdf/fpdf.php";
 
+class PDF extends FPDF
+{
+
+  protected $col = 0; // Current column
+  protected $y0 = 30;      // Ordinate of column start
+
+  function SetCol($col)
+  {
+    // Set position at a given column
+    $this->col = $col;
+    $x = 10 + $col * 100;
+    $this->SetLeftMargin($x);
+    $this->SetX($x);
+  }
+
+  function AcceptPageBreak()
+  {
+    // Method accepting or not automatic page break
+    if ($this->col < 2) {
+      // Go to next column
+      $this->SetCol($this->col + 1);
+      // Set ordinate to top
+      $this->SetY($this->y0);
+      // Keep on page
+      return false;
+    } else {
+      // Go back to first column
+      $this->SetCol(0);
+      // Page break
+      return true;
+    }
+  }
+}
+
 class ReporteFichaChecking
 {
   private $pdf = null;
@@ -8,12 +42,11 @@ class ReporteFichaChecking
 
   public function __construct()
   {
-    $this->pdf = new FPDF('P', 'mm', [105, 148]);
+    $this->pdf = new PDF('P', 'mm', 'A5');
   }
 
   function generarReporte($checking = null, $persona = null, $roomings = null, $acompanantes = null)
   {
-
     $this->imprimirDatosPersonales($checking, $persona);
     $this->imprimirDatosHabitaciones($roomings, $checking);
     $this->imprimirDatosAcompanantes($acompanantes, $checking);
@@ -24,7 +57,7 @@ class ReporteFichaChecking
 
   function imprimirDatosPersonales($checking = null, $persona = null)
   {
-    $this->pdf->AddPage();
+    $this->pdf->AddPage('L');
     $this->pdf->Image(PROJECT_ROOT_PATH . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "img" . DIRECTORY_SEPARATOR . "logo.png", null, null, 15, 0, "PNG");
 
     $this->pdf->SetFont('Arial', 'B', 10);
@@ -93,7 +126,7 @@ class ReporteFichaChecking
 
     $this->pdf->Cell(56, $this->lineHeight, "REQUIERE ESTACIONAMIENTO? " . ($checking->estacionamiento == 1 ? "SI" : "NO"));
     $this->pdf->Cell(44, $this->lineHeight, $this->aUTF8("N° PLACA: ") . $checking->nro_placa);
-    
+
     $this->pdf->Ln();
     $this->pdf->Ln();
   }
@@ -135,6 +168,7 @@ class ReporteFichaChecking
   {
     $this->pdf->Ln();
     $this->pdf->Ln();
+
 
     $this->pdf->SetFont('Arial', 'B');
 
